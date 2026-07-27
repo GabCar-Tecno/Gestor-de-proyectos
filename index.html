@@ -171,6 +171,7 @@ button{color:inherit}
       <div style="line-height:1"><div style="font-weight:700;font-size:17px;letter-spacing:-.3px">Tecno<span style="color:#35c0f0">Corp</span></div><div style="font-size:9px;letter-spacing:3px;color:#66739a;font-weight:600;margin-top:1px">GESTIÓN DE PROYECTOS</div></div>
     </div>
 
+    <sc-if value="{{ !narrow }}" hint-placeholder-val="{{ true }}">
     <nav style="display:flex;align-items:center;gap:7px;overflow:hidden;flex:1;min-width:0">
       <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="1">
         <div style="display:flex;align-items:center;gap:7px;flex:none;min-width:0">
@@ -179,13 +180,18 @@ button{color:inherit}
         </div>
       </sc-for>
     </nav>
+    </sc-if>
+    <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-width:0"></div>
+    </sc-if>
 
     <sc-if value="{{ showSave }}" hint-placeholder-val="{{ false }}">
       <div style="flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12px;color:{{ saveTextColor }};padding:5px 10px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)"><span style="width:7px;height:7px;border-radius:50%;background:{{ saveDot }}"></span>{{ saveLabelTxt }}</div>
     </sc-if>
     <sc-if value="{{ hasPrimary }}" hint-placeholder-val="{{ true }}">
-      <button onClick="{{ primaryAction }}" style="flex:none;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2b3bd6,#23a9e0);color:#fff;border:0;padding:9px 15px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">
-        <span style="font-size:16px;line-height:0;margin-top:-1px">+</span>{{ primaryLabel }}
+      <button onClick="{{ primaryAction }}" style="flex:none;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2b3bd6,#23a9e0);color:#fff;border:0;padding:{{ primaryPad }};border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">
+        <span style="font-size:16px;line-height:0;margin-top:-1px">+</span>
+        <sc-if value="{{ !narrow }}" hint-placeholder-val="{{ true }}">{{ primaryLabel }}</sc-if>
       </button>
     </sc-if>
     <sc-if value="{{ hasPrimaryLocked }}" hint-placeholder-val="{{ false }}">
@@ -204,6 +210,17 @@ button{color:inherit}
       </sc-if>
     </div>
   </header>
+
+  <sc-if value="{{ showSecondBar }}" hint-placeholder-val="{{ false }}">
+    <div style="position:sticky;top:64px;z-index:39;display:flex;align-items:center;gap:8px;padding:0 clamp(16px,3vw,34px);height:44px;background:rgba(10,16,32,.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.07)">
+      <button onClick="{{ backCrumbGo }}" style="flex:none;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:6px 4px;color:#8a95b6;font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%">
+        <svg width="14" height="14" style="flex:none;transform:scaleX(-1)"><use href="#ic-chevron"></use></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis">{{ backCrumbLabel }}</span>
+      </button>
+      <span style="color:#3a476b;flex:none">/</span>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e9edf7;font-size:13.5px;font-weight:600">{{ currentCrumbLabel }}</span>
+    </div>
+  </sc-if>
 
   <main style="flex:1;padding:clamp(20px,3.2vw,40px) clamp(16px,3vw,44px) 80px;max-width:1240px;width:100%;margin:0 auto">
 
@@ -358,9 +375,9 @@ button{color:inherit}
         </div>
         <div style="display:flex;align-items:center;gap:8px;color:#8a95b6;font-size:13px;margin-bottom:24px"><span style="width:24px;height:24px;border-radius:50%;background:#22304f;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#c7d0ea;font-weight:600">{{ req.iniciales }}</span>Responsable: <span style="color:#c7d0ea">{{ req.responsable }}</span></div>
 
-        <div style="display:flex;gap:4px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:22px">
+        <div style="display:flex;gap:4px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:22px;overflow-x:auto;-webkit-overflow-scrolling:touch">
           <sc-for list="{{ reqTabs }}" as="t" hint-placeholder-count="3">
-            <button onClick="{{ t.set }}" style="background:none;border:0;border-bottom:2px solid {{ t.border }};color:{{ t.color }};padding:11px 14px;font-size:13.5px;font-weight:{{ t.weight }};cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px">{{ t.label }}<span style="background:{{ t.badgeBg }};color:{{ t.badgeColor }};border-radius:11px;padding:1px 7px;font-size:11px;min-width:16px">{{ t.count }}</span></button>
+            <button onClick="{{ t.set }}" style="background:none;border:0;border-bottom:2px solid {{ t.border }};color:{{ t.color }};padding:11px 14px;font-size:13.5px;font-weight:{{ t.weight }};cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;flex:none;white-space:nowrap">{{ t.label }}<span style="background:{{ t.badgeBg }};color:{{ t.badgeColor }};border-radius:11px;padding:1px 7px;font-size:11px;min-width:16px">{{ t.count }}</span></button>
           </sc-for>
         </div>
 
@@ -547,6 +564,24 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- links de GitHub del proyecto (N filas) -->
+          <sc-if value="{{ modalGithubLinks }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ form.links }}" as="l" hint-placeholder-count="2">
+                <div style="background:#0c1428;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:0">
+                    <input value="{{ l.label }}" onInput="{{ l.onLabel }}" placeholder="Ej: Backend" style="width:130px;background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 11px;color:#e9edf7;font-size:12.5px;outline:none" style-focus="border-color:#35c0f0"/>
+                    <input value="{{ l.url }}" onInput="{{ l.onUrl }}" placeholder="https://github.com/tu-org/tu-repo" style="flex:1;min-width:180px;background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 11px;color:#e9edf7;font-size:12.5px;outline:none;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                  </div>
+                  <sc-if value="{{ l.canRemove }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ l.remove }}" title="Quitar" style="flex:none;width:34px;height:34px;border-radius:9px;background:none;border:1px solid rgba(255,255,255,.1);color:#8a95b6;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"><svg width="14" height="14"><use href="#ic-x"></use></svg></button>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <button onClick="{{ addGithubLinkRow }}" style="align-self:flex-start;cursor:pointer;background:none;border:1.5px dashed rgba(255,255,255,.14);border-radius:10px;color:#66739a;font-size:12.5px;padding:9px 14px;display:inline-flex;align-items:center;gap:7px" style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"><svg width="14" height="14"><use href="#ic-plus"></use></svg>Agregar repositorio</button>
+            </div>
+          </sc-if>
+
           <!-- ver detalle de un despliegue (solo lectura) -->
           <sc-if value="{{ modalVerDespliegue }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:16px">
@@ -595,7 +630,6 @@ button{color:inherit}
 class Component extends DCLogic {
   constructor(props){
     super(props);
-    this._nid = 100;
     this.state = {
       view:'empresas', empresaId:null, proyectoId:null, reqId:null,
       reqTab:'documentos', filter:'todos', modal:null, form:{},
@@ -605,6 +639,7 @@ class Component extends DCLogic {
       recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       showLoginPass:false, showRecoveryPass1:false, showRecoveryPass2:false, modalShowPass:{},
       data:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false,
+      narrow: (typeof window!=='undefined' && window.innerWidth<=760),
     };
   }
 
@@ -625,9 +660,15 @@ class Component extends DCLogic {
       if(session && !had && !this.state.recoveryMode){ this.afterLogin(); }
       else if(!session){ this.setState({data:[], dataLoaded:false, profileRole:null, view:'empresas', empresaId:null, proyectoId:null, reqId:null}); }
     });
+    this._onResize=()=>{
+      const n=window.innerWidth<=760;
+      if(n!==this.state.narrow) this.setState({narrow:n});
+    };
+    window.addEventListener('resize', this._onResize);
   }
   componentWillUnmount(){
     if(this._authSub && this._authSub.data) this._authSub.data.subscription.unsubscribe();
+    window.removeEventListener('resize', this._onResize);
   }
 
   async afterLogin(){
@@ -642,16 +683,17 @@ class Component extends DCLogic {
   async loadData(){
     this.setState({loadError:''});
     const sb=this._sb;
-    const [co,pr,pd,rq,rdoc,rdep,rblk] = await Promise.all([
+    const [co,pr,pd,gh,rq,rdoc,rdep,rblk] = await Promise.all([
       sb.from('companies').select('*'),
       sb.from('projects').select('*'),
       sb.from('project_deployments').select('*'),
+      sb.from('project_github_links').select('*'),
       sb.from('requirements').select('*'),
       sb.from('requirement_documents').select('*'),
       sb.from('requirement_deployments').select('*'),
       sb.from('requirement_blockers').select('*'),
     ]);
-    const bad=[co,pr,pd,rq,rdoc,rdep,rblk].find(r=>r.error);
+    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
     const envDefault=['.co','.net','.com.co'];
@@ -673,8 +715,7 @@ class Component extends DCLogic {
             manualTecnico:{url:p.technical_manual_url||''},
             diagramas:{url:p.diagrams_url||''},
             manualUsuario:{url:p.user_manual_url||''},
-            githubBackend:{url:p.github_backend_url||''},
-            githubFrontend:{url:p.github_frontend_url||''},
+            github:(gh.data||[]).filter(g=>g.project_id===p.id).map(g=>({id:g.id,label:g.label||'',url:g.url||''})),
             apiSpec: p.api_spec_source ? {source:p.api_spec_source, url:p.api_spec_url||'', json:p.api_spec_json?JSON.stringify(p.api_spec_json):''} : {},
           },
           requerimientos:reqs,
@@ -750,7 +791,7 @@ class Component extends DCLogic {
   closeUserMenu(){ this.setState({userMenuOpen:false}); }
   openPasswordModalFromMenu(){ this.setState({userMenuOpen:false}); this.openPasswordModal(); }
 
-  gid(p){ return p+(++this._nid); }
+  gid(p){ return p+'-'+(window.crypto&&crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2)); }
   estMeta(e){ return ({
     pendiente:['Pendiente','#9aa6c8','rgba(154,166,200,.16)'],
     progreso:['En progreso','#35c0f0','rgba(53,192,240,.16)'],
@@ -794,6 +835,9 @@ class Component extends DCLogic {
   stop(e){ e.stopPropagation(); }
   setForm(k,v){ this.setState(s=>({form:{...s.form,[k]:v}})); }
   setEnvRow(i,k,v){ this.setState(s=>{ const rows=s.form.envRows.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,envRows:rows}}; }); }
+  setGithubLinkRow(i,k,v){ this.setState(s=>{ const rows=s.form.links.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,links:rows}}; }); }
+  addGithubLinkRow(){ this.setState(s=>({form:{...s.form,links:[...s.form.links,{label:'',url:''}]}})); }
+  removeGithubLinkRow(i){ this.setState(s=>({form:{...s.form,links:s.form.links.filter((r,j)=>j!==i)}})); }
 
   openApiDoc(){ const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:'apidoc', apiTab:spec.source||'url', apiUrlInput:spec.url||'', apiJsonInput:spec.json||'', apiErr:'', apiHasRender:!!spec.source}); if(spec.source){ setTimeout(()=>this.renderSpec(spec),90); } }
   setApiTab(t){ this.setState({apiTab:t,apiErr:''}); }
@@ -837,6 +881,7 @@ class Component extends DCLogic {
   addDespliegue(){ if(!this.isDev()) return; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:'.co',url:'',version:''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
   editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
+  editGithubLinks(){ if(!this.isDev()) return; const p=this.proyecto(); const links=p.recursos.github.map(g=>({label:g.label,url:g.url})); this.openModal({type:'githubLinks',mode:'editar',title:'Repositorios de GitHub',form:{links:links.length?links:[{label:'',url:''}]}}); }
   openVerDespliegue(env,url,version){
     this.setState({modal:{type:'verDespliegue', title:'Despliegue '+env, envName:env, url:url||'', version:version||''}, form:{}});
   }
@@ -898,10 +943,15 @@ class Component extends DCLogic {
         ({ error } = await sb.from('project_deployments').insert(rows));
         if(error) throw error;
       } else if(t==='recurso'){
-        const colMap={ manualTecnico:'technical_manual_url', diagramas:'diagrams_url', manualUsuario:'user_manual_url', githubBackend:'github_backend_url', githubFrontend:'github_frontend_url' };
+        const colMap={ manualTecnico:'technical_manual_url', diagramas:'diagrams_url', manualUsuario:'user_manual_url' };
         const col=colMap[m.rkey];
         const { error } = await sb.from('projects').update({ [col]: f.url||'' }).eq('id', this.state.proyectoId);
         if(error) throw error;
+      } else if(t==='githubLinks'){
+        let { error } = await sb.from('project_github_links').delete().eq('project_id', this.state.proyectoId);
+        if(error) throw error;
+        const rows=(f.links||[]).filter(l=>(l.label&&l.label.trim())||(l.url&&l.url.trim())).map(l=>({ id:this.gid('gl'), project_id:this.state.proyectoId, label:l.label||'', url:l.url||'' }));
+        if(rows.length){ ({ error } = await sb.from('project_github_links').insert(rows)); if(error) throw error; }
       }
       this.setState({saveStatus:'saved'});
       this.closeModal();
@@ -1017,10 +1067,20 @@ class Component extends DCLogic {
     if(v==='requerimiento'&&req){ crumbs.push({label:'Requerimientos',go:()=>this.goRequerimientos(),color:'#8a95b6',weight:400,sep:true}); crumbs.push({label:req.code||req.titulo,go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     R.crumbs=crumbs;
 
+    // mobile breadcrumb bar
+    R.narrow = !!s.narrow;
+    R.showSecondBar = R.narrow && crumbs.length>1;
+    const prevCrumb = crumbs[crumbs.length-2];
+    const lastCrumb = crumbs[crumbs.length-1];
+    R.backCrumbLabel = prevCrumb ? prevCrumb.label : 'Atrás';
+    R.backCrumbGo = prevCrumb ? prevCrumb.go : (()=>this.goHome());
+    R.currentCrumbLabel = lastCrumb ? lastCrumb.label : '';
+
     // primary action
     const wantsPrimary = v==='empresas'||v==='proyectos'||v==='requerimientos';
     R.hasPrimary = wantsPrimary && isDev;
     R.hasPrimaryLocked = wantsPrimary && !isDev;
+    R.primaryPad = R.narrow ? '9px' : '9px 15px';
     if(v==='empresas'){ R.primaryLabel='Nueva empresa'; R.primaryAction=()=>this.addEmpresa(); }
     else if(v==='proyectos'){ R.primaryLabel='Nuevo proyecto'; R.primaryAction=()=>this.addProyecto(); }
     else if(v==='requerimientos'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReq(); }
@@ -1061,6 +1121,8 @@ class Component extends DCLogic {
       const estadoChips=['pendiente','progreso','bloqueado','entregado'].map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
       const rec=proy.recursos;
       const cardOf=(key,label,iconHref)=>{ const has=(rec[key]||{}).url; return {label,iconHref,status:has?'Enlazado':'Sin enlace',statusColor:has?'#39d39b':'#66739a',open:()=>this.openRecurso(key,label,iconHref)}; };
+      const ghCount=(rec.github||[]).length;
+      const githubCard={label:'GitHub',iconHref:'#ic-ext',status:ghCount?(ghCount+' repo'+(ghCount===1?'':'s')):'Sin repos',statusColor:ghCount?'#39d39b':'#66739a',open:()=>this.editGithubLinks()};
       const apiHasSpec=!!(rec.apiSpec&&rec.apiSpec.source);
       R.proyecto={
         nombre:proy.nombre, descripcion:proy.descripcion, totalReq:reqs.length, estadoChips,
@@ -1075,7 +1137,7 @@ class Component extends DCLogic {
             copyBorder: copied?'rgba(57,211,155,.4)':'rgba(255,255,255,.09)',
             copyTitle: copied?'Copiado':'Copiar URL' };
         }),
-        recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), cardOf('githubBackend','GitHub Backend','#ic-ext'), cardOf('githubFrontend','GitHub Frontend','#ic-ext'), {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
+        recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
       };
 
       const fdef=[['todos','Todos',null],['pendiente','Pendientes','pendiente'],['progreso','En progreso','progreso'],['bloqueado','Bloqueados','bloqueado'],['entregado','Entregados','entregado']];
@@ -1118,11 +1180,12 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue')?'520px':'440px';
+      R.modalWidth = (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='githubLinks')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
       R.modalVerDespliegue = md.type==='verDespliegue';
+      R.modalGithubLinks = md.type==='githubLinks';
       R.modalSecondaryLabel = md.type==='verDespliegue' ? 'Cerrar' : 'Cancelar';
       R.modalShowSave = md.type!=='verDespliegue';
       R.form={...s.form};
@@ -1155,11 +1218,10 @@ class Component extends DCLogic {
       }
       if(md.type==='recurso'){
         R.recursoIconHref=md.ricon; R.recursoLabel=md.rlabel;
-        const isGit = md.rkey==='githubBackend' || md.rkey==='githubFrontend';
-        R.recursoPreviewLabel = isGit ? 'VISTA PREVIA · GITHUB' : 'VISTA PREVIA · GOOGLE DRIVE';
-        R.recursoFieldLabel = isGit ? 'URL del repositorio' : 'Enlace de Drive';
-        R.recursoUrlPlaceholder = isGit ? 'https://github.com/tu-org/tu-repo' : 'https://drive.google.com/...';
-        R.recursoOpenLabel = isGit ? 'Abrir en GitHub' : 'Abrir en Drive';
+        R.recursoPreviewLabel = 'VISTA PREVIA · GOOGLE DRIVE';
+        R.recursoFieldLabel = 'Enlace de Drive';
+        R.recursoUrlPlaceholder = 'https://drive.google.com/...';
+        R.recursoOpenLabel = 'Abrir en Drive';
       }
       const ch=(k)=>(e)=>this.setForm(k,e.target.value);
       const fields={
@@ -1182,6 +1244,14 @@ class Component extends DCLogic {
           toggleShow: ()=>this.toggleModalShowPass(fd.key) };
       });
       if(md.type==='desplieguesProy'){ R.form.envRows=(s.form.envRows||[]).map((r,i)=>({ env:r.env, url:r.url||'', version:r.version||'', onUrl:(e)=>this.setEnvRow(i,'url',e.target.value), onVersion:(e)=>this.setEnvRow(i,'version',e.target.value) })); }
+      if(md.type==='githubLinks'){
+        const links=s.form.links||[];
+        R.form.links=links.map((l,i)=>({ label:l.label||'', url:l.url||'',
+          onLabel:(e)=>this.setGithubLinkRow(i,'label',e.target.value),
+          onUrl:(e)=>this.setGithubLinkRow(i,'url',e.target.value),
+          canRemove: links.length>1, remove:()=>this.removeGithubLinkRow(i) }));
+        R.addGithubLinkRow=()=>this.addGithubLinkRow();
+      }
     }
     return R;
   }
