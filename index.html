@@ -62,7 +62,31 @@ button{color:inherit}
         <input type="password" value="{{ loginPassword }}" onInput="{{ onLoginPassword }}" placeholder="••••••••" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none" style-focus="border-color:#35c0f0"/>
       </label>
       <sc-if value="{{ loginErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ loginError }}</div></sc-if>
+      <sc-if value="{{ loginNoticeShow }}" hint-placeholder-val="{{ false }}"><div style="color:#39d39b;font-size:12.5px;line-height:1.5">{{ loginNotice }}</div></sc-if>
       <button type="submit" disabled="{{ loginLoading }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;margin-top:4px">{{ loginBtnLabel }}</button>
+      <button type="button" onClick="{{ forgotPassword }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12.5px;padding:2px" style-hover="color:#35c0f0">¿Olvidaste tu contraseña?</button>
+    </form>
+  </div>
+</sc-if>
+
+<!-- ===================== RECUPERAR CONTRASEÑA ===================== -->
+<sc-if value="{{ showRecovery }}" hint-placeholder-val="{{ false }}">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <form onSubmit="{{ doSetNewPassword }}" style="width:100%;max-width:360px;background:linear-gradient(160deg,#131c33,#0f1729);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:32px 28px;display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px">Nueva contraseña</div>
+        <div style="font-size:12.5px;color:#8a95b6">Escribe tu nueva contraseña para esta cuenta.</div>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:7px">
+        <span style="font-size:12px;font-weight:500;color:#8a95b6">Nueva contraseña</span>
+        <input type="password" value="{{ recoveryPass1 }}" onInput="{{ onRecoveryPass1 }}" placeholder="mínimo 6 caracteres" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none" style-focus="border-color:#35c0f0"/>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:7px">
+        <span style="font-size:12px;font-weight:500;color:#8a95b6">Confirmar contraseña</span>
+        <input type="password" value="{{ recoveryPass2 }}" onInput="{{ onRecoveryPass2 }}" placeholder="repite la contraseña" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none" style-focus="border-color:#35c0f0"/>
+      </label>
+      <sc-if value="{{ recoveryErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ recoveryError }}</div></sc-if>
+      <button type="submit" disabled="{{ recoveryLoading }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;margin-top:4px">{{ recoveryBtnLabel }}</button>
     </form>
   </div>
 </sc-if>
@@ -98,6 +122,7 @@ button{color:inherit}
       <span style="flex:none;font-size:12px;color:#66739a">Solo lectura</span>
     </sc-if>
     <span style="flex:none;font-size:11px;font-weight:600;color:#8a95b6;background:rgba(255,255,255,.06);padding:4px 9px;border-radius:20px">{{ roleLabel }}</span>
+    <button onClick="{{ openPasswordModal }}" title="Cambiar contraseña" style="flex:none;background:none;border:1px solid rgba(255,255,255,.1);color:#8a95b6;cursor:pointer;font-size:13px;padding:6px 9px;border-radius:8px" style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0">🔑</button>
     <button onClick="{{ doLogout }}" title="Cerrar sesión" style="flex:none;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#33436e,#1a2440);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:#c7d0ea;border:1px solid rgba(255,255,255,.08);cursor:pointer" style-hover="border-color:rgba(249,123,123,.5);color:#f97b7b">{{ userInitials }}</button>
   </header>
 
@@ -137,6 +162,24 @@ button{color:inherit}
             <p style="margin:2px 0 0;color:#8a95b6;font-size:13.5px">{{ empresa.proyectosLabel }}</p>
           </div>
         </div>
+
+        <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:9px"><span style="font-size:16px">🚀</span><span style="font-weight:600;font-size:15px">Despliegues de {{ empresa.nombre }}</span></div>
+            <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ editDesplieguesEmpresa }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
+            </sc-if>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+            <sc-for list="{{ empresaDespliegues }}" as="d" hint-placeholder-count="3">
+              <div onClick="{{ d.open }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0c1428;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:9px 11px;cursor:pointer" style-hover="border-color:rgba(53,192,240,.4)">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c7d0ea">{{ d.env }}</span>
+                <span style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#39d39b;background:rgba(57,211,155,.12);padding:2px 7px;border-radius:6px">{{ d.version }}</span><span style="color:#66739a;font-size:12px">↗</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
           <sc-for list="{{ proyectosList }}" as="p" hint-placeholder-count="2">
             <button onClick="{{ p.open }}" style="text-align:left;cursor:pointer;background:linear-gradient(160deg,#131c33,#0f1729);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;transition:border-color .18s,transform .18s" style-hover="border-color:rgba(53,192,240,.45);transform:translateY(-3px)">
@@ -176,23 +219,6 @@ button{color:inherit}
         </button>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">
-          <!-- Despliegues actual -->
-          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:9px"><span style="font-size:16px">🚀</span><span style="font-weight:600;font-size:15px">Despliegues</span></div>
-              <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
-              <button onClick="{{ editDesplieguesProy }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
-              </sc-if>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <sc-for list="{{ proyecto.despliegues }}" as="d" hint-placeholder-count="3">
-                <div onClick="{{ d.open }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0c1428;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:9px 11px;cursor:pointer" style-hover="border-color:rgba(53,192,240,.4)">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c7d0ea">{{ d.env }}</span>
-                  <span style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#39d39b;background:rgba(57,211,155,.12);padding:2px 7px;border-radius:6px">{{ d.version }}</span><span style="color:#66739a;font-size:12px">↗</span></span>
-                </div>
-              </sc-for>
-            </div>
-          </div>
           <!-- recurso cards -->
           <sc-for list="{{ proyecto.recursoCards }}" as="r" hint-placeholder-count="3">
             <button onClick="{{ r.open }}" style="text-align:left;cursor:pointer;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:150px;transition:border-color .18s" style-hover="border-color:rgba(53,192,240,.4)">
@@ -386,13 +412,14 @@ button{color:inherit}
                     </select>
                   </sc-if>
                   <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
-                    <input value="{{ f.value }}" onInput="{{ f.onChange }}" placeholder="{{ f.placeholder }}" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none" style-focus="border-color:#35c0f0"/>
+                    <input type="{{ f.inputType }}" value="{{ f.value }}" onInput="{{ f.onChange }}" placeholder="{{ f.placeholder }}" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none" style-focus="border-color:#35c0f0"/>
                   </sc-if>
                   <sc-if value="{{ f.isArea }}" hint-placeholder-val="{{ false }}">
                     <textarea value="{{ f.value }}" onInput="{{ f.onChange }}" placeholder="{{ f.placeholder }}" rows="3" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:14px;outline:none;resize:vertical;font-family:inherit" style-focus="border-color:#35c0f0"></textarea>
                   </sc-if>
                 </label>
               </sc-for>
+              <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
             </div>
           </sc-if>
 
@@ -451,7 +478,8 @@ class Component extends DCLogic {
       reqTab:'documentos', filter:'todos', modal:null, form:{},
       apiTab:'url', apiUrlInput:'', apiJsonInput:'', apiErr:'', apiHasRender:false,
       session:null, authChecked:false, profileRole:null,
-      loginEmail:'', loginPassword:'', loginError:'', loginLoading:false,
+      loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
+      recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       data:[], dataLoaded:false, loadError:'',
     };
   }
@@ -466,10 +494,11 @@ class Component extends DCLogic {
       this.setState({session:data.session, authChecked:true});
       if(data.session) this.afterLogin();
     });
-    this._authSub = this._sb.auth.onAuthStateChange((_evt, session)=>{
+    this._authSub = this._sb.auth.onAuthStateChange((evt, session)=>{
+      if(evt==='PASSWORD_RECOVERY'){ this.setState({session, authChecked:true, recoveryMode:true}); return; }
       const had=this.state.session;
       this.setState({session, authChecked:true});
-      if(session && !had){ this.afterLogin(); }
+      if(session && !had && !this.state.recoveryMode){ this.afterLogin(); }
       else if(!session){ this.setState({data:[], dataLoaded:false, profileRole:null, view:'empresas', empresaId:null, proyectoId:null, reqId:null}); }
     });
   }
@@ -489,43 +518,45 @@ class Component extends DCLogic {
   async loadData(){
     this.setState({loadError:''});
     const sb=this._sb;
-    const [co,pr,pd,rq,rdoc,rdep,rblk] = await Promise.all([
+    const [co,cd,pr,rq,rdoc,rdep,rblk] = await Promise.all([
       sb.from('companies').select('*'),
+      sb.from('company_deployments').select('*'),
       sb.from('projects').select('*'),
-      sb.from('project_deployments').select('*'),
       sb.from('requirements').select('*'),
       sb.from('requirement_documents').select('*'),
       sb.from('requirement_deployments').select('*'),
       sb.from('requirement_blockers').select('*'),
     ]);
-    const bad=[co,pr,pd,rq,rdoc,rdep,rblk].find(r=>r.error);
+    const bad=[co,cd,pr,rq,rdoc,rdep,rblk].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
     const envDefault=['.co','.net','.com.co'];
-    const data = (co.data||[]).map(c=>({
-      id:c.id, nombre:c.name, mono:c.initial, color:c.color,
-      proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
-        const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
-        const byEnv=env=>deploys.find(d=>d.env===env)||{};
-        const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
-          id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:r.status,
-          documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
-          despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,env:d.env,url:d.url||'',version:d.version||''})),
-          bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
-        }));
-        return {
-          id:p.id, nombre:p.name, descripcion:p.description||'',
-          recursos:{
-            despliegues:envDefault.map(env=>({env,url:(byEnv(env).url)||'',version:(byEnv(env).version)||''})),
-            manualTecnico:{url:p.technical_manual_url||''},
-            diagramas:{url:p.diagrams_url||''},
-            manualUsuario:{url:p.user_manual_url||''},
-            apiSpec: p.api_spec_source ? {source:p.api_spec_source, url:p.api_spec_url||'', json:p.api_spec_json?JSON.stringify(p.api_spec_json):''} : {},
-          },
-          requerimientos:reqs,
-        };
-      }),
-    }));
+    const data = (co.data||[]).map(c=>{
+      const deploys=(cd.data||[]).filter(d=>d.company_id===c.id);
+      const byEnv=env=>deploys.find(d=>d.env===env)||{};
+      return {
+        id:c.id, nombre:c.name, mono:c.initial, color:c.color,
+        despliegues:envDefault.map(env=>({env,url:(byEnv(env).url)||'',version:(byEnv(env).version)||''})),
+        proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
+          const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
+            id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:r.status,
+            documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
+            despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,env:d.env,url:d.url||'',version:d.version||''})),
+            bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
+          }));
+          return {
+            id:p.id, nombre:p.name, descripcion:p.description||'',
+            recursos:{
+              manualTecnico:{url:p.technical_manual_url||''},
+              diagramas:{url:p.diagrams_url||''},
+              manualUsuario:{url:p.user_manual_url||''},
+              apiSpec: p.api_spec_source ? {source:p.api_spec_source, url:p.api_spec_url||'', json:p.api_spec_json?JSON.stringify(p.api_spec_json):''} : {},
+            },
+            requerimientos:reqs,
+          };
+        }),
+      };
+    });
     this.setState(s=>{
       const next={data, dataLoaded:true};
       if(s.empresaId && !data.find(e=>e.id===s.empresaId)) Object.assign(next,{empresaId:null, view:'empresas'});
@@ -546,6 +577,32 @@ class Component extends DCLogic {
     if(error) this.setState({loginError:'Credenciales inválidas.'});
   }
   async doLogout(){ await this._sb.auth.signOut(); }
+
+  async forgotPassword(){
+    const email=(this.state.loginEmail||'').trim();
+    if(!email){ this.setState({loginError:'Escribe tu correo arriba y da clic otra vez en "¿Olvidaste tu contraseña?".', loginNotice:''}); return; }
+    this.setState({loginLoading:true, loginError:'', loginNotice:''});
+    const redirectTo = window.location.href.split('#')[0].split('?')[0];
+    const { error } = await this._sb.auth.resetPasswordForEmail(email, { redirectTo });
+    this.setState({loginLoading:false});
+    if(error) this.setState({loginError:'No se pudo enviar: '+error.message});
+    else this.setState({loginNotice:'Listo, revisa tu correo para el enlace de recuperación.'});
+  }
+  onRecoveryPass1(e){ this.setState({recoveryPass1:e.target.value}); }
+  onRecoveryPass2(e){ this.setState({recoveryPass2:e.target.value}); }
+  async doSetNewPassword(e){
+    e.preventDefault();
+    const p1=this.state.recoveryPass1||'', p2=this.state.recoveryPass2||'';
+    if(p1.length<6){ this.setState({recoveryError:'Mínimo 6 caracteres.'}); return; }
+    if(p1!==p2){ this.setState({recoveryError:'Las contraseñas no coinciden.'}); return; }
+    this.setState({recoveryLoading:true, recoveryError:''});
+    const { error } = await this._sb.auth.updateUser({password:p1});
+    this.setState({recoveryLoading:false});
+    if(error){ this.setState({recoveryError:error.message}); return; }
+    this.setState({recoveryMode:false, recoveryPass1:'', recoveryPass2:''});
+    await this.afterLogin();
+  }
+  openPasswordModal(){ this.setState({modal:{type:'password',mode:'editar',title:'Cambiar contraseña'}, form:{newPassword:'',confirmPassword:''}}); }
 
   gid(p){ return p+(++this._nid); }
   estMeta(e){ return ({
@@ -616,26 +673,38 @@ class Component extends DCLogic {
   addDoc(){ if(!this.isDev()) return; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); }
   addDespliegue(){ if(!this.isDev()) return; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:'.co',url:'',version:''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
-  editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
+  editDesplieguesEmpresa(){ if(!this.isDev()) return; const e=this.empresa(); this.openModal({type:'desplieguesEmpresa',mode:'editar',title:'Despliegues de '+e.nombre,form:{envRows:e.despliegues.map(d=>({...d}))}}); }
   openRecurso(key,label,icon){ const p=this.proyecto(); this.openModal({type:'recurso',mode:'editar',rkey:key,rlabel:label,ricon:icon,title:label,form:{url:(p.recursos[key]||{}).url||''}}); }
 
   async saveModal(){
-    if(!this.isDev()){ this.closeModal(); return; }
     const m=this.state.modal, f=this.state.form; if(!m) return;
     const t=m.type, sb=this._sb;
-    this.setState({saveStatus:'saving'});
+    if(t!=='password' && !this.isDev()){ this.closeModal(); return; }
+    this.setState({saveStatus:'saving', modalErr:''});
     try{
-      if(t==='empresa'){
+      if(t==='password'){
+        if(!f.newPassword || f.newPassword.length<6){ this.setState({saveStatus:'idle', modalErr:'Mínimo 6 caracteres.'}); return; }
+        if(f.newPassword!==f.confirmPassword){ this.setState({saveStatus:'idle', modalErr:'Las contraseñas no coinciden.'}); return; }
+        const { error } = await sb.auth.updateUser({password:f.newPassword});
+        if(error) throw error;
+        this.setState({saveStatus:'saved'});
+        this.closeModal();
+        return;
+      } else if(t==='empresa'){
         if(!f.nombre) return;
         const { error } = await sb.from('companies').insert({ id:this.gid('e'), name:f.nombre, initial:(f.nombre[0]||'?').toUpperCase(), color:'linear-gradient(135deg,#5b6bff,#35c0f0)' });
         if(error) throw error;
+        await this.loadData();
+        const created = this.state.data.find(x=>x.nombre===f.nombre);
+        if(created){
+          const rows=['.co','.net','.com.co'].map(env=>({id:this.gid('x'), company_id:created.id, env, url:'', version:''}));
+          const { error: e2 } = await sb.from('company_deployments').insert(rows);
+          if(e2) throw e2;
+        }
       } else if(t==='proyecto'){
         if(!f.nombre) return;
         const id=this.gid('p');
-        let { error } = await sb.from('projects').insert({ id, company_id:this.state.empresaId, name:f.nombre, description:f.descripcion||'' });
-        if(error) throw error;
-        const rows=['.co','.net','.com.co'].map(env=>({id:this.gid('x'), project_id:id, env, url:'', version:''}));
-        ({ error } = await sb.from('project_deployments').insert(rows));
+        const { error } = await sb.from('projects').insert({ id, company_id:this.state.empresaId, name:f.nombre, description:f.descripcion||'' });
         if(error) throw error;
       } else if(t==='requerimiento'){
         if(!f.titulo) return;
@@ -659,11 +728,11 @@ class Component extends DCLogic {
         const fecha=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
         const { error } = await sb.from('requirement_blockers').insert({ id:this.gid('b'), requirement_id:this.state.reqId, text:f.texto, resolved:false, date:fecha });
         if(error) throw error;
-      } else if(t==='desplieguesProy'){
-        let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId);
+      } else if(t==='desplieguesEmpresa'){
+        let { error } = await sb.from('company_deployments').delete().eq('company_id', this.state.empresaId);
         if(error) throw error;
-        const rows=(f.envRows||[]).map(r=>({ id:this.gid('x'), project_id:this.state.proyectoId, env:r.env, url:r.url||'', version:r.version||'' }));
-        ({ error } = await sb.from('project_deployments').insert(rows));
+        const rows=(f.envRows||[]).map(r=>({ id:this.gid('x'), company_id:this.state.empresaId, env:r.env, url:r.url||'', version:r.version||'' }));
+        ({ error } = await sb.from('company_deployments').insert(rows));
         if(error) throw error;
       } else if(t==='recurso'){
         const colMap={ manualTecnico:'technical_manual_url', diagramas:'diagrams_url', manualUsuario:'user_manual_url' };
@@ -675,7 +744,7 @@ class Component extends DCLogic {
       this.closeModal();
       await this.loadData();
     }catch(e){
-      this.setState({saveStatus:'error'});
+      this.setState({saveStatus:'error', modalErr: t==='password' ? (e.message||'No se pudo cambiar la contraseña.') : ''});
       console.error(e);
     }
   }
@@ -696,20 +765,28 @@ class Component extends DCLogic {
       viewRequerimientos:v==='requerimientos', viewRequerimiento:v==='requerimiento', viewApidoc:v==='apidoc',
       stop:(e)=>this.stop(e), closeModal:()=>this.closeModal(),
       addDoc:()=>this.addDoc(), addDespliegue:()=>this.addDespliegue(), addBloqueante:()=>this.addBloqueante(),
-      editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(),
+      editReq:()=>this.editReq(), editDesplieguesEmpresa:()=>this.editDesplieguesEmpresa(),
       f_url:(e)=>this.setForm('url',e.target.value),
       isDev,
     };
 
     // sesión / pantallas
     R.showChecking = !s.authChecked;
-    R.showLogin = s.authChecked && !s.session;
-    R.showApp = s.authChecked && !!s.session;
+    R.showLogin = s.authChecked && !s.session && !s.recoveryMode;
+    R.showApp = s.authChecked && !!s.session && !s.recoveryMode;
+    R.showRecovery = s.authChecked && s.recoveryMode;
     R.loginEmail=s.loginEmail; R.loginPassword=s.loginPassword;
     R.onLoginEmail=(e)=>this.onLoginEmail(e); R.onLoginPassword=(e)=>this.onLoginPassword(e);
     R.doLogin=(e)=>this.doLogin(e); R.doLogout=()=>this.doLogout();
+    R.forgotPassword=()=>this.forgotPassword(); R.openPasswordModal=()=>this.openPasswordModal();
     R.loginError=s.loginError||''; R.loginErrShow=!!s.loginError;
+    R.loginNotice=s.loginNotice||''; R.loginNoticeShow=!!s.loginNotice;
     R.loginLoading=!!s.loginLoading; R.loginBtnLabel=s.loginLoading?'Entrando…':'Entrar';
+    R.recoveryPass1=s.recoveryPass1||''; R.recoveryPass2=s.recoveryPass2||'';
+    R.onRecoveryPass1=(e)=>this.onRecoveryPass1(e); R.onRecoveryPass2=(e)=>this.onRecoveryPass2(e);
+    R.doSetNewPassword=(e)=>this.doSetNewPassword(e);
+    R.recoveryError=s.recoveryError||''; R.recoveryErrShow=!!s.recoveryError;
+    R.recoveryLoading=!!s.recoveryLoading; R.recoveryBtnLabel=s.recoveryLoading?'Guardando…':'Guardar nueva contraseña';
     R.roleLabel = isDev ? 'DEV' : 'CLIENTE';
     R.userInitials = s.session ? this.emailInitials(s.session.user.email) : '?';
 
@@ -759,6 +836,7 @@ class Component extends DCLogic {
 
     if(emp){
       R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
+      R.empresaDespliegues=(emp.despliegues||[]).map(d=>({env:d.env,version:d.version||'—',open:()=>this.openExt(d.url)}));
       R.proyectosList=emp.proyectos.map(p=>{
         const reqs=p.requerimientos; const tot=reqs.length||1;
         const counts={pendiente:0,progreso:0,bloqueado:0,entregado:0}; reqs.forEach(r=>counts[r.estado]++);
@@ -778,7 +856,6 @@ class Component extends DCLogic {
       const apiHasSpec=!!(rec.apiSpec&&rec.apiSpec.source);
       R.proyecto={
         nombre:proy.nombre, descripcion:proy.descripcion, totalReq:reqs.length, estadoChips,
-        despliegues:rec.despliegues.map(d=>({env:d.env,version:d.version||'—',open:()=>this.openExt(d.url)})),
         recursoCards:[ cardOf('manualTecnico','Manual Técnico','📘'), cardOf('diagramas','Diagramas','🗂️'), cardOf('manualUsuario','Manual de Usuario','📗'), {label:'Documentación API',icon:'🔌',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
       };
 
@@ -813,14 +890,15 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='recurso'||md.type==='desplieguesProy')?'520px':'440px';
-      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante'].includes(md.type);
+      R.modalWidth = (md.type==='recurso'||md.type==='desplieguesEmpresa')?'520px':'440px';
+      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
-      R.modalDesplieguesProy = md.type==='desplieguesProy';
+      R.modalDesplieguesProy = md.type==='desplieguesEmpresa';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
       R.openRecursoLink=()=>this.openExt(s.form.url);
       R.saveModal=()=>this.saveModal();
+      R.modalErr=s.modalErr||''; R.modalErrShow=!!s.modalErr;
       if(md.type==='recurso'){ R.recursoIcon=md.ricon; R.recursoLabel=md.rlabel; }
       const ch=(k)=>(e)=>this.setForm(k,e.target.value);
       const fields={
@@ -830,9 +908,10 @@ class Component extends DCLogic {
         documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace de Drive',key:'url',kind:'text',placeholder:'https://drive.google.com/...'}],
         despliegue:[{label:'Ambiente',key:'env',kind:'select',options:[{value:'.co',label:'.co'},{value:'.net',label:'.net'},{value:'.com.co',label:'.com.co'}]},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
         bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
+        password:[{label:'Nueva contraseña',key:'newPassword',kind:'text',type:'password',placeholder:'mínimo 6 caracteres'},{label:'Confirmar contraseña',key:'confirmPassword',kind:'text',type:'password',placeholder:'repite la contraseña'}],
       };
-      R.formFields=(fields[md.type]||[]).map(fd=>({ label:fd.label, value:s.form[fd.key]||'', onChange:ch(fd.key), placeholder:fd.placeholder||'', isSelect:fd.kind==='select', isText:fd.kind==='text', isArea:fd.kind==='area', options:fd.options||[] }));
-      if(md.type==='desplieguesProy'){ R.form.envRows=(s.form.envRows||[]).map((r,i)=>({ env:r.env, url:r.url||'', version:r.version||'', onUrl:(e)=>this.setEnvRow(i,'url',e.target.value), onVersion:(e)=>this.setEnvRow(i,'version',e.target.value) })); }
+      R.formFields=(fields[md.type]||[]).map(fd=>({ label:fd.label, value:s.form[fd.key]||'', onChange:ch(fd.key), placeholder:fd.placeholder||'', isSelect:fd.kind==='select', isText:fd.kind==='text', isArea:fd.kind==='area', options:fd.options||[], inputType:fd.type||'text' }));
+      if(md.type==='desplieguesEmpresa'){ R.form.envRows=(s.form.envRows||[]).map((r,i)=>({ env:r.env, url:r.url||'', version:r.version||'', onUrl:(e)=>this.setEnvRow(i,'url',e.target.value), onVersion:(e)=>this.setEnvRow(i,'version',e.target.value) })); }
     }
     return R;
   }
