@@ -27,6 +27,11 @@ button{color:inherit}
 @keyframes shIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes vwIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Redoc embed: contenedor acotado que hace scroll internamente; el lateral sticky se ancla a este box */
+.redoc-embed{--redoc-h:78vh;height:var(--redoc-h)}
+.redoc-embed:fullscreen{--redoc-h:100vh;border-radius:0!important}
+.redoc-scroll{height:100%;overflow-y:auto;overflow-x:hidden}
+.redoc-embed .menu-content{height:var(--redoc-h)!important}
 </style>
 <script src="https://cdn.redocly.com/redoc/latest/bundles/redoc.standalone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -282,6 +287,34 @@ button{color:inherit}
             </button>
           </sc-for>
         </div>
+
+        <sc-if value="{{ showAmbientes }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:32px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Ambientes</h2>
+              <span style="font-size:12px;color:#66739a">Exclusivos de esta empresa</span>
+              <button onClick="{{ addAmbiente }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600" style-hover="background:rgba(53,192,240,.1)"><svg width="13" height="13"><use href="#ic-plus"></use></svg>Nuevo ambiente</button>
+            </div>
+            <sc-if value="{{ ambientesEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:20px;color:#66739a;font-size:13px">Esta empresa aún no tiene ambientes. Crea al menos uno para poder registrar despliegues.</div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+              <sc-for list="{{ ambientesList }}" as="a" hint-placeholder-count="3">
+                <div style="background:linear-gradient(160deg,#131c33,#0f1729);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#35c0f0">{{ a.code }}</span>
+                    <span style="font-size:11px;font-weight:600;color:{{ a.stageColor }};background:{{ a.stageBg }};padding:3px 8px;border-radius:20px">{{ a.stageLabel }}</span>
+                  </div>
+                  <div style="font-size:13px;color:#c7d0ea">{{ a.label }}</div>
+                  <div style="display:flex;gap:8px;margin-top:2px">
+                    <button onClick="{{ a.edit }}" style="flex:1;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
+                    <button onClick="{{ a.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -488,18 +521,20 @@ button{color:inherit}
         </div>
         </sc-if>
 
-        <div ref="{{ redocContainerRef }}" style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);min-height:420px;position:relative">
+        <div ref="{{ redocContainerRef }}" class="redoc-embed" style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);position:relative">
           <sc-if value="{{ showFullscreenBtn }}" hint-placeholder-val="{{ false }}">
-            <button onClick="{{ toggleFullscreen }}" title="Pantalla completa" style="position:absolute;top:10px;right:10px;z-index:5;background:#121c34;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"><svg width="15" height="15"><use href="#ic-expand"></use></svg></button>
+            <button onClick="{{ toggleFullscreen }}" title="{{ fullscreenTitle }}" style="position:absolute;top:10px;right:10px;z-index:5;background:#121c34;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"><svg width="15" height="15"><use href="{{ fullscreenIconHref }}"></use></svg></button>
           </sc-if>
-          <sc-if value="{{ apiEmptyShow }}" hint-placeholder-val="{{ true }}">
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#8a95b6;background:#0d1526;text-align:center;padding:24px">
-              <svg width="38" height="38" style="color:#3d4a70"><use href="#ic-api"></use></svg>
-              <div style="font-size:15px;font-weight:600;color:#c7d0ea">Aún no hay una spec cargada</div>
-              <div style="font-size:13px;max-width:340px;line-height:1.5">Pega el JSON del OpenAPI o indica la URL de su spec arriba para documentar esta API con Redoc.</div>
-            </div>
-          </sc-if>
-          <div ref="{{ redocRef }}" style="display:{{ redocDisplay }};width:100%"></div>
+          <div class="redoc-scroll">
+            <sc-if value="{{ apiEmptyShow }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#8a95b6;background:#0d1526;text-align:center;padding:24px">
+                <svg width="38" height="38" style="color:#3d4a70"><use href="#ic-api"></use></svg>
+                <div style="font-size:15px;font-weight:600;color:#c7d0ea">Aún no hay una spec cargada</div>
+                <div style="font-size:13px;max-width:340px;line-height:1.5">Pega el JSON del OpenAPI o indica la URL de su spec arriba para documentar esta API con Redoc.</div>
+              </div>
+            </sc-if>
+            <div ref="{{ redocRef }}" style="display:{{ redocDisplay }};width:100%"></div>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -668,6 +703,11 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- aviso simple -->
+          <sc-if value="{{ modalAviso }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.6">{{ avisoMensaje }}</p>
+          </sc-if>
+
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(255,255,255,.07);position:sticky;bottom:0;background:#121c34">
           <sc-if value="{{ modalPromoteConfirm }}" hint-placeholder-val="{{ false }}">
@@ -701,7 +741,7 @@ class Component extends DCLogic {
       loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
       recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       showLoginPass:false, showRecoveryPass1:false, showRecoveryPass2:false, modalShowPass:{},
-      data:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false,
+      data:[], statuses:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false, apiFullscreen:false,
       narrow: (typeof window!=='undefined' && window.innerWidth<=760),
     };
   }
@@ -728,16 +768,19 @@ class Component extends DCLogic {
       if(n!==this.state.narrow) this.setState({narrow:n});
     };
     window.addEventListener('resize', this._onResize);
+    this._onFsChange=()=>{ const fs=!!document.fullscreenElement; if(fs!==this.state.apiFullscreen) this.setState({apiFullscreen:fs}); };
+    document.addEventListener('fullscreenchange', this._onFsChange);
   }
   componentWillUnmount(){
     if(this._authSub && this._authSub.data) this._authSub.data.subscription.unsubscribe();
     window.removeEventListener('resize', this._onResize);
+    document.removeEventListener('fullscreenchange', this._onFsChange);
   }
 
   async afterLogin(){
     const uid=this.state.session.user.id;
-    const { data:prof } = await this._sb.from('profiles').select('role').eq('id',uid).maybeSingle();
-    this.setState({profileRole: prof ? prof.role : 'client'});
+    const { data:prof } = await this._sb.from('profiles').select('role_id, role').eq('id',uid).maybeSingle();
+    this.setState({profileRole: prof ? (prof.role_id || prof.role) : 'client'});
     await this.loadData();
   }
 
@@ -746,7 +789,7 @@ class Component extends DCLogic {
   async loadData(){
     this.setState({loadError:''});
     const sb=this._sb;
-    const [co,pr,pd,gh,rq,rdoc,rdep,rblk] = await Promise.all([
+    const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st] = await Promise.all([
       sb.from('companies').select('*'),
       sb.from('projects').select('*'),
       sb.from('project_deployments').select('*'),
@@ -755,26 +798,36 @@ class Component extends DCLogic {
       sb.from('requirement_documents').select('*'),
       sb.from('requirement_deployments').select('*'),
       sb.from('requirement_blockers').select('*'),
+      sb.from('environments').select('*'),
+      sb.from('statuses').select('*'),
     ]);
-    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk].find(r=>r.error);
+    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
-    const envDefault=['.30','.40','.25'];
-    const data = (co.data||[]).map(c=>({
-      id:c.id, nombre:c.name, mono:c.initial, color:c.color,
+    // catalogos parametricos
+    const statuses=(st.data||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const envById={}; (env.data||[]).forEach(e=>{ envById[e.id]=e; });
+    const envCode=d=>{ const e=envById[d.environment_id]; return (e&&e.code) || d.env || ''; };
+
+    const data = (co.data||[]).map(c=>{
+      const ambientes=(env.data||[]).filter(e=>e.company_id===c.id)
+        .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+        .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0}));
+      return {
+      id:c.id, nombre:c.name, mono:c.initial, color:c.color, ambientes,
       proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
         const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
-        const byEnv=env=>deploys.find(d=>d.env===env)||{};
+        const byAmb=a=>deploys.find(d=>(d.environment_id&&d.environment_id===a.id) || (!d.environment_id&&d.env===a.code))||{};
         const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
-          id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:r.status,
+          id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:(r.status_id||r.status),
           documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
-          despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,env:d.env,url:d.url||'',version:d.version||''})),
+          despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||''})),
           bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
         }));
         return {
           id:p.id, nombre:p.name, descripcion:p.description||'',
           recursos:{
-            despliegues:envDefault.map(env=>({env,url:(byEnv(env).url)||'',version:(byEnv(env).version)||'',updatedAt:byEnv(env).updated_at||null})),
+            despliegues:ambientes.map(a=>{ const d=byAmb(a); return {env:a.code, environmentId:a.id, label:a.label, url:d.url||'', version:d.version||'', updatedAt:d.updated_at||null}; }),
             manualTecnico:{url:p.technical_manual_url||''},
             diagramas:{url:p.diagrams_url||''},
             manualUsuario:{url:p.user_manual_url||''},
@@ -784,9 +837,9 @@ class Component extends DCLogic {
           requerimientos:reqs,
         };
       }),
-    }));
+    };});
     this.setState(s=>{
-      const next={data, dataLoaded:true};
+      const next={data, statuses, dataLoaded:true};
       if(s.empresaId && !data.find(e=>e.id===s.empresaId)) Object.assign(next,{empresaId:null, view:'empresas'});
       return next;
     });
@@ -855,13 +908,8 @@ class Component extends DCLogic {
   openPasswordModalFromMenu(){ this.setState({userMenuOpen:false}); this.openPasswordModal(); }
 
   gid(p){ return p+'-'+(window.crypto&&crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2)); }
-  estMeta(e){ return ({
-    desarrollo:['En desarrollo','#35c0f0','rgba(53,192,240,.16)'],
-    bloqueado:['Bloqueado','#f97b7b','rgba(249,123,123,.16)'],
-    qa:['QA','#f5b544','rgba(245,181,68,.16)'],
-    usuarios:['Usuarios','#a78bfa','rgba(167,139,250,.16)'],
-    produccion:['Producción','#39d39b','rgba(57,211,155,.16)'],
-  })[e] || ['—','#9aa6c8','rgba(154,166,200,.16)']; }
+  estMeta(e){ const st=(this.state.statuses||[]).find(x=>x.id===e); return st ? [st.label||e, st.color||'#9aa6c8', st.color_bg||'rgba(154,166,200,.16)'] : ['—','#9aa6c8','rgba(154,166,200,.16)']; }
+  statusOrder(){ const list=(this.state.statuses||[]); const flow=list.filter(st=>!st.is_lateral).map(st=>st.id); const lat=list.filter(st=>st.is_lateral).map(st=>st.id); return {flow, lat, canonical:flow.concat(lat), reversed:flow.slice().reverse().concat(lat)}; }
   iniciales(n){ return (n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
   hexA(hex,a){ const h=hex.replace('#',''); const r=parseInt(h.substring(0,2),16), g=parseInt(h.substring(2,4),16), b=parseInt(h.substring(4,6),16); return `rgba(${r},${g},${b},${a})`; }
   emailInitials(email){ if(!email) return '?'; const local=email.split('@')[0]; const parts=local.split(/[._-]/).filter(Boolean); if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase(); return local.slice(0,2).toUpperCase(); }
@@ -950,12 +998,37 @@ class Component extends DCLogic {
 
   addEmpresa(){ if(!this.isDev()) return; this.openModal({type:'empresa',mode:'crear',title:'Nueva empresa',form:{nombre:''}}); }
   addProyecto(){ if(!this.isDev()) return; this.openModal({type:'proyecto',mode:'crear',title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-  addReq(){ if(!this.isDev()) return; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',responsable:'',estado:'desarrollo'}}); }
+  addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',responsable:'',estado:first}}); }
   editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,responsable:r.responsable,estado:r.estado}}); }
   addDoc(){ if(!this.isDev()) return; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); }
-  addDespliegue(){ if(!this.isDev()) return; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:'.30',url:'',version:''}}); }
+  addDespliegue(){ if(!this.isDev()) return; const ambs=(this.empresa()||{}).ambientes||[]; if(!ambs.length){ this.setState({modal:{type:'aviso',title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de agregar despliegues.'}, form:{}}); return; } this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:(ambs[0].id),url:'',version:''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
-  editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this._origEnvRows=p.recursos.despliegues.reduce((a,d)=>{a[d.env]={url:d.url,version:d.version,updatedAt:d.updatedAt}; return a;},{}); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
+  editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this._origEnvRows=p.recursos.despliegues.reduce((a,d)=>{a[d.environmentId]={url:d.url,version:d.version,updatedAt:d.updatedAt}; return a;},{}); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
+  addAmbiente(){ if(!this.isDev()) return; this.openModal({type:'ambiente',mode:'crear',title:'Nuevo ambiente',form:{code:'',label:'',stage:''}}); }
+  editAmbiente(id){ if(!this.isDev()) return; const a=((this.empresa()||{}).ambientes||[]).find(x=>x.id===id); if(!a) return; this.openModal({type:'ambiente',mode:'editar',id,title:'Editar ambiente',form:{code:a.code||'',label:a.label||'',stage:a.stage||''}}); }
+  async delAmbiente(id){
+    if(!this.isDev()||this._busy) return;
+    const emp=this.empresa(); if(!emp) return;
+    const inUse=(emp.proyectos||[]).some(p=>
+      (p.recursos.despliegues||[]).some(d=>d.environmentId===id && ((d.url||'').trim()||(d.version||'').trim())) ||
+      (p.requerimientos||[]).some(r=>(r.despliegues||[]).some(d=>d.environmentId===id && ((d.url||'').trim()||(d.version||'').trim())))
+    );
+    if(inUse){ this.setState({modal:{type:'aviso',title:'Ambiente en uso',mensaje:'Este ambiente tiene despliegues con datos (URL o versión). Bórralos o muévelos antes de eliminar el ambiente.'}, form:{}}); return; }
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    const sb=this._sb;
+    try{
+      let { error } = await sb.from('project_deployments').delete().eq('environment_id', id);
+      if(error) throw error;
+      ({ error } = await sb.from('requirement_deployments').delete().eq('environment_id', id));
+      if(error) throw error;
+      ({ error } = await sb.from('environments').delete().eq('id', id));
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
   editGithubLinks(){ if(!this.isDev()) return; const p=this.proyecto(); const links=p.recursos.github.map(g=>({label:g.label,url:g.url})); this.openModal({type:'githubLinks',mode:'editar',title:'Repositorios de GitHub',form:{links:links.length?links:[{label:'',url:''}]}}); }
   openVerGithubLinks(){ const p=this.proyecto(); this.setState({modal:{type:'verGithubLinks', title:'Repositorios de GitHub', links:p.recursos.github}, form:{}}); }
   openVerDespliegue(env,url,version){
@@ -987,20 +1060,23 @@ class Component extends DCLogic {
         const id=this.gid('p');
         let { error } = await sb.from('projects').insert({ id, company_id:this.state.empresaId, name:f.nombre, description:f.descripcion||'' });
         if(error) throw error;
-        const rows=['.30','.40','.25'].map(env=>({id:this.gid('x'), project_id:id, env, url:'', version:''}));
-        ({ error } = await sb.from('project_deployments').insert(rows));
-        if(error) throw error;
+        const ambs=(this.empresa()||{}).ambientes||[];
+        if(ambs.length){
+          const rows=ambs.map(a=>({id:this.gid('x'), project_id:id, environment_id:a.id, env:a.code, url:'', version:''}));
+          ({ error } = await sb.from('project_deployments').insert(rows));
+          if(error) throw error;
+        }
       } else if(t==='requerimiento'){
         if(!f.titulo) return;
         const prevEstado = m.mode==='editar' ? ((this.req()||{}).estado) : null;
         const statusChanged = m.mode==='crear' ? true : (prevEstado !== f.estado);
-        const targetEnv = ({qa:'.30',usuarios:'.40',produccion:'.25'})[f.estado];
-        if(targetEnv && statusChanged){
+        const targetAmb = ((this.empresa()||{}).ambientes||[]).find(a=>a.stage===f.estado);
+        if(targetAmb && statusChanged){
           this.setState({saveStatus:'idle'});
-          this.openPromoteConfirm(m, f, targetEnv);
+          this.openPromoteConfirm(m, f, targetAmb);
           return;
         }
-        const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, code:(f.codigo||'').trim() };
+        const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim() };
         if(statusChanged) payload.status_updated_at=new Date().toISOString();
         if(m.mode==='crear'){
           const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:this.state.proyectoId, ...payload });
@@ -1015,7 +1091,8 @@ class Component extends DCLogic {
         if(error) throw error;
       } else if(t==='despliegue'){
         if(!f.url) return;
-        const { error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:this.state.reqId, env:f.env, url:f.url, version:f.version||'—', updated_at:new Date().toISOString() });
+        const amb=((this.empresa()||{}).ambientes||[]).find(a=>a.id===f.env)||{};
+        const { error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:this.state.reqId, environment_id:f.env, env:amb.code||'', url:f.url, version:f.version||'—', updated_at:new Date().toISOString() });
         if(error) throw error;
       } else if(t==='bloqueante'){
         if(!f.texto) return;
@@ -1027,9 +1104,9 @@ class Component extends DCLogic {
         if(error) throw error;
         const nowIso=new Date().toISOString(), orig=this._origEnvRows||{};
         const rows=(f.envRows||[]).map(r=>{
-          const o=orig[r.env]||{};
+          const o=orig[r.environmentId]||{};
           const changed=(r.url||'')!==(o.url||'') || (r.version||'')!==(o.version||'');
-          return { id:this.gid('x'), project_id:this.state.proyectoId, env:r.env, url:r.url||'', version:r.version||'', updated_at: changed?nowIso:(o.updatedAt||nowIso) };
+          return { id:this.gid('x'), project_id:this.state.proyectoId, environment_id:r.environmentId, env:r.env, url:r.url||'', version:r.version||'', updated_at: changed?nowIso:(o.updatedAt||nowIso) };
         });
         ({ error } = await sb.from('project_deployments').insert(rows));
         if(error) throw error;
@@ -1043,6 +1120,21 @@ class Component extends DCLogic {
         if(error) throw error;
         const rows=(f.links||[]).filter(l=>(l.label&&l.label.trim())||(l.url&&l.url.trim())).map(l=>({ id:this.gid('gl'), project_id:this.state.proyectoId, label:l.label||'', url:l.url||'' }));
         if(rows.length){ ({ error } = await sb.from('project_github_links').insert(rows)); if(error) throw error; }
+      } else if(t==='ambiente'){
+        const code=(f.code||'').trim(); if(!code){ this.setState({saveStatus:'idle', modalErr:'El código es obligatorio.'}); return; }
+        const stage=f.stage||'';
+        const ambs=(this.empresa()||{}).ambientes||[];
+        if(ambs.some(a=>a.code===code && a.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya existe un ambiente con ese código en esta empresa.'}); return; }
+        if(stage && ambs.some(a=>a.stage===stage && a.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya hay un ambiente con esa etapa en esta empresa.'}); return; }
+        const payload={ company_id:this.state.empresaId, code, label:(f.label||'').trim()||code, stage:stage||null };
+        if(m.mode==='crear'){
+          const maxOrder=ambs.reduce((mx,a)=>Math.max(mx,a.sortOrder||0),0);
+          const { error } = await sb.from('environments').insert({ id:this.gid('env'), sort_order:maxOrder+1, ...payload });
+          if(error) throw error;
+        } else {
+          const { error } = await sb.from('environments').update(payload).eq('id', m.id);
+          if(error) throw error;
+        }
       }
       this.setState({saveStatus:'saved'});
       this.closeModal();
@@ -1055,14 +1147,14 @@ class Component extends DCLogic {
     }
   }
 
-  openPromoteConfirm(m, f, targetEnv){
+  openPromoteConfirm(m, f, targetAmb){
     const p=this.proyecto();
-    const envRow=(p.recursos.despliegues.find(d=>d.env===targetEnv))||{url:'',version:''};
+    const envRow=(p.recursos.despliegues.find(d=>d.environmentId===targetAmb.id))||{url:'',version:''};
     const req=m.mode==='editar' ? this.req() : null;
-    const reqEnvRow=req ? ((req.despliegues||[]).find(d=>d.env===targetEnv)||{}) : {};
+    const reqEnvRow=req ? ((req.despliegues||[]).find(d=>d.environmentId===targetAmb.id)||{}) : {};
     this.setState({
       modal:{ type:'promoteConfirm', title:'Actualizar ambiente',
-        targetEnv, estLabel:this.estMeta(f.estado)[0],
+        targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
         reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsable:f.responsable, codigo:f.codigo, estado:f.estado },
         projectUrl: envRow.url||'Sin URL', projectVersion: envRow.version||'Sin versión' },
       form:{ url: reqEnvRow.url || envRow.url || '', version: reqEnvRow.version || envRow.version || '' },
@@ -1075,7 +1167,7 @@ class Component extends DCLogic {
     this.setState({saveStatus:'saving', modalErr:''});
     const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
     try{
-      const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, code:(rp.codigo||'').trim(), status_updated_at:nowIso };
+      const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), status_updated_at:nowIso };
       let reqId=rp.id;
       if(rp.mode==='crear'){
         reqId=this.gid('r');
@@ -1087,13 +1179,13 @@ class Component extends DCLogic {
       }
       if(updateProject){
         const f=this.state.form, url=f.url||'', version=f.version||'';
-        let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId).eq('env', md.targetEnv);
+        let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId).eq('environment_id', md.targetEnvId);
         if(error) throw error;
-        ({ error } = await sb.from('project_deployments').insert({ id:this.gid('x'), project_id:this.state.proyectoId, env:md.targetEnv, url, version, updated_at:nowIso }));
+        ({ error } = await sb.from('project_deployments').insert({ id:this.gid('x'), project_id:this.state.proyectoId, environment_id:md.targetEnvId, env:md.targetEnv, url, version, updated_at:nowIso }));
         if(error) throw error;
-        ({ error } = await sb.from('requirement_deployments').delete().eq('requirement_id', reqId).eq('env', md.targetEnv));
+        ({ error } = await sb.from('requirement_deployments').delete().eq('requirement_id', reqId).eq('environment_id', md.targetEnvId));
         if(error) throw error;
-        ({ error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:reqId, env:md.targetEnv, url, version, updated_at:nowIso }));
+        ({ error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:reqId, environment_id:md.targetEnvId, env:md.targetEnv, url, version, updated_at:nowIso }));
         if(error) throw error;
       }
       this.setState({saveStatus:'saved'});
@@ -1243,6 +1335,8 @@ class Component extends DCLogic {
     R.apiEmptyShow=v==='apidoc'&&!s.apiHasRender;
     R.showFullscreenBtn=v==='apidoc'&&!!s.apiHasRender;
     R.toggleFullscreen=()=>this.toggleApiFullscreen();
+    R.fullscreenTitle=s.apiFullscreen?'Salir de pantalla completa':'Pantalla completa';
+    R.fullscreenIconHref='#ic-expand';
     R.redocRef=(el)=>{ this._redocEl=el; };
     R.redocContainerRef=(el)=>{ this._redocContainerEl=el; };
 
@@ -1250,11 +1344,16 @@ class Component extends DCLogic {
     R.empresasList=s.data.map(e=>({ id:e.id,nombre:e.nombre,mono:e.mono,color:e.color, proyectosLabel:`${e.proyectos.length} proyecto${e.proyectos.length===1?'':'s'}`, open:()=>this.openEmpresa(e.id) }));
 
     if(emp){
+      const ord=this.statusOrder();
       R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
+      R.showAmbientes=isDev;
+      R.ambientesEmpty=!(emp.ambientes||[]).length;
+      R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'#66739a', stageBg: sm?sm[2]:'rgba(255,255,255,.05)', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
+      R.addAmbiente=()=>this.addAmbiente();
       R.proyectosList=emp.proyectos.map(p=>{
         const reqs=p.requerimientos; const tot=reqs.length||1;
-        const counts={desarrollo:0,bloqueado:0,qa:0,usuarios:0,produccion:0}; reqs.forEach(r=>counts[r.estado]++);
-        const order=['produccion','usuarios','qa','desarrollo','bloqueado'];
+        const counts={}; ord.canonical.forEach(k=>counts[k]=0); reqs.forEach(r=>{ if(counts[r.estado]!=null) counts[r.estado]++; });
+        const order=ord.reversed;
         const barra=order.filter(k=>counts[k]>0).map(k=>({w:(counts[k]/tot*100)+'%',color:this.estMeta(k)[1]}));
         const estadoChips=order.filter(k=>counts[k]>0).map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
         const bloq=reqs.reduce((a,r)=>a+this.activeBloq(r),0);
@@ -1265,11 +1364,11 @@ class Component extends DCLogic {
 
     if(proy){
       const reqs=proy.requerimientos;
-      const counts={desarrollo:0,bloqueado:0,qa:0,usuarios:0,produccion:0}; reqs.forEach(r=>counts[r.estado]++);
-      const barraOrder=['desarrollo','qa','usuarios','produccion','bloqueado'];
-      const totR=reqs.length||1;
+      const ord=this.statusOrder();
+      const counts={}; ord.canonical.forEach(k=>counts[k]=0); reqs.forEach(r=>{ if(counts[r.estado]!=null) counts[r.estado]++; });
+      const barraOrder=ord.canonical;
       const reqBarra=barraOrder.filter(k=>counts[k]>0).map(k=>({f:counts[k],color:this.estMeta(k)[1]}));
-      const chipOrder=['desarrollo','qa','usuarios','produccion','bloqueado'];
+      const chipOrder=ord.canonical;
       const estadoChips=chipOrder.map((k,i)=>{ const c=this.estMeta(k)[1], n=counts[k], z=n===0, last=i===chipOrder.length-1; return {label:this.estMeta(k)[0],n,color:z?'#5c678c':c,labelColor:z?'#8a95b6':'#cfd7ee',pr:last?'0':'18px',bd:last?'none':'1px solid rgba(255,255,255,.08)'}; });
       const rec=proy.recursos;
       const cardOf=(key,label,iconHref)=>{ const url=(rec[key]||{}).url; return {label,iconHref,status:url?'Enlazado':'Sin enlace',statusColor:url?'#39d39b':'#66739a',open: isDev ? ()=>this.openRecurso(key,label,iconHref) : ()=>this.openExt(url)}; };
@@ -1292,7 +1391,7 @@ class Component extends DCLogic {
         recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
       };
 
-      const fdef=[['todos','Todos',null],['desarrollo','En desarrollo','desarrollo'],['qa','QA','qa'],['usuarios','Usuarios','usuarios'],['produccion','Producción','produccion'],['bloqueado','Bloqueados','bloqueado']];
+      const fdef=[['todos','Todos',null]].concat(ord.canonical.map(k=>[k,this.estMeta(k)[0],k]));
       R.filterChips=fdef.map(([key,label,est])=>{ const count= est? counts[est] : reqs.length; const active=s.filter===key; return { label,count, set:()=>this.setFilter(key), border: active?'rgba(53,192,240,.55)':'rgba(255,255,255,.1)', bg: active?'rgba(53,192,240,.14)':'transparent', color: active?'#35c0f0':'#b7c0dd' }; });
       const filtered= s.filter==='todos'? reqs : reqs.filter(r=>r.estado===s.filter);
       const idx=(id)=> reqs.findIndex(r=>r.id===id);
@@ -1333,15 +1432,17 @@ class Component extends DCLogic {
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
       R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm')?'520px':'440px';
-      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password'].includes(md.type);
+      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
       R.modalVerDespliegue = md.type==='verDespliegue';
       R.modalGithubLinks = md.type==='githubLinks';
       R.modalVerGithubLinks = md.type==='verGithubLinks';
       R.modalPromoteConfirm = md.type==='promoteConfirm';
-      R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks') ? 'Cerrar' : 'Cancelar';
-      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm';
+      R.modalAviso = md.type==='aviso';
+      R.avisoMensaje = md.mensaje||'';
+      R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks'||md.type==='aviso') ? 'Cerrar' : 'Cancelar';
+      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='aviso';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
       R.f_version=(e)=>this.setForm('version',e.target.value);
@@ -1397,14 +1498,18 @@ class Component extends DCLogic {
         R.recursoOpenLabel = 'Abrir en Drive';
       }
       const ch=(k)=>(e)=>this.setForm(k,e.target.value);
+      const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id}));
+      const ambienteOptions=((emp&&emp.ambientes)||[]).map(a=>({value:a.id,label:(a.label&&a.label!==a.code)?(a.label+' ('+a.code+')'):a.code}));
+      const stageOptions=[{value:'',label:'— Sin etapa'}].concat(estadoOptions);
       const fields={
         empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
         proyecto:[{label:'Nombre del proyecto',key:'nombre',kind:'text',placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:'area',placeholder:'Breve descripción'}],
-        requerimiento:[{label:'Código / N.º de requerimiento',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título',key:'titulo',kind:'text',placeholder:'Describe el requerimiento'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'},{label:'Estado',key:'estado',kind:'select',options:[{value:'desarrollo',label:'En desarrollo'},{value:'bloqueado',label:'Bloqueado'},{value:'qa',label:'QA'},{value:'usuarios',label:'Usuarios'},{value:'produccion',label:'Producción'}]}],
+        requerimiento:[{label:'Código / N.º de requerimiento',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título',key:'titulo',kind:'text',placeholder:'Describe el requerimiento'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions}],
         documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace de Drive',key:'url',kind:'text',placeholder:'https://drive.google.com/...'}],
-        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:[{value:'.30',label:'.30'},{value:'.40',label:'.40'},{value:'.25',label:'.25'}]},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
+        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
         bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
         password:[{label:'Nueva contraseña',key:'newPassword',kind:'text',type:'password',placeholder:'mínimo 6 caracteres'},{label:'Confirmar contraseña',key:'confirmPassword',kind:'text',type:'password',placeholder:'repite la contraseña'}],
+        ambiente:[{label:'Código',key:'code',kind:'text',placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:'text',placeholder:'Ej: Producción'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:'select',options:stageOptions}],
       };
       R.formFields=(fields[md.type]||[]).map(fd=>{
         const isPassword = fd.type==='password';
