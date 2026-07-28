@@ -295,13 +295,15 @@ button{color:inherit}
 
         <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
         <button onClick="{{ goRequerimientos }}" style="width:100%;text-align:left;cursor:pointer;background:linear-gradient(120deg,rgba(43,59,214,.22),rgba(35,169,224,.12));border:1px solid rgba(53,192,240,.28);border-radius:18px;padding:22px 24px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:16px;transition:border-color .18s" style-hover="border-color:rgba(53,192,240,.55)">
-          <div style="flex:1;min-width:200px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:19px;font-weight:600">Requerimientos</span><span style="background:rgba(255,255,255,.08);padding:2px 9px;border-radius:20px;font-size:12px;color:#c7d0ea">{{ proyecto.totalReq }}</span></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <sc-for list="{{ proyecto.estadoChips }}" as="c" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#b7c0dd"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.color }}"></span>{{ c.n }} {{ c.label }}</span></sc-for>
+          <div style="flex:1;min-width:200px;width:100%;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:10px"><span style="font-size:19px;font-weight:600">Requerimientos</span><span style="background:rgba(255,255,255,.08);padding:2px 9px;border-radius:20px;font-size:12px;color:#c7d0ea">{{ proyecto.totalReq }}</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;color:#35c0f0;font-weight:600;font-size:14px">Ver requerimientos →</span></div>
+            <div style="display:flex;gap:3px;height:7px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06)">
+              <sc-for list="{{ proyecto.reqBarra }}" as="b" hint-placeholder-count="3"><div style="flex:{{ b.f }};background:{{ b.color }}"></div></sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0 18px;align-items:center">
+              <sc-for list="{{ proyecto.estadoChips }}" as="c" hint-placeholder-count="5"><div style="display:flex;align-items:baseline;gap:7px;padding-right:{{ c.pr }};border-right:{{ c.bd }}"><span style="font-size:15px;font-weight:700;color:{{ c.color }}">{{ c.n }}</span><span style="font-size:12.5px;color:{{ c.labelColor }}">{{ c.label }}</span></div></sc-for>
             </div>
           </div>
-          <span style="display:inline-flex;align-items:center;gap:8px;color:#35c0f0;font-weight:600;font-size:14px">Ver requerimientos →</span>
         </button>
         </sc-if>
 
@@ -861,6 +863,7 @@ class Component extends DCLogic {
     produccion:['Producción','#39d39b','rgba(57,211,155,.16)'],
   })[e] || ['—','#9aa6c8','rgba(154,166,200,.16)']; }
   iniciales(n){ return (n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+  hexA(hex,a){ const h=hex.replace('#',''); const r=parseInt(h.substring(0,2),16), g=parseInt(h.substring(2,4),16), b=parseInt(h.substring(4,6),16); return `rgba(${r},${g},${b},${a})`; }
   emailInitials(email){ if(!email) return '?'; const local=email.split('@')[0]; const parts=local.split(/[._-]/).filter(Boolean); if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase(); return local.slice(0,2).toUpperCase(); }
   relDate(iso){
     if(!iso) return null;
@@ -1263,14 +1266,18 @@ class Component extends DCLogic {
     if(proy){
       const reqs=proy.requerimientos;
       const counts={desarrollo:0,bloqueado:0,qa:0,usuarios:0,produccion:0}; reqs.forEach(r=>counts[r.estado]++);
-      const estadoChips=['desarrollo','qa','usuarios','produccion','bloqueado'].map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
+      const barraOrder=['desarrollo','qa','usuarios','produccion','bloqueado'];
+      const totR=reqs.length||1;
+      const reqBarra=barraOrder.filter(k=>counts[k]>0).map(k=>({f:counts[k],color:this.estMeta(k)[1]}));
+      const chipOrder=['desarrollo','qa','usuarios','produccion','bloqueado'];
+      const estadoChips=chipOrder.map((k,i)=>{ const c=this.estMeta(k)[1], n=counts[k], z=n===0, last=i===chipOrder.length-1; return {label:this.estMeta(k)[0],n,color:z?'#5c678c':c,labelColor:z?'#8a95b6':'#cfd7ee',pr:last?'0':'18px',bd:last?'none':'1px solid rgba(255,255,255,.08)'}; });
       const rec=proy.recursos;
       const cardOf=(key,label,iconHref)=>{ const url=(rec[key]||{}).url; return {label,iconHref,status:url?'Enlazado':'Sin enlace',statusColor:url?'#39d39b':'#66739a',open: isDev ? ()=>this.openRecurso(key,label,iconHref) : ()=>this.openExt(url)}; };
       const ghCount=(rec.github||[]).length;
       const githubCard={label:'GitHub',iconHref:'#ic-ext',status:ghCount?(ghCount+' repo'+(ghCount===1?'':'s')):'Sin repos',statusColor:ghCount?'#39d39b':'#66739a',open: isDev ? ()=>this.editGithubLinks() : ()=>this.openVerGithubLinks()};
       const apiHasSpec=!!(rec.apiSpec&&rec.apiSpec.source);
       R.proyecto={
-        nombre:proy.nombre, descripcion:proy.descripcion, totalReq:reqs.length, estadoChips,
+        nombre:proy.nombre, descripcion:proy.descripcion, totalReq:reqs.length, estadoChips, reqBarra,
         despliegues:rec.despliegues.map(d=>{
           const k='p:'+d.env; const copied=s.copiedKey===k;
           return { env:d.env, version:d.version||'—',
