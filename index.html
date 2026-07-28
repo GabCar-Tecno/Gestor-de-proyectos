@@ -272,9 +272,12 @@ button{color:inherit}
               <div style="height:6px;border-radius:4px;display:flex;overflow:hidden;background:#0c1428">
                 <sc-for list="{{ p.barra }}" as="b" hint-placeholder-count="3"><div style="height:100%;width:{{ b.w }};background:{{ b.color }}"></div></sc-for>
               </div>
-              <div style="display:flex;gap:16px;font-size:12px;color:#8a95b6">
-                <span><strong style="color:#e9edf7;font-weight:600">{{ p.totalReq }}</strong> requerimientos</span>
-                <span style="color:{{ p.bloqColor }}"><strong style="font-weight:600">{{ p.bloqCount }}</strong> bloqueados</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ p.estadoChips }}" as="c" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#b7c0dd"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.color }}"></span>{{ c.n }} {{ c.label }}</span></sc-for>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#8a95b6">
+                <span style="display:inline-flex;align-items:center;gap:6px;color:{{ p.bloqColor }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.bloqColor }}"></span><strong style="font-weight:600">{{ p.bloqCount }}</strong> bloqueantes</span>
+                <span>Último despliegue · {{ p.ultimoDespliegue }}</span>
               </div>
             </button>
           </sc-for>
@@ -645,11 +648,36 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- confirmación de promoción de ambiente -->
+          <sc-if value="{{ modalPromoteConfirm }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.55">Este requerimiento pasó a <strong style="color:#e9edf7">{{ promote.estLabel }}</strong>. ¿Actualizar el ambiente <strong style="color:#35c0f0;font-family:'JetBrains Mono',monospace">{{ promote.targetEnv }}</strong> del proyecto <strong style="color:#e9edf7">{{ promote.projectName }}</strong>?</p>
+              <label style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-size:12px;font-weight:500;color:#8a95b6">URL</span>
+                <input value="{{ form.url }}" onInput="{{ f_url }}" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                <span style="font-size:11px;color:#66739a">Actual del proyecto: {{ promote.projectUrl }}</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-size:12px;font-weight:500;color:#8a95b6">Versión</span>
+                <input value="{{ form.version }}" onInput="{{ f_version }}" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                <span style="font-size:11px;color:#66739a">Actual del proyecto: {{ promote.projectVersion }}</span>
+              </label>
+              <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
+            </div>
+          </sc-if>
+
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(255,255,255,.07);position:sticky;bottom:0;background:#121c34">
+          <sc-if value="{{ modalPromoteConfirm }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ closeModal }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500">Cancelar</button>
+          <button onClick="{{ promoteOnlyStatus }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Solo cambiar estado</button>
+          <button onClick="{{ promoteUpdateProject }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">Actualizar proyecto</button>
+          </sc-if>
+          <sc-if value="{{ !modalPromoteConfirm }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ closeModal }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500">{{ modalSecondaryLabel }}</button>
           <sc-if value="{{ modalShowSave }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ saveModal }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">{{ saveLabel }}</button>
+          </sc-if>
           </sc-if>
         </div>
       </div>
@@ -729,7 +757,7 @@ class Component extends DCLogic {
     const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
-    const envDefault=['.co','.net','.com.co'];
+    const envDefault=['.30','.40','.25'];
     const data = (co.data||[]).map(c=>({
       id:c.id, nombre:c.name, mono:c.initial, color:c.color,
       proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
@@ -744,7 +772,7 @@ class Component extends DCLogic {
         return {
           id:p.id, nombre:p.name, descripcion:p.description||'',
           recursos:{
-            despliegues:envDefault.map(env=>({env,url:(byEnv(env).url)||'',version:(byEnv(env).version)||''})),
+            despliegues:envDefault.map(env=>({env,url:(byEnv(env).url)||'',version:(byEnv(env).version)||'',updatedAt:byEnv(env).updated_at||null})),
             manualTecnico:{url:p.technical_manual_url||''},
             diagramas:{url:p.diagrams_url||''},
             manualUsuario:{url:p.user_manual_url||''},
@@ -826,13 +854,23 @@ class Component extends DCLogic {
 
   gid(p){ return p+'-'+(window.crypto&&crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2)); }
   estMeta(e){ return ({
-    pendiente:['Pendiente','#9aa6c8','rgba(154,166,200,.16)'],
-    progreso:['En progreso','#35c0f0','rgba(53,192,240,.16)'],
+    desarrollo:['En desarrollo','#35c0f0','rgba(53,192,240,.16)'],
     bloqueado:['Bloqueado','#f97b7b','rgba(249,123,123,.16)'],
-    entregado:['Entregado','#39d39b','rgba(57,211,155,.16)'],
+    qa:['QA','#f5b544','rgba(245,181,68,.16)'],
+    usuarios:['Usuarios','#a78bfa','rgba(167,139,250,.16)'],
+    produccion:['Producción','#39d39b','rgba(57,211,155,.16)'],
   })[e] || ['—','#9aa6c8','rgba(154,166,200,.16)']; }
   iniciales(n){ return (n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
   emailInitials(email){ if(!email) return '?'; const local=email.split('@')[0]; const parts=local.split(/[._-]/).filter(Boolean); if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase(); return local.slice(0,2).toUpperCase(); }
+  relDate(iso){
+    if(!iso) return null;
+    const d=new Date(iso), now=new Date();
+    const days=Math.floor((now.setHours(0,0,0,0)-new Date(d).setHours(0,0,0,0))/86400000);
+    if(days===0) return 'hoy';
+    if(days===1) return 'ayer';
+    if(days>1 && days<=7) return 'hace '+days+' días';
+    return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+  }
   docIcon(t){ t=(t||'').toLowerCase(); if(t.includes('pdf'))return '#ic-filetext'; if(t.includes('fig')||t.includes('imag'))return '#ic-image'; if(t.includes('diag'))return '#ic-diagram'; if(t.includes('cálc')||t.includes('xls'))return '#ic-chart'; return '#ic-file'; }
   activeBloq(r){ return (r.bloqueantes||[]).filter(b=>!b.resuelto).length; }
 
@@ -909,12 +947,12 @@ class Component extends DCLogic {
 
   addEmpresa(){ if(!this.isDev()) return; this.openModal({type:'empresa',mode:'crear',title:'Nueva empresa',form:{nombre:''}}); }
   addProyecto(){ if(!this.isDev()) return; this.openModal({type:'proyecto',mode:'crear',title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-  addReq(){ if(!this.isDev()) return; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',responsable:'',estado:'pendiente'}}); }
+  addReq(){ if(!this.isDev()) return; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',responsable:'',estado:'desarrollo'}}); }
   editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,responsable:r.responsable,estado:r.estado}}); }
   addDoc(){ if(!this.isDev()) return; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); }
-  addDespliegue(){ if(!this.isDev()) return; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:'.co',url:'',version:''}}); }
+  addDespliegue(){ if(!this.isDev()) return; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:'.30',url:'',version:''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
-  editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
+  editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this._origEnvRows=p.recursos.despliegues.reduce((a,d)=>{a[d.env]={url:d.url,version:d.version,updatedAt:d.updatedAt}; return a;},{}); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
   editGithubLinks(){ if(!this.isDev()) return; const p=this.proyecto(); const links=p.recursos.github.map(g=>({label:g.label,url:g.url})); this.openModal({type:'githubLinks',mode:'editar',title:'Repositorios de GitHub',form:{links:links.length?links:[{label:'',url:''}]}}); }
   openVerGithubLinks(){ const p=this.proyecto(); this.setState({modal:{type:'verGithubLinks', title:'Repositorios de GitHub', links:p.recursos.github}, form:{}}); }
   openVerDespliegue(env,url,version){
@@ -946,16 +984,26 @@ class Component extends DCLogic {
         const id=this.gid('p');
         let { error } = await sb.from('projects').insert({ id, company_id:this.state.empresaId, name:f.nombre, description:f.descripcion||'' });
         if(error) throw error;
-        const rows=['.co','.net','.com.co'].map(env=>({id:this.gid('x'), project_id:id, env, url:'', version:''}));
+        const rows=['.30','.40','.25'].map(env=>({id:this.gid('x'), project_id:id, env, url:'', version:''}));
         ({ error } = await sb.from('project_deployments').insert(rows));
         if(error) throw error;
       } else if(t==='requerimiento'){
         if(!f.titulo) return;
+        const prevEstado = m.mode==='editar' ? ((this.req()||{}).estado) : null;
+        const statusChanged = m.mode==='crear' ? true : (prevEstado !== f.estado);
+        const targetEnv = ({qa:'.30',usuarios:'.40',produccion:'.25'})[f.estado];
+        if(targetEnv && statusChanged){
+          this.setState({saveStatus:'idle'});
+          this.openPromoteConfirm(m, f, targetEnv);
+          return;
+        }
+        const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, code:(f.codigo||'').trim() };
+        if(statusChanged) payload.status_updated_at=new Date().toISOString();
         if(m.mode==='crear'){
-          const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:this.state.proyectoId, title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, code:(f.codigo||'').trim() });
+          const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:this.state.proyectoId, ...payload });
           if(error) throw error;
         } else {
-          const { error } = await sb.from('requirements').update({ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, code:(f.codigo||'').trim() }).eq('id', m.id);
+          const { error } = await sb.from('requirements').update(payload).eq('id', m.id);
           if(error) throw error;
         }
       } else if(t==='documento'){
@@ -964,7 +1012,7 @@ class Component extends DCLogic {
         if(error) throw error;
       } else if(t==='despliegue'){
         if(!f.url) return;
-        const { error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:this.state.reqId, env:f.env, url:f.url, version:f.version||'—' });
+        const { error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:this.state.reqId, env:f.env, url:f.url, version:f.version||'—', updated_at:new Date().toISOString() });
         if(error) throw error;
       } else if(t==='bloqueante'){
         if(!f.texto) return;
@@ -974,7 +1022,12 @@ class Component extends DCLogic {
       } else if(t==='desplieguesProy'){
         let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId);
         if(error) throw error;
-        const rows=(f.envRows||[]).map(r=>({ id:this.gid('x'), project_id:this.state.proyectoId, env:r.env, url:r.url||'', version:r.version||'' }));
+        const nowIso=new Date().toISOString(), orig=this._origEnvRows||{};
+        const rows=(f.envRows||[]).map(r=>{
+          const o=orig[r.env]||{};
+          const changed=(r.url||'')!==(o.url||'') || (r.version||'')!==(o.version||'');
+          return { id:this.gid('x'), project_id:this.state.proyectoId, env:r.env, url:r.url||'', version:r.version||'', updated_at: changed?nowIso:(o.updatedAt||nowIso) };
+        });
         ({ error } = await sb.from('project_deployments').insert(rows));
         if(error) throw error;
       } else if(t==='recurso'){
@@ -993,6 +1046,58 @@ class Component extends DCLogic {
       await this.loadData();
     }catch(e){
       this.setState({saveStatus:'error', modalErr: t==='password' ? (e.message||'No se pudo cambiar la contraseña.') : ''});
+      console.error(e);
+    } finally {
+      this._busy=false;
+    }
+  }
+
+  openPromoteConfirm(m, f, targetEnv){
+    const p=this.proyecto();
+    const envRow=(p.recursos.despliegues.find(d=>d.env===targetEnv))||{url:'',version:''};
+    const req=m.mode==='editar' ? this.req() : null;
+    const reqEnvRow=req ? ((req.despliegues||[]).find(d=>d.env===targetEnv)||{}) : {};
+    this.setState({
+      modal:{ type:'promoteConfirm', title:'Actualizar ambiente',
+        targetEnv, estLabel:this.estMeta(f.estado)[0],
+        reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsable:f.responsable, codigo:f.codigo, estado:f.estado },
+        projectUrl: envRow.url||'Sin URL', projectVersion: envRow.version||'Sin versión' },
+      form:{ url: reqEnvRow.url || envRow.url || '', version: reqEnvRow.version || envRow.version || '' },
+      modalErr:'',
+    });
+  }
+
+  async confirmPromote(updateProject){
+    if(this._busy) return; this._busy=true;
+    this.setState({saveStatus:'saving', modalErr:''});
+    const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
+    try{
+      const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, code:(rp.codigo||'').trim(), status_updated_at:nowIso };
+      let reqId=rp.id;
+      if(rp.mode==='crear'){
+        reqId=this.gid('r');
+        const { error } = await sb.from('requirements').insert({ id:reqId, project_id:this.state.proyectoId, ...payload });
+        if(error) throw error;
+      } else {
+        const { error } = await sb.from('requirements').update(payload).eq('id', reqId);
+        if(error) throw error;
+      }
+      if(updateProject){
+        const f=this.state.form, url=f.url||'', version=f.version||'';
+        let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId).eq('env', md.targetEnv);
+        if(error) throw error;
+        ({ error } = await sb.from('project_deployments').insert({ id:this.gid('x'), project_id:this.state.proyectoId, env:md.targetEnv, url, version, updated_at:nowIso }));
+        if(error) throw error;
+        ({ error } = await sb.from('requirement_deployments').delete().eq('requirement_id', reqId).eq('env', md.targetEnv));
+        if(error) throw error;
+        ({ error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:reqId, env:md.targetEnv, url, version, updated_at:nowIso }));
+        if(error) throw error;
+      }
+      this.setState({saveStatus:'saved'});
+      this.closeModal();
+      await this.loadData();
+    }catch(e){
+      this.setState({saveStatus:'error', modalErr:'No se pudo guardar: '+e.message});
       console.error(e);
     } finally {
       this._busy=false;
@@ -1145,18 +1250,20 @@ class Component extends DCLogic {
       R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
       R.proyectosList=emp.proyectos.map(p=>{
         const reqs=p.requerimientos; const tot=reqs.length||1;
-        const counts={pendiente:0,progreso:0,bloqueado:0,entregado:0}; reqs.forEach(r=>counts[r.estado]++);
-        const order=['entregado','progreso','pendiente','bloqueado'];
+        const counts={desarrollo:0,bloqueado:0,qa:0,usuarios:0,produccion:0}; reqs.forEach(r=>counts[r.estado]++);
+        const order=['produccion','usuarios','qa','desarrollo','bloqueado'];
         const barra=order.filter(k=>counts[k]>0).map(k=>({w:(counts[k]/tot*100)+'%',color:this.estMeta(k)[1]}));
+        const estadoChips=order.filter(k=>counts[k]>0).map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
         const bloq=reqs.reduce((a,r)=>a+this.activeBloq(r),0);
-        return { id:p.id,nombre:p.nombre,descripcion:p.descripcion,totalReq:reqs.length,barra, bloqCount:bloq, bloqColor:bloq>0?'#f97b7b':'#8a95b6', open:()=>this.openProyecto(p.id) };
+        const ultimo=(p.recursos.despliegues||[]).reduce((max,d)=> (d.updatedAt && (!max || d.updatedAt>max)) ? d.updatedAt : max, null);
+        return { id:p.id,nombre:p.nombre,descripcion:p.descripcion,totalReq:reqs.length,barra, estadoChips, bloqCount:bloq, bloqColor:bloq>0?'#f97b7b':'#8a95b6', ultimoDespliegue: ultimo?this.relDate(ultimo):'Sin despliegues', open:()=>this.openProyecto(p.id) };
       });
     }
 
     if(proy){
       const reqs=proy.requerimientos;
-      const counts={pendiente:0,progreso:0,bloqueado:0,entregado:0}; reqs.forEach(r=>counts[r.estado]++);
-      const estadoChips=['pendiente','progreso','bloqueado','entregado'].map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
+      const counts={desarrollo:0,bloqueado:0,qa:0,usuarios:0,produccion:0}; reqs.forEach(r=>counts[r.estado]++);
+      const estadoChips=['desarrollo','qa','usuarios','produccion','bloqueado'].map(k=>({label:this.estMeta(k)[0],color:this.estMeta(k)[1],n:counts[k]}));
       const rec=proy.recursos;
       const cardOf=(key,label,iconHref)=>{ const url=(rec[key]||{}).url; return {label,iconHref,status:url?'Enlazado':'Sin enlace',statusColor:url?'#39d39b':'#66739a',open: isDev ? ()=>this.openRecurso(key,label,iconHref) : ()=>this.openExt(url)}; };
       const ghCount=(rec.github||[]).length;
@@ -1178,7 +1285,7 @@ class Component extends DCLogic {
         recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
       };
 
-      const fdef=[['todos','Todos',null],['pendiente','Pendientes','pendiente'],['progreso','En progreso','progreso'],['bloqueado','Bloqueados','bloqueado'],['entregado','Entregados','entregado']];
+      const fdef=[['todos','Todos',null],['desarrollo','En desarrollo','desarrollo'],['qa','QA','qa'],['usuarios','Usuarios','usuarios'],['produccion','Producción','produccion'],['bloqueado','Bloqueados','bloqueado']];
       R.filterChips=fdef.map(([key,label,est])=>{ const count= est? counts[est] : reqs.length; const active=s.filter===key; return { label,count, set:()=>this.setFilter(key), border: active?'rgba(53,192,240,.55)':'rgba(255,255,255,.1)', bg: active?'rgba(53,192,240,.14)':'transparent', color: active?'#35c0f0':'#b7c0dd' }; });
       const filtered= s.filter==='todos'? reqs : reqs.filter(r=>r.estado===s.filter);
       const idx=(id)=> reqs.findIndex(r=>r.id===id);
@@ -1218,17 +1325,19 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue')?'520px':'440px';
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
       R.modalVerDespliegue = md.type==='verDespliegue';
       R.modalGithubLinks = md.type==='githubLinks';
       R.modalVerGithubLinks = md.type==='verGithubLinks';
+      R.modalPromoteConfirm = md.type==='promoteConfirm';
       R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks') ? 'Cerrar' : 'Cancelar';
-      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks';
+      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
+      R.f_version=(e)=>this.setForm('version',e.target.value);
       R.openRecursoLink=()=>this.openExt(s.form.url);
       R.saveModal=()=>this.saveModal();
       R.modalErr=s.modalErr||''; R.modalErrShow=!!s.modalErr;
@@ -1267,6 +1376,12 @@ class Component extends DCLogic {
             open:()=>this.openExt(l.url) };
         });
       }
+      if(md.type==='promoteConfirm'){
+        R.promote={ estLabel:md.estLabel, targetEnv:md.targetEnv, projectName:(proy&&proy.nombre)||'',
+          projectUrl:md.projectUrl, projectVersion:md.projectVersion };
+        R.promoteOnlyStatus=()=>this.confirmPromote(false);
+        R.promoteUpdateProject=()=>this.confirmPromote(true);
+      }
       if(md.type==='recurso'){
         R.recursoIconHref=md.ricon; R.recursoLabel=md.rlabel;
         R.recursoPreviewLabel = 'VISTA PREVIA · GOOGLE DRIVE';
@@ -1278,9 +1393,9 @@ class Component extends DCLogic {
       const fields={
         empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
         proyecto:[{label:'Nombre del proyecto',key:'nombre',kind:'text',placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:'area',placeholder:'Breve descripción'}],
-        requerimiento:[{label:'Código / N.º de requerimiento',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título',key:'titulo',kind:'text',placeholder:'Describe el requerimiento'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'},{label:'Estado',key:'estado',kind:'select',options:[{value:'pendiente',label:'Pendiente'},{value:'progreso',label:'En progreso'},{value:'bloqueado',label:'Bloqueado'},{value:'entregado',label:'Entregado'}]}],
+        requerimiento:[{label:'Código / N.º de requerimiento',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título',key:'titulo',kind:'text',placeholder:'Describe el requerimiento'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'},{label:'Estado',key:'estado',kind:'select',options:[{value:'desarrollo',label:'En desarrollo'},{value:'bloqueado',label:'Bloqueado'},{value:'qa',label:'QA'},{value:'usuarios',label:'Usuarios'},{value:'produccion',label:'Producción'}]}],
         documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace de Drive',key:'url',kind:'text',placeholder:'https://drive.google.com/...'}],
-        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:[{value:'.co',label:'.co'},{value:'.net',label:'.net'},{value:'.com.co',label:'.com.co'}]},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
+        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:[{value:'.30',label:'.30'},{value:'.40',label:'.40'},{value:'.25',label:'.25'}]},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
         bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
         password:[{label:'Nueva contraseña',key:'newPassword',kind:'text',type:'password',placeholder:'mínimo 6 caracteres'},{label:'Confirmar contraseña',key:'confirmPassword',kind:'text',type:'password',placeholder:'repite la contraseña'}],
       };
