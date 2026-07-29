@@ -766,6 +766,32 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- aviso opcional a Discord -->
+          <sc-if value="{{ modalDiscord }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.55">El cambio de ambiente y la versión ya quedaron guardados. Podés avisar al canal de Discord (opcional).</p>
+              <sc-if value="{{ discord.hasCreds }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span style="font-size:12px;font-weight:500;color:#8a95b6">Usuarios de prueba a incluir</span>
+                  <sc-for list="{{ discord.creds }}" as="c" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:11px;text-align:left;background:{{ c.boxBg }};border:1px solid {{ c.boxBorder }};border-radius:10px;padding:10px 12px;cursor:pointer">
+                      <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"><svg width="12" height="12"><use href="{{ c.checkHref }}"></use></svg></span>
+                      <span style="flex:1;min-width:0">
+                        <span style="display:block;font-size:13px;color:#e9edf7">{{ c.label }}</span>
+                        <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#8a95b6">{{ c.username }}</span>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-size:12px;font-weight:500;color:#8a95b6">Vista previa del mensaje</span>
+                <pre style="margin:0;white-space:pre-wrap;word-break:break-word;background:#0c1428;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 13px;color:#c7d0ea;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.55">{{ discord.preview }}</pre>
+              </div>
+              <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
+            </div>
+          </sc-if>
+
           <!-- aviso simple -->
           <sc-if value="{{ modalAviso }}" hint-placeholder-val="{{ false }}">
             <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.6">{{ avisoMensaje }}</p>
@@ -778,7 +804,11 @@ button{color:inherit}
           <button onClick="{{ promoteOnlyStatus }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Solo cambiar estado</button>
           <button onClick="{{ promoteUpdateProject }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">Actualizar proyecto</button>
           </sc-if>
-          <sc-if value="{{ !modalPromoteConfirm }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ modalDiscord }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ discord.skip }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Ahora no</button>
+          <button onClick="{{ discord.send }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">{{ discord.sendLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ modalGenericFooter }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ closeModal }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500">{{ modalSecondaryLabel }}</button>
           <sc-if value="{{ modalShowSave }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ saveModal }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">{{ saveLabel }}</button>
@@ -1256,8 +1286,10 @@ class Component extends DCLogic {
         const { error } = await sb.from('requirements').update(payload).eq('id', reqId);
         if(error) throw error;
       }
+      let ctxUrl='', ctxVersion='';
       if(updateProject){
         const f=this.state.form, url=f.url||'', version=f.version||'';
+        ctxUrl=url; ctxVersion=version;
         let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId).eq('environment_id', md.targetEnvId);
         if(error) throw error;
         ({ error } = await sb.from('project_deployments').insert({ id:this.gid('x'), project_id:this.state.proyectoId, environment_id:md.targetEnvId, env:md.targetEnv, url, version, updated_at:nowIso }));
@@ -1268,14 +1300,72 @@ class Component extends DCLogic {
         if(error) throw error;
       }
       this.setState({saveStatus:'saved'});
-      this.closeModal();
       await this.loadData();
+      // Tercer paso (opcional): ofrecer aviso a Discord tras actualizar version.
+      if(updateProject){
+        this.openDiscordStep({ projectId:this.state.proyectoId, environmentId:md.targetEnvId, envCode:md.targetEnv, version:ctxVersion, artifactUrl:ctxUrl, requirementTitle:rp.titulo });
+      } else {
+        this.closeModal();
+      }
     }catch(e){
       this.setState({saveStatus:'error', modalErr:'No se pudo guardar: '+e.message});
       console.error(e);
     } finally {
       this._busy=false;
     }
+  }
+
+  // ---------- AVISO A DISCORD ----------
+  openDiscordStep({projectId, projectName, environmentId, envCode, version, artifactUrl, requirementTitle}){
+    const p=this.proyecto();
+    const nombre = projectName || (p&&p.nombre) || '';
+    const amb = (((this.empresa()||{}).ambientes)||[]).find(a=>a.id===environmentId) || {};
+    const embedColor = this.estMeta(amb.stage||'')[1];
+    // Solo credenciales del ambiente destino o generales (sin ambiente).
+    const creds = (((p&&p.recursos.credenciales))||[])
+      .filter(c=>c.environmentId===environmentId || !c.environmentId)
+      .map(c=>({ id:c.id, label:c.label||'(sin etiqueta)', username:c.username||'', secret:c.secret||'', envLabel:c.envLabel||'' }));
+    this.setState({
+      modal:{ type:'discord', title:'Enviar aviso a Discord',
+        projectId, projectName:nombre, envCode, environmentId,
+        version, artifactUrl, requirementTitle, embedColor, creds, sendState:'idle' },
+      form:{ discordSel:{} }, modalErr:'',
+    });
+  }
+  toggleDiscordCred(id){
+    this.setState(s=>{ const sel={...(s.form.discordSel||{})}; if(sel[id]) delete sel[id]; else sel[id]=true; return {form:{...s.form, discordSel:sel}}; });
+  }
+  buildDiscordPreview(md, sel){
+    const lines=[
+      'Aplicativo: '+(md.projectName||''),
+      'Ambiente: '+(md.envCode||''),
+      'Version: '+(md.version||''),
+      'Solicitud: '+(md.requirementTitle||''),
+    ];
+    if(md.artifactUrl) lines.push(md.artifactUrl);
+    const users=(md.creds||[]).filter(c=>sel[c.id]);
+    if(users.length){ lines.push(''); users.forEach(u=>lines.push('Usuario: '+u.username+'  Contraseña: '+u.secret)); }
+    return lines.join('\n');
+  }
+  async sendDiscord(){
+    if(this._busy) return; this._busy=true;
+    const md=this.state.modal, sel=this.state.form.discordSel||{};
+    const ids=(md.creds||[]).filter(c=>sel[c.id]).map(c=>c.id);
+    this.setState({modalErr:'', modal:{...md, sendState:'sending'}});
+    try{
+      const { data, error } = await this._sb.functions.invoke('discord-notify', { body:{
+        projectId:md.projectId, projectName:md.projectName, envCode:md.envCode,
+        version:md.version, requirementTitle:md.requirementTitle, artifactUrl:md.artifactUrl,
+        embedColor:md.embedColor, credentialIds:ids,
+      }});
+      if(error) throw error;
+      if(data && data.ok===false) throw new Error(data.error||'Discord rechazó el envío');
+      this.setState({saveStatus:'saved'});
+      this.closeModal();
+    }catch(e){
+      this.setState({modal:{...this.state.modal, sendState:'error'}, modalErr:'No se pudo enviar a Discord: '+(e.message||e)+'. El cambio de ambiente y la versión ya quedaron guardados; podés reintentar.'});
+      console.error(e);
+    }finally{ this._busy=false; }
   }
 
   async delDoc(id){
@@ -1530,7 +1620,7 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm')?'520px':'440px';
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
@@ -1539,10 +1629,12 @@ class Component extends DCLogic {
       R.modalCredenciales = md.type==='credenciales';
       R.modalVerGithubLinks = md.type==='verGithubLinks';
       R.modalPromoteConfirm = md.type==='promoteConfirm';
+      R.modalDiscord = md.type==='discord';
+      R.modalGenericFooter = md.type!=='promoteConfirm' && md.type!=='discord';
       R.modalAviso = md.type==='aviso';
       R.avisoMensaje = md.mensaje||'';
       R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks'||md.type==='aviso') ? 'Cerrar' : 'Cancelar';
-      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='aviso';
+      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='aviso';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
       R.f_version=(e)=>this.setForm('version',e.target.value);
@@ -1589,6 +1681,27 @@ class Component extends DCLogic {
           projectUrl:md.projectUrl, projectVersion:md.projectVersion };
         R.promoteOnlyStatus=()=>this.confirmPromote(false);
         R.promoteUpdateProject=()=>this.confirmPromote(true);
+      }
+      if(md.type==='discord'){
+        const sel=s.form.discordSel||{};
+        const selCount=(md.creds||[]).filter(c=>sel[c.id]).length;
+        R.discord={
+          hasCreds:(md.creds||[]).length>0,
+          creds:(md.creds||[]).map(c=>({
+            id:c.id, label:c.label, username:c.username||'—', envLabel:c.envLabel,
+            toggle:()=>this.toggleDiscordCred(c.id),
+            boxBg: sel[c.id]?'rgba(53,192,240,.12)':'transparent',
+            boxBorder: sel[c.id]?'#35c0f0':'rgba(255,255,255,.14)',
+            checkHref: sel[c.id]?'#ic-check':'#ic-empty',
+          })),
+          selCount,
+          preview:this.buildDiscordPreview(md, sel),
+          sending: md.sendState==='sending',
+          sendDisabled: md.sendState==='sending',
+          sendLabel: md.sendState==='error' ? 'Reintentar' : (md.sendState==='sending' ? 'Enviando…' : 'Enviar a Discord'),
+          send:()=>this.sendDiscord(),
+          skip:()=>this.closeModal(),
+        };
       }
       if(md.type==='recurso'){
         R.recursoIconHref=md.ricon; R.recursoLabel=md.rlabel;
