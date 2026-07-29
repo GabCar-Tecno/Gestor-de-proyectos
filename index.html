@@ -52,6 +52,9 @@ button{color:inherit}
     <symbol id="ic-deploy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 3v10"/><path d="M8 7l4-4 4 4"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>
     </symbol>
+    <symbol id="ic-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L21 2"/><path d="M18 5l2 2"/><path d="M15 8l2 2"/>
+    </symbol>
     <symbol id="ic-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 5a2 2 0 012-2h12a1 1 0 011 1v15a1 1 0 01-1 1H6a2 2 0 01-2-2V5z"/><path d="M8 3v18"/>
     </symbol>
@@ -340,9 +343,9 @@ button{color:inherit}
         </button>
         </sc-if>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
           <!-- Despliegues del proyecto -->
-          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:150px">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <div style="display:flex;align-items:center;gap:9px"><svg width="17" height="17" style="color:#35c0f0"><use href="#ic-deploy"></use></svg><span style="font-weight:600;font-size:15px">Despliegues</span></div>
               <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
@@ -373,6 +376,36 @@ button{color:inherit}
               </div>
             </button>
           </sc-for>
+        </div>
+
+        <!-- Accesos / credenciales del proyecto -->
+        <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;margin-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div style="display:flex;align-items:center;gap:9px"><svg width="17" height="17" style="color:#35c0f0"><use href="#ic-key"></use></svg><span style="font-weight:600;font-size:15px">Accesos</span></div>
+            <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ editCredenciales }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
+            </sc-if>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+            <sc-for list="{{ proyecto.credenciales }}" as="c" hint-placeholder-count="3">
+              <div style="background:#0c1428;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:7px;min-width:0">
+                  <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:#e9edf7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.label }}</span>
+                  <sc-if value="{{ c.hasEnv }}" hint-placeholder-val="{{ true }}"><span style="flex:none;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#35c0f0;background:rgba(53,192,240,.12);padding:2px 7px;border-radius:6px">{{ c.envLabel }}</span></sc-if>
+                </div>
+                <sc-if value="{{ c.hasUsername }}" hint-placeholder-val="{{ true }}"><div style="font-size:11.5px;color:#8a95b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Usuario: <span style="color:#c7d0ea;font-family:'JetBrains Mono',monospace">{{ c.username }}</span></div></sc-if>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#c7d0ea;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.secretText }}</span>
+                  <button onClick="{{ c.toggle }}" title="{{ c.toggleTitle }}" style="flex:none;width:26px;height:26px;border-radius:7px;background:none;border:1px solid rgba(255,255,255,.09);color:#8a95b6;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="13" height="13"><use href="{{ c.eyeHref }}"></use></svg></button>
+                  <button onClick="{{ c.copy }}" title="{{ c.copyTitle }}" style="flex:none;width:26px;height:26px;border-radius:7px;background:{{ c.copyBg }};border:1px solid {{ c.copyBorder }};color:{{ c.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="13" height="13"><use href="{{ c.copyIconHref }}"></use></svg></button>
+                  <sc-if value="{{ c.hasUrl }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ c.open }}" title="Abrir enlace" style="flex:none;width:26px;height:26px;border-radius:7px;background:none;border:1px solid rgba(255,255,255,.09);color:#8a95b6;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="12" height="12"><use href="#ic-ext"></use></svg></button>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ credsEmpty }}" hint-placeholder-val="{{ false }}"><div style="grid-column:1/-1;text-align:center;padding:22px;color:#66739a;font-size:13px">Este proyecto aún no tiene accesos registrados.</div></sc-if>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -636,6 +669,36 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- accesos / credenciales del proyecto (N filas) -->
+          <sc-if value="{{ modalCredenciales }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ form.credRows }}" as="c" hint-placeholder-count="2">
+                <div style="background:#0c1428;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;gap:10px;align-items:flex-start">
+                    <input value="{{ c.label }}" onInput="{{ c.onLabel }}" placeholder="Nombre del acceso (ej: Servidor prod)" style="flex:1;min-width:0;background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:13px;outline:none" style-focus="border-color:#35c0f0"/>
+                    <sc-if value="{{ c.canRemove }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ c.remove }}" title="Quitar acceso" style="flex:none;width:36px;height:36px;border-radius:9px;background:none;border:1px solid rgba(255,255,255,.1);color:#8a95b6;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"><svg width="14" height="14"><use href="#ic-x"></use></svg></button>
+                    </sc-if>
+                  </div>
+                  <select value="{{ c.environmentId }}" onChange="{{ c.onEnv }}" style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:13px">
+                    <sc-for list="{{ c.envOptions }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                  </select>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <input value="{{ c.username }}" onInput="{{ c.onUsername }}" placeholder="Usuario (opcional)" style="flex:1;min-width:130px;background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                    <div style="position:relative;flex:1;min-width:130px">
+                      <input type="{{ c.secretType }}" value="{{ c.secret }}" onInput="{{ c.onSecret }}" placeholder="Contraseña" style="width:100%;background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 38px 10px 11px;color:#e9edf7;font-size:13px;outline:none;box-sizing:border-box;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                      <button type="button" onClick="{{ c.toggleSecret }}" tabindex="-1" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:0;color:#8a95b6;cursor:pointer;display:flex;padding:2px" style-hover="color:#35c0f0"><svg width="16" height="16"><use href="{{ c.eyeHref }}"></use></svg></button>
+                    </div>
+                  </div>
+                  <input value="{{ c.url }}" onInput="{{ c.onUrl }}" placeholder="Enlace del sistema (opcional)" style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace" style-focus="border-color:#35c0f0"/>
+                  <textarea value="{{ c.notes }}" onInput="{{ c.onNotes }}" placeholder="Notas (opcional)" rows="2" style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:13px;outline:none;resize:vertical;font-family:inherit" style-focus="border-color:#35c0f0"></textarea>
+                </div>
+              </sc-for>
+              <button onClick="{{ addCredRow }}" style="align-self:flex-start;cursor:pointer;background:none;border:1.5px dashed rgba(255,255,255,.14);border-radius:10px;color:#66739a;font-size:12.5px;padding:9px 14px;display:inline-flex;align-items:center;gap:7px" style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"><svg width="14" height="14"><use href="#ic-plus"></use></svg>Agregar acceso</button>
+              <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
+            </div>
+          </sc-if>
+
           <!-- links de GitHub (solo lectura, cliente) -->
           <sc-if value="{{ modalVerGithubLinks }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:12px">
@@ -741,7 +804,7 @@ class Component extends DCLogic {
       loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
       recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       showLoginPass:false, showRecoveryPass1:false, showRecoveryPass2:false, modalShowPass:{},
-      data:[], statuses:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false, apiFullscreen:false,
+      data:[], statuses:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false, apiFullscreen:false, credShown:{},
       narrow: (typeof window!=='undefined' && window.innerWidth<=760),
     };
   }
@@ -789,7 +852,7 @@ class Component extends DCLogic {
   async loadData(){
     this.setState({loadError:''});
     const sb=this._sb;
-    const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st] = await Promise.all([
+    const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred] = await Promise.all([
       sb.from('companies').select('*'),
       sb.from('projects').select('*'),
       sb.from('project_deployments').select('*'),
@@ -800,8 +863,9 @@ class Component extends DCLogic {
       sb.from('requirement_blockers').select('*'),
       sb.from('environments').select('*'),
       sb.from('statuses').select('*'),
+      sb.from('project_credentials').select('*'),
     ]);
-    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st].find(r=>r.error);
+    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
     // catalogos parametricos
@@ -832,6 +896,7 @@ class Component extends DCLogic {
             diagramas:{url:p.diagrams_url||''},
             manualUsuario:{url:p.user_manual_url||''},
             github:(gh.data||[]).filter(g=>g.project_id===p.id).map(g=>({id:g.id,label:g.label||'',url:g.url||''})),
+            credenciales:(cred.data||[]).filter(x=>x.project_id===p.id).map(x=>{ const e=x.environment_id?envById[x.environment_id]:null; return {id:x.id, environmentId:x.environment_id||null, envLabel:e?(e.label||e.code):'', label:x.label||'', username:x.username||'', secret:x.secret||'', url:x.url||'', notes:x.notes||''}; }),
             apiSpec: p.api_spec_source ? {source:p.api_spec_source, url:p.api_spec_url||'', json:p.api_spec_json?JSON.stringify(p.api_spec_json):''} : {},
           },
           requerimientos:reqs,
@@ -951,6 +1016,8 @@ class Component extends DCLogic {
     }
   }
 
+  toggleCredShown(id){ this.setState(s=>({credShown:{...s.credShown,[id]:!s.credShown[id]}})); }
+
   // ---------- MODALS ----------
   openModal(cfg){ if(!this.isDev()) return; this.setState({modal:cfg, form:cfg.form||{}}); }
   closeModal(){ this.setState({modal:null, form:{}}); }
@@ -960,6 +1027,10 @@ class Component extends DCLogic {
   setGithubLinkRow(i,k,v){ this.setState(s=>{ const rows=s.form.links.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,links:rows}}; }); }
   addGithubLinkRow(){ this.setState(s=>({form:{...s.form,links:[...s.form.links,{label:'',url:''}]}})); }
   removeGithubLinkRow(i){ this.setState(s=>({form:{...s.form,links:s.form.links.filter((r,j)=>j!==i)}})); }
+  editCredenciales(){ if(!this.isDev()) return; const p=this.proyecto(); const rows=(p.recursos.credenciales||[]).map(c=>({environmentId:c.environmentId||'',label:c.label||'',username:c.username||'',secret:c.secret||'',url:c.url||'',notes:c.notes||''})); this.openModal({type:'credenciales',mode:'editar',title:'Accesos del proyecto',form:{credRows:rows.length?rows:[{environmentId:'',label:'',username:'',secret:'',url:'',notes:''}]}}); this.setState({modalShowPass:{}}); }
+  setCredRow(i,k,v){ this.setState(s=>{ const rows=s.form.credRows.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,credRows:rows}}; }); }
+  addCredRow(){ this.setState(s=>({form:{...s.form,credRows:[...s.form.credRows,{environmentId:'',label:'',username:'',secret:'',url:'',notes:''}]}})); }
+  removeCredRow(i){ this.setState(s=>({form:{...s.form,credRows:s.form.credRows.filter((r,j)=>j!==i)}})); }
 
   openApiDoc(){ const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:'apidoc', apiTab:spec.source||'url', apiUrlInput:spec.url||'', apiJsonInput:spec.json||'', apiErr:'', apiHasRender:!!spec.source}); if(spec.source){ setTimeout(()=>this.renderSpec(spec),90); } }
   setApiTab(t){ this.setState({apiTab:t,apiErr:''}); }
@@ -1120,6 +1191,14 @@ class Component extends DCLogic {
         if(error) throw error;
         const rows=(f.links||[]).filter(l=>(l.label&&l.label.trim())||(l.url&&l.url.trim())).map(l=>({ id:this.gid('gl'), project_id:this.state.proyectoId, label:l.label||'', url:l.url||'' }));
         if(rows.length){ ({ error } = await sb.from('project_github_links').insert(rows)); if(error) throw error; }
+      } else if(t==='credenciales'){
+        const nonEmpty=(f.credRows||[]).filter(c=>((c.label||'').trim()||(c.username||'').trim()||(c.secret||'').trim()||(c.url||'').trim()||(c.notes||'').trim()));
+        if(nonEmpty.some(c=>!(c.label||'').trim())){ this.setState({saveStatus:'idle', modalErr:'Cada acceso necesita un nombre.'}); return; }
+        let { error } = await sb.from('project_credentials').delete().eq('project_id', this.state.proyectoId);
+        if(error) throw error;
+        const nowIso=new Date().toISOString();
+        const rows=nonEmpty.map(c=>({ id:this.gid('cred'), project_id:this.state.proyectoId, environment_id:(c.environmentId||null), label:(c.label||'').trim(), username:c.username||'', secret:c.secret||'', url:c.url||'', notes:c.notes||'', updated_at:nowIso }));
+        if(rows.length){ ({ error } = await sb.from('project_credentials').insert(rows)); if(error) throw error; }
       } else if(t==='ambiente'){
         const code=(f.code||'').trim(); if(!code){ this.setState({saveStatus:'idle', modalErr:'El código es obligatorio.'}); return; }
         const stage=f.stage||'';
@@ -1248,7 +1327,7 @@ class Component extends DCLogic {
       viewRequerimientos:v==='requerimientos', viewRequerimiento:v==='requerimiento', viewApidoc:v==='apidoc',
       stop:(e)=>this.stop(e), closeModal:()=>this.closeModal(),
       addDoc:()=>this.addDoc(), addDespliegue:()=>this.addDespliegue(), addBloqueante:()=>this.addBloqueante(),
-      editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(),
+      editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(), editCredenciales:()=>this.editCredenciales(),
       f_url:(e)=>this.setForm('url',e.target.value),
       isDev,
     };
@@ -1389,7 +1468,27 @@ class Component extends DCLogic {
             copyTitle: copied?'Copiado':'Copiar URL' };
         }),
         recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
+        credenciales:(rec.credenciales||[]).map(c=>{
+          const shown=!!s.credShown[c.id]; const k='cred:'+c.id; const copied=s.copiedKey===k;
+          return { label:c.label||'(sin nombre)',
+            hasEnv:!!c.envLabel, envLabel:c.envLabel||'',
+            hasUsername:!!(c.username&&c.username.trim()), username:c.username||'',
+            hasNotes:!!(c.notes&&c.notes.trim()), notes:c.notes||'',
+            hasUrl:!!(c.url&&c.url.trim()),
+            secretText: shown ? (c.secret||'—') : '••••••••',
+            eyeHref: shown?'#ic-eye-off':'#ic-eye',
+            toggleTitle: shown?'Ocultar':'Mostrar',
+            toggle:()=>this.toggleCredShown(c.id),
+            open:()=>this.openExt(c.url),
+            copy:()=>this.copyToClipboard(c.secret,k),
+            copyIconHref: copied?'#ic-check':'#ic-copy',
+            copyColor: copied?'#39d39b':'#66739a',
+            copyBg: copied?'rgba(57,211,155,.12)':'transparent',
+            copyBorder: copied?'rgba(57,211,155,.4)':'rgba(255,255,255,.09)',
+            copyTitle: copied?'Copiado':'Copiar contraseña' };
+        }),
       };
+      R.credsEmpty=!(rec.credenciales||[]).length;
 
       const fdef=[['todos','Todos',null]].concat(ord.canonical.map(k=>[k,this.estMeta(k)[0],k]));
       R.filterChips=fdef.map(([key,label,est])=>{ const count= est? counts[est] : reqs.length; const active=s.filter===key; return { label,count, set:()=>this.setFilter(key), border: active?'rgba(53,192,240,.55)':'rgba(255,255,255,.1)', bg: active?'rgba(53,192,240,.14)':'transparent', color: active?'#35c0f0':'#b7c0dd' }; });
@@ -1431,12 +1530,13 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm')?'520px':'440px';
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
       R.modalVerDespliegue = md.type==='verDespliegue';
       R.modalGithubLinks = md.type==='githubLinks';
+      R.modalCredenciales = md.type==='credenciales';
       R.modalVerGithubLinks = md.type==='verGithubLinks';
       R.modalPromoteConfirm = md.type==='promoteConfirm';
       R.modalAviso = md.type==='aviso';
@@ -1538,6 +1638,26 @@ class Component extends DCLogic {
             open:()=>this.openExt(l.url) };
         });
         R.addGithubLinkRow=()=>this.addGithubLinkRow();
+      }
+      if(md.type==='credenciales'){
+        const rows=s.form.credRows||[];
+        const credEnvOptions=[{value:'',label:'— General (sin ambiente)'}].concat(ambienteOptions);
+        R.form.credRows=rows.map((c,i)=>{
+          const shown=!!s.modalShowPass['cred-'+i];
+          return { label:c.label||'', environmentId:c.environmentId||'', username:c.username||'', secret:c.secret||'', url:c.url||'', notes:c.notes||'',
+            envOptions:credEnvOptions,
+            onLabel:(e)=>this.setCredRow(i,'label',e.target.value),
+            onEnv:(e)=>this.setCredRow(i,'environmentId',e.target.value),
+            onUsername:(e)=>this.setCredRow(i,'username',e.target.value),
+            onSecret:(e)=>this.setCredRow(i,'secret',e.target.value),
+            onUrl:(e)=>this.setCredRow(i,'url',e.target.value),
+            onNotes:(e)=>this.setCredRow(i,'notes',e.target.value),
+            secretType: shown?'text':'password',
+            eyeHref: shown?'#ic-eye-off':'#ic-eye',
+            toggleSecret:()=>this.toggleModalShowPass('cred-'+i),
+            canRemove: rows.length>1, remove:()=>this.removeCredRow(i) };
+        });
+        R.addCredRow=()=>this.addCredRow();
       }
     }
     return R;
