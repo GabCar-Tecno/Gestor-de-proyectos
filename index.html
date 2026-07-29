@@ -109,6 +109,15 @@ button{color:inherit}
     <symbol id="ic-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M21 16v3a2 2 0 01-2 2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/>
     </symbol>
+    <symbol id="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13" y="4" width="7" height="7" rx="1.4"/><rect x="4" y="13" width="7" height="7" rx="1.4"/><rect x="13" y="13" width="7" height="7" rx="1.4"/>
+    </symbol>
+    <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>
+    </symbol>
+    <symbol id="ic-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -268,8 +277,13 @@ button{color:inherit}
             <h1 style="margin:0;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">{{ empresa.nombre }}</h1>
             <p style="margin:2px 0 0;color:#8a95b6;font-size:13.5px">{{ empresa.proyectosLabel }}</p>
           </div>
+          <div style="margin-left:auto;flex:none;display:inline-flex;background:#0c1428;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:3px;gap:2px">
+            <button onClick="{{ setProjectsGrid }}" title="Vista de tarjetas" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvGridBg }};color:{{ pvGridColor }}"><svg width="16" height="16"><use href="#ic-grid"></use></svg></button>
+            <button onClick="{{ setProjectsListView }}" title="Vista de lista" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvListBg }};color:{{ pvListColor }}"><svg width="16" height="16"><use href="#ic-list"></use></svg></button>
+          </div>
         </div>
 
+        <sc-if value="{{ projectsGrid }}" hint-placeholder-val="{{ true }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
           <sc-for list="{{ proyectosList }}" as="p" hint-placeholder-count="2">
             <button onClick="{{ p.open }}" style="text-align:left;cursor:pointer;background:linear-gradient(160deg,#131c33,#0f1729);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;transition:border-color .18s,transform .18s" style-hover="border-color:rgba(53,192,240,.45);transform:translateY(-3px)">
@@ -290,6 +304,22 @@ button{color:inherit}
             </button>
           </sc-for>
         </div>
+        </sc-if>
+
+        <sc-if value="{{ projectsListView }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ proyectosList }}" as="p" hint-placeholder-count="3">
+            <button onClick="{{ p.open }}" style="text-align:left;cursor:pointer;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:border-color .16s" style-hover="border-color:rgba(53,192,240,.4)">
+              <span style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px;min-width:0">
+                <span style="font-size:15px;font-weight:600">{{ p.nombre }}</span>
+                <span style="font-size:12.5px;color:#8a95b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.descripcion }}</span>
+              </span>
+              <span style="flex:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:{{ p.bloqColor }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.bloqColor }}"></span><strong style="font-weight:600">{{ p.bloqCount }}</strong> bloqueantes</span>
+              <span style="flex:none;font-size:12px;color:#8a95b6">Último despliegue · {{ p.ultimoDespliegue }}</span>
+            </button>
+          </sc-for>
+        </div>
+        </sc-if>
 
         <sc-if value="{{ showAmbientes }}" hint-placeholder-val="{{ false }}">
           <div style="margin-top:32px">
@@ -414,14 +444,29 @@ button{color:inherit}
     <sc-if value="{{ viewRequerimientos }}" hint-placeholder-val="{{ true }}">
       <div style="animation:vwIn .3s ease">
         <div style="margin-bottom:20px"><h1 style="margin:0 0 3px;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">Requerimientos</h1><p style="margin:0;color:#8a95b6;font-size:13.5px">{{ proyecto.nombre }}</p></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
-          <sc-for list="{{ filterChips }}" as="f" hint-placeholder-count="5">
-            <button onClick="{{ f.set }}" style="cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px">{{ f.label }}<span style="background:rgba(255,255,255,.1);border-radius:12px;padding:0 7px;font-size:11px;min-width:18px;text-align:center">{{ f.count }}</span></button>
-          </sc-for>
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:0">
+            <sc-for list="{{ filterChips }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.set }}" style="cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px">{{ f.label }}<span style="background:rgba(255,255,255,.1);border-radius:12px;padding:0 7px;font-size:11px;min-width:18px;text-align:center">{{ f.count }}</span></button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ reqSelToggle }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgba(255,255,255,.14);background:none;color:#8a95b6;padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"><svg width="14" height="14"><use href="#ic-check"></use></svg>{{ reqSelToggleLabel }}</button>
+          </sc-if>
         </div>
+        <sc-if value="{{ reqSelBarShow }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(43,59,214,.2),rgba(35,169,224,.12));border:1px solid rgba(53,192,240,.3);border-radius:12px;padding:12px 16px;margin-bottom:14px">
+            <span style="font-size:13px;font-weight:600;color:#e9edf7">{{ reqSelBarLabel }}</span>
+            <button onClick="{{ clearReqSelection }}" style="background:none;border:0;color:#8a95b6;cursor:pointer;font-size:12.5px;padding:4px 6px" style-hover="color:#35c0f0">Limpiar</button>
+            <button onClick="{{ openBatchPromote }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)"><svg width="14" height="14"><use href="#ic-deploy"></use></svg>Promover seleccionados</button>
+          </div>
+        </sc-if>
         <div style="display:flex;flex-direction:column;gap:10px">
           <sc-for list="{{ reqList }}" as="r" hint-placeholder-count="4">
             <button onClick="{{ r.open }}" style="text-align:left;cursor:pointer;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:border-color .16s" style-hover="border-color:rgba(53,192,240,.4)">
+              <sc-if value="{{ r.selectMode }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ r.checkBorder }};background:{{ r.checkBg }};display:inline-flex;align-items:center;justify-content:center;color:#fff"><sc-if value="{{ r.selected }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13"><use href="#ic-check"></use></svg></sc-if></span>
+              </sc-if>
               <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#66739a;flex:none">{{ r.code }}</span>
               <span style="flex:1;min-width:180px;font-size:15px;font-weight:500">{{ r.titulo }}</span>
               <span style="display:inline-flex;align-items:center;gap:7px;flex:none;color:#8a95b6;font-size:12.5px"><span style="width:22px;height:22px;border-radius:50%;background:#22304f;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;color:#c7d0ea;font-weight:600">{{ r.iniciales }}</span>{{ r.responsable }}</span>
@@ -442,9 +487,11 @@ button{color:inherit}
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#66739a;margin-bottom:5px">{{ req.code }}</div>
             <h1 style="margin:0;font-size:clamp(21px,2.7vw,27px);font-weight:700;letter-spacing:-.4px;line-height:1.2">{{ req.titulo }}</h1>
           </div>
-          <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span style="font-size:12.5px;font-weight:600;color:{{ req.estColor }};background:{{ req.estBg }};padding:6px 13px;border-radius:20px">{{ req.estLabel }}</span>
             <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ promoteReq }}" disabled="{{ promoteReqDisabled }}" title="{{ promoteReqTitle }}" style="display:inline-flex;align-items:center;gap:6px;background:{{ promoteReqBg }};border:1px solid {{ promoteReqBorder }};color:{{ promoteReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"><svg width="14" height="14"><use href="#ic-deploy"></use></svg>Promover</button>
+            <button onClick="{{ markReqBlocked }}" disabled="{{ blockReqDisabled }}" title="{{ blockReqTitle }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid {{ blockReqBorder }};color:{{ blockReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"><svg width="14" height="14"><use href="#ic-alert"></use></svg>Marcar bloqueado</button>
             <button onClick="{{ editReq }}" style="background:#1a2340;border:1px solid rgba(255,255,255,.1);color:#c7d0ea;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:500" style-hover="border-color:rgba(53,192,240,.4)">Editar</button>
             </sc-if>
           </div>
@@ -492,6 +539,7 @@ button{color:inherit}
                 <button onClick="{{ d.copy }}" title="{{ d.copyTitle }}" style="flex:none;width:32px;height:32px;border-radius:8px;background:{{ d.copyBg }};border:1px solid {{ d.copyBorder }};color:{{ d.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="14" height="14"><use href="{{ d.copyIconHref }}"></use></svg></button>
                 <button onClick="{{ d.open }}" style="flex:none;display:inline-flex;align-items:center;gap:6px;background:#1a2340;border:1px solid rgba(255,255,255,.1);color:#c7d0ea;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="border-color:rgba(53,192,240,.4)">Abrir<svg width="13" height="13"><use href="#ic-ext"></use></svg></button>
                 <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ d.sendDiscord }}" title="Enviar a Discord" style="flex:none;display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid rgba(255,255,255,.1);color:#8a95b6;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"><svg width="13" height="13"><use href="#ic-send"></use></svg>Discord</button>
                 <button onClick="{{ d.del }}" style="flex:none;background:none;border:0;color:#66739a;cursor:pointer;padding:4px;display:flex" style-hover="color:#f97b7b"><svg width="15" height="15"><use href="#ic-x"></use></svg></button>
                 </sc-if>
               </div>
@@ -742,6 +790,7 @@ button{color:inherit}
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button onClick="{{ verDespliegue.openUrl }}" style="display:inline-flex;align-items:center;gap:7px;height:36px;background:#1a2340;border:1px solid rgba(255,255,255,.1);color:#c7d0ea;cursor:pointer;padding:0 15px;border-radius:9px;font-size:13px;font-weight:500" style-hover="border-color:rgba(53,192,240,.4)">Abrir ambiente<svg width="13" height="13"><use href="#ic-ext"></use></svg></button>
                 <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ verDespliegue.sendDiscord }}" style="display:inline-flex;align-items:center;gap:7px;height:36px;background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:0 15px;border-radius:9px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"><svg width="14" height="14"><use href="#ic-send"></use></svg>Enviar a Discord</button>
                 <button onClick="{{ verDespliegue.editAll }}" style="height:36px;background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:0 15px;border-radius:9px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar despliegues</button>
                 </sc-if>
               </div>
@@ -766,16 +815,41 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <!-- confirmación de promoción múltiple (batch) -->
+          <sc-if value="{{ modalBatchPromote }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.55">{{ batch.text }}</p>
+              <sc-if value="{{ batch.skippedShow }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:flex-start;gap:9px;background:rgba(245,181,68,.1);border:1px solid rgba(245,181,68,.25);border-radius:10px;padding:11px 13px;color:#f5b544;font-size:12.5px;line-height:1.5"><svg width="15" height="15" style="flex:none;margin-top:1px"><use href="#ic-alert"></use></svg><span>{{ batch.skippedText }}</span></div>
+              </sc-if>
+              <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
+            </div>
+          </sc-if>
+
           <!-- aviso opcional a Discord -->
           <sc-if value="{{ modalDiscord }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:16px">
               <p style="margin:0;font-size:13.5px;color:#c7d0ea;line-height:1.55">El cambio de ambiente y la versión ya quedaron guardados. Podés avisar al canal de Discord (opcional).</p>
-              <sc-if value="{{ discord.hasCreds }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ discord.hasEnvCreds }}" hint-placeholder-val="{{ true }}">
                 <div style="display:flex;flex-direction:column;gap:8px">
-                  <span style="font-size:12px;font-weight:500;color:#8a95b6">Usuarios de prueba a incluir</span>
-                  <sc-for list="{{ discord.creds }}" as="c" hint-placeholder-count="2">
+                  <span style="font-size:12px;font-weight:500;color:#8a95b6">Usuarios del ambiente</span>
+                  <sc-for list="{{ discord.envCreds }}" as="c" hint-placeholder-count="1">
                     <button type="button" onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:11px;text-align:left;background:{{ c.boxBg }};border:1px solid {{ c.boxBorder }};border-radius:10px;padding:10px 12px;cursor:pointer">
-                      <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"><svg width="12" height="12"><use href="{{ c.checkHref }}"></use></svg></span>
+                      <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"><sc-if value="{{ c.selected }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12"><use href="#ic-check"></use></svg></sc-if></span>
+                      <span style="flex:1;min-width:0">
+                        <span style="display:block;font-size:13px;color:#e9edf7">{{ c.label }}</span>
+                        <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#8a95b6">{{ c.username }}</span>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ discord.hasGenCreds }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span style="font-size:12px;font-weight:500;color:#8a95b6">Usuarios generales</span>
+                  <sc-for list="{{ discord.genCreds }}" as="c" hint-placeholder-count="1">
+                    <button type="button" onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:11px;text-align:left;background:{{ c.boxBg }};border:1px solid {{ c.boxBorder }};border-radius:10px;padding:10px 12px;cursor:pointer">
+                      <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"><sc-if value="{{ c.selected }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12"><use href="#ic-check"></use></svg></sc-if></span>
                       <span style="flex:1;min-width:0">
                         <span style="display:block;font-size:13px;color:#e9edf7">{{ c.label }}</span>
                         <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#8a95b6">{{ c.username }}</span>
@@ -808,6 +882,16 @@ button{color:inherit}
           <button onClick="{{ discord.skip }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Ahora no</button>
           <button onClick="{{ discord.send }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">{{ discord.sendLabel }}</button>
           </sc-if>
+          <sc-if value="{{ modalBatchPromote }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ batchCancel }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500">Cancelar</button>
+          <sc-if value="{{ batch.hasAmb }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ batchOnlyStatus }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#8a95b6;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Solo cambiar estado</button>
+          <button onClick="{{ batchUpdate }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">Actualizar proyecto</button>
+          </sc-if>
+          <sc-if value="{{ batch.stateOnly }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ batchOnlyStatus }}" style="background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 18px -6px rgba(43,59,214,.7)">Promover</button>
+          </sc-if>
+          </sc-if>
           <sc-if value="{{ modalGenericFooter }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ closeModal }}" style="background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500">{{ modalSecondaryLabel }}</button>
           <sc-if value="{{ modalShowSave }}" hint-placeholder-val="{{ true }}">
@@ -829,6 +913,7 @@ class Component extends DCLogic {
     this.state = {
       view:'empresas', empresaId:null, proyectoId:null, reqId:null,
       reqTab:'documentos', filter:'todos', modal:null, form:{},
+      projectsView:'grid', reqSelectMode:false, reqSelected:{},
       apiTab:'url', apiUrlInput:'', apiJsonInput:'', apiErr:'', apiHasRender:false,
       session:null, authChecked:false, profileRole:null,
       loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
@@ -915,7 +1000,7 @@ class Component extends DCLogic {
         const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
           id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:(r.status_id||r.status),
           documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
-          despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||''})),
+          despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
           bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
         }));
         return {
@@ -1132,8 +1217,8 @@ class Component extends DCLogic {
   }
   editGithubLinks(){ if(!this.isDev()) return; const p=this.proyecto(); const links=p.recursos.github.map(g=>({label:g.label,url:g.url})); this.openModal({type:'githubLinks',mode:'editar',title:'Repositorios de GitHub',form:{links:links.length?links:[{label:'',url:''}]}}); }
   openVerGithubLinks(){ const p=this.proyecto(); this.setState({modal:{type:'verGithubLinks', title:'Repositorios de GitHub', links:p.recursos.github}, form:{}}); }
-  openVerDespliegue(env,url,version){
-    this.setState({modal:{type:'verDespliegue', title:'Despliegue '+env, envName:env, url:url||'', version:version||''}, form:{}});
+  openVerDespliegue(env,url,version,environmentId){
+    this.setState({modal:{type:'verDespliegue', title:'Despliegue '+env, envName:env, environmentId:environmentId||null, url:url||'', version:version||''}, form:{}});
   }
   openRecurso(key,label,icon){ const p=this.proyecto(); this.openModal({type:'recurso',mode:'editar',rkey:key,rlabel:label,ricon:icon,title:label,form:{url:(p.recursos[key]||{}).url||''}}); }
 
@@ -1260,7 +1345,9 @@ class Component extends DCLogic {
     const p=this.proyecto();
     const envRow=(p.recursos.despliegues.find(d=>d.environmentId===targetAmb.id))||{url:'',version:''};
     const req=m.mode==='editar' ? this.req() : null;
-    const reqEnvRow=req ? ((req.despliegues||[]).find(d=>d.environmentId===targetAmb.id)||{}) : {};
+    // El prellenado sale del despliegue MÁS RECIENTE del requerimiento a ese ambiente (mayor updated_at).
+    const reqDeps=req ? (req.despliegues||[]).filter(d=>d.environmentId===targetAmb.id) : [];
+    const reqEnvRow=reqDeps.reduce((mx,d)=>(!mx || (d.updatedAt||'')>(mx.updatedAt||'')) ? d : mx, null) || {};
     this.setState({
       modal:{ type:'promoteConfirm', title:'Actualizar ambiente',
         targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
@@ -1317,19 +1404,23 @@ class Component extends DCLogic {
 
   // ---------- AVISO A DISCORD ----------
   openDiscordStep({projectId, projectName, environmentId, envCode, version, artifactUrl, requirementTitle}){
+    if(!this.isDev()) return;
     const p=this.proyecto();
     const nombre = projectName || (p&&p.nombre) || '';
     const amb = (((this.empresa()||{}).ambientes)||[]).find(a=>a.id===environmentId) || {};
     const embedColor = this.estMeta(amb.stage||'')[1];
-    // Solo credenciales del ambiente destino o generales (sin ambiente).
-    const creds = (((p&&p.recursos.credenciales))||[])
-      .filter(c=>c.environmentId===environmentId || !c.environmentId)
-      .map(c=>({ id:c.id, label:c.label||'(sin etiqueta)', username:c.username||'', secret:c.secret||'', envLabel:c.envLabel||'' }));
+    // Dos grupos: usuarios del ambiente destino (pre-chequeados) y usuarios generales (sin ambiente, desmarcados).
+    const allCreds = (((p&&p.recursos.credenciales))||[]);
+    const mapCred = (c,group)=>({ id:c.id, label:c.label||'(sin etiqueta)', username:c.username||'', secret:c.secret||'', envLabel:c.envLabel||'', group });
+    const envCreds = allCreds.filter(c=>c.environmentId && c.environmentId===environmentId).map(c=>mapCred(c,'env'));
+    const genCreds = allCreds.filter(c=>!c.environmentId).map(c=>mapCred(c,'general'));
+    const creds = envCreds.concat(genCreds);
+    const sel={}; envCreds.forEach(c=>{ sel[c.id]=true; });
     this.setState({
       modal:{ type:'discord', title:'Enviar aviso a Discord',
         projectId, projectName:nombre, envCode, environmentId,
         version, artifactUrl, requirementTitle, embedColor, creds, sendState:'idle' },
-      form:{ discordSel:{} }, modalErr:'',
+      form:{ discordSel:sel }, modalErr:'',
     });
   }
   toggleDiscordCred(id){
@@ -1366,6 +1457,121 @@ class Component extends DCLogic {
       this.setState({modal:{...this.state.modal, sendState:'error'}, modalErr:'No se pudo enviar a Discord: '+(e.message||e)+'. El cambio de ambiente y la versión ya quedaron guardados; podés reintentar.'});
       console.error(e);
     }finally{ this._busy=false; }
+  }
+
+  // ---------- VISTA DE PROYECTOS (grid / lista) ----------
+  setProjectsView(v){ this.setState({projectsView:v}); }
+
+  // ---------- SELECCIÓN MÚLTIPLE DE REQUERIMIENTOS ----------
+  toggleReqSelectMode(){ this.setState(s=>({reqSelectMode:!s.reqSelectMode, reqSelected: s.reqSelectMode ? {} : s.reqSelected})); }
+  toggleReqSelected(id){ this.setState(s=>{ const sel={...(s.reqSelected||{})}; if(sel[id]) delete sel[id]; else sel[id]=true; return {reqSelected:sel}; }); }
+  clearReqSelection(){ this.setState({reqSelected:{}}); }
+
+  // ---------- PROMOVER / BLOQUEAR (acciones directas) ----------
+  blockedStatusId(){
+    const lat=this.statusOrder().lat; if(!lat.length) return null;
+    const byName=lat.find(id=>{ const st=(this.state.statuses||[]).find(x=>x.id===id); const t=((st&&(st.label||st.id))||'').toLowerCase(); return t.includes('bloq'); });
+    return byName || lat[0];
+  }
+  async saveReqStatus(reqId, statusId){
+    if(!this.isDev()||this._busy) return; this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      const { error } = await this._sb.from('requirements').update({ status:statusId, status_id:statusId, status_updated_at:new Date().toISOString() }).eq('id', reqId);
+      this.setState({saveStatus:error?'error':'saved'});
+      if(!error) await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  promoteReqDirect(){
+    if(!this.isDev()) return;
+    const req=this.req(); if(!req) return;
+    const flow=this.statusOrder().flow;
+    const i=flow.indexOf(req.estado);
+    if(i<0 || i>=flow.length-1) return; // fuera del flujo o ya en el último estado
+    const next=flow[i+1];
+    const targetAmb=((this.empresa()||{}).ambientes||[]).find(a=>a.stage===next);
+    if(targetAmb){
+      this.openPromoteConfirm({mode:'editar', id:req.id}, {titulo:req.titulo, responsable:req.responsable, codigo:req.codigo, estado:next}, targetAmb);
+    } else {
+      this.saveReqStatus(req.id, next); // el siguiente estado no tiene ambiente: solo se avanza el estado
+    }
+  }
+  markReqBlocked(){
+    if(!this.isDev()) return;
+    const req=this.req(); if(!req) return;
+    const blockId=this.blockedStatusId();
+    if(!blockId || req.estado===blockId) return;
+    this.saveReqStatus(req.id, blockId);
+  }
+
+  // ---------- PROMOCIÓN MÚLTIPLE (batch) ----------
+  openBatchPromote(){
+    if(!this.isDev()) return;
+    const proy=this.proyecto(); if(!proy) return;
+    const flow=this.statusOrder().flow;
+    const sel=this.state.reqSelected||{};
+    const selReqs=(proy.requerimientos||[]).filter(r=>sel[r.id]);
+    if(!selReqs.length) return;
+    const promotable=[], skipped=[];
+    selReqs.forEach(r=>{ const i=flow.indexOf(r.estado); if(i>=0 && i<flow.length-1) promotable.push({id:r.id, next:flow[i+1]}); else skipped.push(r); });
+    if(!promotable.length){ this.setState({modal:{type:'aviso',title:'Nada para promover',mensaje:'Ninguno de los requerimientos seleccionados se puede promover (ya están en el último estado o fuera del flujo).'}, form:{}}); return; }
+    const distinctNext=[...new Set(promotable.map(p=>p.next))];
+    const ambs=((this.empresa()||{}).ambientes)||[];
+    let targetStatusId=null, amb=null, mixed=distinctNext.length>1;
+    if(!mixed){ targetStatusId=distinctNext[0]; amb=ambs.find(a=>a.stage===targetStatusId)||null; }
+    const stateOnly = mixed || !amb;
+    this.setState({
+      modal:{ type:'batchPromote', title:'Promover requerimientos',
+        targetStatusId, targetEnv:amb?amb.code:'', targetEnvId:amb?amb.id:null, hasAmb:!!amb,
+        estLabel: mixed?'':this.estMeta(targetStatusId)[0], mixed,
+        nextById: promotable.reduce((a,p)=>{a[p.id]=p.next;return a;},{}),
+        reqIds: promotable.map(p=>p.id), count:promotable.length, skippedCount:skipped.length, stateOnly },
+      form:{}, modalErr:'',
+    });
+  }
+  async confirmBatchPromote(updateDeployment){
+    if(this._busy) return; this._busy=true;
+    this.setState({saveStatus:'saving', modalErr:''});
+    const md=this.state.modal, sb=this._sb, nowIso=new Date().toISOString();
+    const proy=this.proyecto();
+    try{
+      const reqs=(proy&&proy.requerimientos)||[];
+      const envId=md.targetEnvId, envCode=md.targetEnv;
+      // 1) Avanzar el estado de cada requerimiento a su siguiente estado del flujo.
+      for(const rid of md.reqIds){
+        const next=md.nextById[rid]; if(!next) continue;
+        const { error } = await sb.from('requirements').update({ status:next, status_id:next, status_updated_at:nowIso }).eq('id', rid);
+        if(error) throw error;
+      }
+      // 2) Actualizar despliegues solo si se pidió y hay un ambiente destino único.
+      if(updateDeployment && envId){
+        let batchWinner=null;
+        for(const rid of md.reqIds){
+          const r=reqs.find(x=>x.id===rid); if(!r) continue;
+          const deps=(r.despliegues||[]).filter(d=>d.environmentId===envId);
+          if(!deps.length) continue; // sin despliegue a ese ambiente: solo estado, no aporta link
+          const latest=deps.reduce((mx,d)=>(!mx||(d.updatedAt||'')>(mx.updatedAt||''))?d:mx, null);
+          if(latest && (!batchWinner || (latest.updatedAt||'')>(batchWinner.updatedAt||''))) batchWinner={url:latest.url||'', version:latest.version||'', updatedAt:latest.updatedAt||''};
+          let { error } = await sb.from('requirement_deployments').delete().eq('requirement_id', rid).eq('environment_id', envId);
+          if(error) throw error;
+          ({ error } = await sb.from('requirement_deployments').insert({ id:this.gid('x'), requirement_id:rid, environment_id:envId, env:envCode, url:latest.url||'', version:latest.version||'', updated_at:nowIso }));
+          if(error) throw error;
+        }
+        if(batchWinner){
+          let { error } = await sb.from('project_deployments').delete().eq('project_id', this.state.proyectoId).eq('environment_id', envId);
+          if(error) throw error;
+          ({ error } = await sb.from('project_deployments').insert({ id:this.gid('x'), project_id:this.state.proyectoId, environment_id:envId, env:envCode, url:batchWinner.url, version:batchWinner.version, updated_at:nowIso }));
+          if(error) throw error;
+        }
+      }
+      this.setState({saveStatus:'saved', reqSelectMode:false, reqSelected:{}});
+      this.closeModal();
+      await this.loadData();
+    }catch(e){
+      this.setState({saveStatus:'error', modalErr:'No se pudo promover el lote: '+e.message});
+      console.error(e);
+    } finally { this._busy=false; }
   }
 
   async delDoc(id){
@@ -1519,6 +1725,12 @@ class Component extends DCLogic {
       R.ambientesEmpty=!(emp.ambientes||[]).length;
       R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'#66739a', stageBg: sm?sm[2]:'rgba(255,255,255,.05)', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
       R.addAmbiente=()=>this.addAmbiente();
+      // toggle grid / lista de la grilla de proyectos
+      const pv=s.projectsView||'grid';
+      R.projectsGrid=pv!=='list'; R.projectsListView=pv==='list';
+      R.setProjectsGrid=()=>this.setProjectsView('grid'); R.setProjectsListView=()=>this.setProjectsView('list');
+      R.pvGridBg=pv!=='list'?'rgba(53,192,240,.16)':'transparent'; R.pvGridColor=pv!=='list'?'#35c0f0':'#8a95b6';
+      R.pvListBg=pv==='list'?'rgba(53,192,240,.16)':'transparent'; R.pvListColor=pv==='list'?'#35c0f0':'#8a95b6';
       R.proyectosList=emp.proyectos.map(p=>{
         const reqs=p.requerimientos; const tot=reqs.length||1;
         const counts={}; ord.canonical.forEach(k=>counts[k]=0); reqs.forEach(r=>{ if(counts[r.estado]!=null) counts[r.estado]++; });
@@ -1549,7 +1761,7 @@ class Component extends DCLogic {
         despliegues:rec.despliegues.map(d=>{
           const k='p:'+d.env; const copied=s.copiedKey===k;
           return { env:d.env, version:d.version||'—',
-            openDetail:()=>this.openVerDespliegue(d.env,d.url,d.version),
+            openDetail:()=>this.openVerDespliegue(d.env,d.url,d.version,d.environmentId),
             copy:(e)=>{e.stopPropagation();this.copyToClipboard(d.url,k);},
             copyIconHref: copied?'#ic-check':'#ic-copy',
             copyColor: copied?'#39d39b':'#66739a',
@@ -1584,7 +1796,15 @@ class Component extends DCLogic {
       R.filterChips=fdef.map(([key,label,est])=>{ const count= est? counts[est] : reqs.length; const active=s.filter===key; return { label,count, set:()=>this.setFilter(key), border: active?'rgba(53,192,240,.55)':'rgba(255,255,255,.1)', bg: active?'rgba(53,192,240,.14)':'transparent', color: active?'#35c0f0':'#b7c0dd' }; });
       const filtered= s.filter==='todos'? reqs : reqs.filter(r=>r.estado===s.filter);
       const idx=(id)=> reqs.findIndex(r=>r.id===id);
-      R.reqList=filtered.map(r=>{ const m=this.estMeta(r.estado); const bc=this.activeBloq(r); return { code:(r.codigo&&r.codigo.trim())||('REQ-'+String(idx(r.id)+1).padStart(3,'0')), titulo:r.titulo, responsable:r.responsable, iniciales:this.iniciales(r.responsable), estLabel:m[0],estColor:m[1],estBg:m[2], tieneBloq:bc>0, bloqCount:bc, open:()=>this.openReq(r.id) }; });
+      // selección múltiple (batch)
+      const selMode=!!s.reqSelectMode, selMap=s.reqSelected||{};
+      const selCount=reqs.filter(r=>selMap[r.id]).length;
+      R.reqSelectMode=selMode; R.reqSelToggle=()=>this.toggleReqSelectMode();
+      R.reqSelToggleLabel=selMode?'Cancelar selección':'Seleccionar';
+      R.reqSelCount=selCount; R.reqSelBarShow=selMode && selCount>0;
+      R.reqSelBarLabel=selCount+' seleccionado'+(selCount===1?'':'s');
+      R.openBatchPromote=()=>this.openBatchPromote(); R.clearReqSelection=()=>this.clearReqSelection();
+      R.reqList=filtered.map(r=>{ const m=this.estMeta(r.estado); const bc=this.activeBloq(r); const chk=!!selMap[r.id]; return { code:(r.codigo&&r.codigo.trim())||('REQ-'+String(idx(r.id)+1).padStart(3,'0')), titulo:r.titulo, responsable:r.responsable, iniciales:this.iniciales(r.responsable), estLabel:m[0],estColor:m[1],estBg:m[2], tieneBloq:bc>0, bloqCount:bc, selectMode:selMode, selected:chk, checkBg: chk?'#35c0f0':'transparent', checkBorder: chk?'#35c0f0':'rgba(255,255,255,.25)', open:(selMode?()=>this.toggleReqSelected(r.id):()=>this.openReq(r.id)) }; });
       R.reqEmpty=filtered.length===0;
     }
 
@@ -1598,6 +1818,7 @@ class Component extends DCLogic {
         despliegues:req.despliegues.map(d=>{
           const copied=s.copiedKey===d.id;
           return { env:d.env, url:d.url, version:d.version, open:()=>this.openExt(d.url), del:()=>this.delDespliegue(d.id),
+            sendDiscord:()=>this.openDiscordStep({projectId:this.state.proyectoId, environmentId:d.environmentId, envCode:d.env, version:d.version, artifactUrl:d.url, requirementTitle:req.titulo}),
             copy:()=>this.copyToClipboard(d.url,d.id),
             copyIconHref: copied?'#ic-check':'#ic-copy',
             copyColor: copied?'#39d39b':'#8a95b6',
@@ -1608,6 +1829,16 @@ class Component extends DCLogic {
         bloqueantes:req.bloqueantes.map(b=>({ texto:b.texto, meta:(b.resuelto?'Resuelto':'Activo')+' · '+b.fecha, accent:b.resuelto?'#39d39b':'#f97b7b', border:b.resuelto?'rgba(57,211,155,.25)':'rgba(249,123,123,.25)', checkBg:b.resuelto?'#39d39b':'transparent', resuelto:!!b.resuelto, strike:b.resuelto?'line-through':'none', textColor:b.resuelto?'#66739a':'#e9edf7', locked:!isDev, toggle:()=>this.toggleBloqueante(b.id), del:()=>this.delBloqueante(b.id) })),
       };
       R.bloqEmpty=req.bloqueantes.length===0;
+      // acciones directas: promover ambiente / marcar bloqueado (solo dev)
+      const flowR=this.statusOrder().flow, curI=flowR.indexOf(req.estado);
+      const canPromote=curI>=0 && curI<flowR.length-1, nextId=canPromote?flowR[curI+1]:null;
+      R.canPromoteReq=canPromote; R.promoteReqDisabled=!canPromote; R.promoteReq=()=>this.promoteReqDirect();
+      R.promoteReqTitle=canPromote?('Promover a '+this.estMeta(nextId)[0]):(curI<0?'Estado fuera del flujo':'Ya está en el último estado');
+      R.promoteReqBg=canPromote?'rgba(53,192,240,.14)':'transparent'; R.promoteReqBorder=canPromote?'rgba(53,192,240,.4)':'rgba(255,255,255,.1)'; R.promoteReqColor=canPromote?'#35c0f0':'#4b566f';
+      const blockId=this.blockedStatusId(), canBlock=!!blockId && req.estado!==blockId;
+      R.canBlockReq=canBlock; R.blockReqDisabled=!canBlock; R.markReqBlocked=()=>this.markReqBlocked();
+      R.blockReqTitle=!blockId?'No hay estado bloqueado configurado':(req.estado===blockId?'Ya está bloqueado':'Marcar como bloqueado');
+      R.blockReqBorder=canBlock?'rgba(249,123,123,.35)':'rgba(255,255,255,.1)'; R.blockReqColor=canBlock?'#f97b7b':'#4b566f';
       const tab=s.reqTab;
       R.tabDocumentos=tab==='documentos'; R.tabDespliegues=tab==='despliegues'; R.tabBloqueantes=tab==='bloqueantes';
       const tdef=[['documentos','Documentos',req.documentos.length],['despliegues','Despliegues',req.despliegues.length],['bloqueantes','Bloqueantes',this.activeBloq(req)]];
@@ -1620,7 +1851,7 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord')?'520px':'440px';
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
@@ -1630,11 +1861,12 @@ class Component extends DCLogic {
       R.modalVerGithubLinks = md.type==='verGithubLinks';
       R.modalPromoteConfirm = md.type==='promoteConfirm';
       R.modalDiscord = md.type==='discord';
-      R.modalGenericFooter = md.type!=='promoteConfirm' && md.type!=='discord';
+      R.modalBatchPromote = md.type==='batchPromote';
+      R.modalGenericFooter = md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='batchPromote';
       R.modalAviso = md.type==='aviso';
       R.avisoMensaje = md.mensaje||'';
       R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks'||md.type==='aviso') ? 'Cerrar' : 'Cancelar';
-      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='aviso';
+      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='batchPromote' && md.type!=='aviso';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
       R.f_version=(e)=>this.setForm('version',e.target.value);
@@ -1662,6 +1894,7 @@ class Component extends DCLogic {
           copyUrlBorder: copiedU?'rgba(57,211,155,.4)':'rgba(255,255,255,.09)',
           openUrl: ()=>this.openExt(md.url),
           editAll: ()=>this.editDesplieguesProy(),
+          sendDiscord: ()=>this.openDiscordStep({projectId:this.state.proyectoId, environmentId:md.environmentId, envCode:md.envName, version:md.version, artifactUrl:md.url, requirementTitle:''}),
         };
       }
       if(md.type==='verGithubLinks'){
@@ -1684,24 +1917,39 @@ class Component extends DCLogic {
       }
       if(md.type==='discord'){
         const sel=s.form.discordSel||{};
-        const selCount=(md.creds||[]).filter(c=>sel[c.id]).length;
+        const mapC=(c)=>({
+          id:c.id, label:c.label, username:c.username||'—', envLabel:c.envLabel, selected:!!sel[c.id],
+          toggle:()=>this.toggleDiscordCred(c.id),
+          boxBg: sel[c.id]?'rgba(53,192,240,.12)':'transparent',
+          boxBorder: sel[c.id]?'#35c0f0':'rgba(255,255,255,.14)',
+        });
+        const envCreds=(md.creds||[]).filter(c=>c.group==='env');
+        const genCreds=(md.creds||[]).filter(c=>c.group==='general');
         R.discord={
-          hasCreds:(md.creds||[]).length>0,
-          creds:(md.creds||[]).map(c=>({
-            id:c.id, label:c.label, username:c.username||'—', envLabel:c.envLabel,
-            toggle:()=>this.toggleDiscordCred(c.id),
-            boxBg: sel[c.id]?'rgba(53,192,240,.12)':'transparent',
-            boxBorder: sel[c.id]?'#35c0f0':'rgba(255,255,255,.14)',
-            checkHref: sel[c.id]?'#ic-check':'#ic-empty',
-          })),
-          selCount,
+          hasEnvCreds:envCreds.length>0, hasGenCreds:genCreds.length>0,
+          envCreds:envCreds.map(mapC), genCreds:genCreds.map(mapC),
           preview:this.buildDiscordPreview(md, sel),
-          sending: md.sendState==='sending',
-          sendDisabled: md.sendState==='sending',
           sendLabel: md.sendState==='error' ? 'Reintentar' : (md.sendState==='sending' ? 'Enviando…' : 'Enviar a Discord'),
           send:()=>this.sendDiscord(),
           skip:()=>this.closeModal(),
         };
+      }
+      if(md.type==='batchPromote'){
+        const n=md.count, plural=n===1?'':'s';
+        let text;
+        if(md.mixed){ text='Vas a promover '+n+' requerimiento'+plural+'. Cada uno avanza al siguiente estado de su flujo; solo se cambiará el estado.'; }
+        else if(!md.hasAmb){ text='Vas a promover '+n+' requerimiento'+plural+' al estado '+md.estLabel+'. Este estado no tiene ambiente asociado; solo se cambiará el estado.'; }
+        else { text='Vas a promover '+n+' requerimiento'+plural+' al ambiente '+md.targetEnv+' ('+md.estLabel+').'; }
+        R.batch={
+          text,
+          skippedShow: md.skippedCount>0,
+          skippedText: 'Se omitirán '+md.skippedCount+' que ya están en el último estado o fuera del flujo.',
+          hasAmb: md.hasAmb && !md.stateOnly,
+          stateOnly: md.stateOnly,
+        };
+        R.batchCancel=()=>this.closeModal();
+        R.batchOnlyStatus=()=>this.confirmBatchPromote(false);
+        R.batchUpdate=()=>this.confirmBatchPromote(true);
       }
       if(md.type==='recurso'){
         R.recursoIconHref=md.ricon; R.recursoLabel=md.rlabel;
