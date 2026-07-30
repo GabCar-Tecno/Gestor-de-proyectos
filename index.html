@@ -118,6 +118,9 @@ button{color:inherit}
     <symbol id="ic-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
     </symbol>
+    <symbol id="ic-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -271,15 +274,21 @@ button{color:inherit}
     <!-- ===================== PROYECTOS ===================== -->
     <sc-if value="{{ viewProyectos }}" hint-placeholder-val="{{ true }}">
       <div style="animation:vwIn .3s ease">
-        <div style="margin-bottom:26px;display:flex;align-items:center;gap:16px">
+        <div style="margin-bottom:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
           <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div>
           <div>
             <h1 style="margin:0;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">{{ empresa.nombre }}</h1>
             <p style="margin:2px 0 0;color:#8a95b6;font-size:13.5px">{{ empresa.proyectosLabel }}</p>
           </div>
-          <div style="margin-left:auto;flex:none;display:inline-flex;background:#0c1428;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:3px;gap:2px">
-            <button onClick="{{ setProjectsGrid }}" title="Vista de tarjetas" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvGridBg }};color:{{ pvGridColor }}"><svg width="16" height="16"><use href="#ic-grid"></use></svg></button>
-            <button onClick="{{ setProjectsListView }}" title="Vista de lista" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvListBg }};color:{{ pvListColor }}"><svg width="16" height="16"><use href="#ic-list"></use></svg></button>
+          <div style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:10px">
+            <sc-if value="{{ showParam }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ openCorreoDespliegue }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap" style-hover="opacity:.9"><svg width="14" height="14"><use href="#ic-mail"></use></svg>Enviar correo despliegue</button>
+              <button onClick="{{ goConfiguracion }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Configuración</button>
+            </sc-if>
+            <div style="flex:none;display:inline-flex;background:#0c1428;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:3px;gap:2px">
+              <button onClick="{{ setProjectsGrid }}" title="Vista de tarjetas" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvGridBg }};color:{{ pvGridColor }}"><svg width="16" height="16"><use href="#ic-grid"></use></svg></button>
+              <button onClick="{{ setProjectsListView }}" title="Vista de lista" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvListBg }};color:{{ pvListColor }}"><svg width="16" height="16"><use href="#ic-list"></use></svg></button>
+            </div>
           </div>
         </div>
 
@@ -320,9 +329,22 @@ button{color:inherit}
           </sc-for>
         </div>
         </sc-if>
+      </div>
+    </sc-if>
 
+    <!-- ===================== CONFIGURACION DE LA EMPRESA ===================== -->
+    <sc-if value="{{ viewConfiguracion }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:vwIn .3s ease">
+        <div style="margin-bottom:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div>
+          <div>
+            <h1 style="margin:0;font-size:clamp(20px,3vw,26px);font-weight:700;letter-spacing:-.5px">Configuración</h1>
+            <p style="margin:2px 0 0;color:#8a95b6;font-size:13.5px">{{ empresa.nombre }}</p>
+          </div>
+          <button onClick="{{ goProyectos }}" style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(255,255,255,.14);color:#c7d0ea;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Volver a proyectos</button>
+        </div>
         <sc-if value="{{ showAmbientes }}" hint-placeholder-val="{{ false }}">
-          <div style="margin-top:32px">
+          <div style="margin-top:4px">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
               <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Ambientes</h2>
               <span style="font-size:12px;color:#66739a">Exclusivos de esta empresa</span>
@@ -339,10 +361,104 @@ button{color:inherit}
                     <span style="font-size:11px;font-weight:600;color:{{ a.stageColor }};background:{{ a.stageBg }};padding:3px 8px;border-radius:20px">{{ a.stageLabel }}</span>
                   </div>
                   <div style="font-size:13px;color:#c7d0ea">{{ a.label }}</div>
+                  <div style="font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ a.carpetaTexto }}</div>
                   <div style="display:flex;gap:8px;margin-top:2px">
                     <button onClick="{{ a.edit }}" style="flex:1;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
                     <button onClick="{{ a.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
                   </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showParam }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:32px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Servidores</h2>
+              <span style="font-size:12px;color:#66739a">Origen de los despliegues</span>
+              <button onClick="{{ addServidor }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600" style-hover="background:rgba(53,192,240,.1)"><svg width="13" height="13"><use href="#ic-plus"></use></svg>Nuevo servidor</button>
+            </div>
+            <sc-if value="{{ servidoresEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:20px;color:#66739a;font-size:13px">Esta empresa aún no tiene servidores. Crea al menos uno para poder armar correos de despliegue.</div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+              <sc-for list="{{ servidoresList }}" as="s" hint-placeholder-count="3">
+                <div style="background:linear-gradient(160deg,#131c33,#0f1729);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:10px">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#35c0f0">{{ s.code }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#c7d0ea">{{ s.ip }}</div>
+                  <div style="display:flex;gap:8px;margin-top:2px">
+                    <button onClick="{{ s.edit }}" style="flex:1;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
+                    <button onClick="{{ s.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="margin-top:32px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Instrucciones de despliegue</h2>
+              <span style="font-size:12px;color:#66739a">Frases que se repiten en los correos</span>
+              <button onClick="{{ addInstruccion }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600" style-hover="background:rgba(53,192,240,.1)"><svg width="13" height="13"><use href="#ic-plus"></use></svg>Nueva instrucción</button>
+            </div>
+            <sc-if value="{{ instruccionesEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:20px;color:#66739a;font-size:13px">Sin instrucciones. Agrega las que repites, como "por favor conservar carpeta logs".</div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ instruccionesList }}" as="i" hint-placeholder-count="2">
+                <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="flex:1;min-width:200px;font-size:13px;color:#c7d0ea">{{ i.text }}</span>
+                  <button onClick="{{ i.edit }}" style="flex:none;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
+                  <button onClick="{{ i.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="margin-top:32px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Contactos</h2>
+              <span style="font-size:12px;color:#66739a">Destinatarios de los correos de esta empresa</span>
+              <button onClick="{{ addContacto }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600" style-hover="background:rgba(53,192,240,.1)"><svg width="13" height="13"><use href="#ic-plus"></use></svg>Nuevo contacto</button>
+            </div>
+            <sc-if value="{{ contactosEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:20px;color:#66739a;font-size:13px">Sin contactos. Agrega al menos uno para poder enviar correos de despliegue.</div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ contactosList }}" as="k" hint-placeholder-count="3">
+                <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px">
+                    <span style="font-size:13.5px;font-weight:600;color:#e9edf7">{{ k.name }}</span>
+                    <span style="font-size:12px;color:#8a95b6;font-family:'JetBrains Mono',monospace">{{ k.email }}</span>
+                  </span>
+                  <span style="flex:none;font-size:11px;font-weight:600;color:{{ k.badgeColor }};background:{{ k.badgeBg }};padding:3px 9px;border-radius:20px">{{ k.badgeLabel }}</span>
+                  <button onClick="{{ k.edit }}" style="flex:none;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
+                  <button onClick="{{ k.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="margin-top:32px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <h2 style="margin:0;font-size:16px;font-weight:600;color:#e9edf7">Desplegables</h2>
+              <span style="font-size:12px;color:#66739a">APIs, apps y gateways de la empresa</span>
+              <button onClick="{{ addDesplegable }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600" style-hover="background:rgba(53,192,240,.1)"><svg width="13" height="13"><use href="#ic-plus"></use></svg>Nuevo desplegable</button>
+            </div>
+            <sc-if value="{{ desplegablesEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:20px;color:#66739a;font-size:13px">Sin desplegables. Crea las APIs, apps y gateways de esta empresa para poder armar correos.</div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ desplegablesList }}" as="d" hint-placeholder-count="4">
+                <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:3px">
+                    <span style="font-size:13.5px;font-weight:600;color:#e9edf7;font-family:'JetBrains Mono',monospace">{{ d.titulo }}</span>
+                    <span style="font-size:11.5px;color:#66739a">{{ d.detalle }}</span>
+                  </span>
+                  <span style="flex:none;font-size:11px;font-weight:600;color:{{ d.kindColor }};background:{{ d.kindBg }};padding:3px 9px;border-radius:20px">{{ d.kindLabel }}</span>
+                  <button onClick="{{ d.edit }}" style="flex:none;background:none;border:1px solid rgba(255,255,255,.12);color:#8a95b6;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Editar</button>
+                  <button onClick="{{ d.del }}" style="flex:none;background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px" style-hover="background:rgba(249,123,123,.08)">Eliminar</button>
                 </div>
               </sc-for>
             </div>
@@ -391,6 +507,27 @@ button{color:inherit}
                     <button onClick="{{ d.copy }}" title="{{ d.copyTitle }}" style="flex:none;width:26px;height:26px;border-radius:7px;background:{{ d.copyBg }};border:1px solid {{ d.copyBorder }};color:{{ d.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="13" height="13"><use href="{{ d.copyIconHref }}"></use></svg></button>
                     <svg width="13" height="13" style="flex:none;color:#66739a"><use href="#ic-chevron"></use></svg>
                   </span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <!-- Componentes desplegables del proyecto -->
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:150px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:14.5px;font-weight:600">Componentes desplegables</span>
+              <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ openComponentesProy }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ componentesProyEmpty }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12.5px;color:#66739a;line-height:1.5">Sin componentes. Enlaza las APIs, apps y gateways que se despliegan con este proyecto.</span>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ componentesProy }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span style="flex:none;font-size:10.5px;font-weight:600;color:{{ c.kindColor }};background:{{ c.kindBg }};padding:2px 7px;border-radius:20px">{{ c.kindLabel }}</span>
+                  <span style="flex:1;min-width:120px;font-size:12.5px;color:#c7d0ea;font-family:'JetBrains Mono',monospace">{{ c.titulo }}</span>
+                  <span style="flex:none;font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ c.servidor }}</span>
                 </div>
               </sc-for>
             </div>
@@ -693,6 +830,153 @@ button{color:inherit}
             </div>
           </sc-if>
 
+          <sc-if value="{{ modalDesplegable }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.07)">
+              <span style="font-size:12px;font-weight:500;color:#8a95b6">Instrucciones que aplican</span>
+              <sc-if value="{{ desplegableSinInstrucciones }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:12.5px;color:#66739a">Esta empresa no tiene instrucciones en el catálogo todavía.</span>
+              </sc-if>
+              <sc-for list="{{ desplegableInstrucciones }}" as="i" hint-placeholder-count="2">
+                <button onClick="{{ i.toggle }}" style="text-align:left;cursor:pointer;background:{{ i.bg }};border:1px solid {{ i.border }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px" style-hover="border-color:rgba(53,192,240,.45)">
+                  <span style="flex:none;width:16px;height:16px;border-radius:5px;border:1px solid {{ i.boxBorder }};background:{{ i.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="11" height="11"><use href="{{ i.iconHref }}"></use></svg></span>
+                  <span style="font-size:12.5px;color:{{ i.color }}">{{ i.text }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- selector de componentes desplegables del proyecto -->
+          <sc-if value="{{ modalComponentes }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-if value="{{ componentesOpcionesEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:12px;padding:18px;color:#66739a;font-size:12.5px">Esta empresa no tiene desplegables. Créalos primero en la vista de la empresa.</div>
+              </sc-if>
+              <sc-for list="{{ componentesOpciones }}" as="o" hint-placeholder-count="5">
+                <button onClick="{{ o.toggle }}" style="text-align:left;cursor:pointer;background:{{ o.bg }};border:1px solid {{ o.border }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap" style-hover="border-color:rgba(53,192,240,.45)">
+                  <span style="flex:none;width:16px;height:16px;border-radius:5px;border:1px solid {{ o.boxBorder }};background:{{ o.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="11" height="11"><use href="{{ o.iconHref }}"></use></svg></span>
+                  <span style="flex:none;font-size:10.5px;font-weight:600;color:{{ o.kindColor }};background:{{ o.kindBg }};padding:2px 7px;border-radius:20px">{{ o.kindLabel }}</span>
+                  <span style="flex:1;min-width:120px;font-size:12.5px;color:{{ o.color }};font-family:'JetBrains Mono',monospace">{{ o.titulo }}</span>
+                  <span style="flex:none;font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ o.servidor }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- wizard de correo de despliegue: selección (Tarea 9). La Tarea 10 agrega vista previa + mailto a continuación, dentro del mismo bloque. -->
+          <sc-if value="{{ modalCorreo }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:22px">
+
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <span style="font-size:12px;font-weight:600;color:#8a95b6">1 · Ambiente de destino</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <sc-for list="{{ correoAmbientes }}" as="a" hint-placeholder-count="3">
+                    <button onClick="{{ a.pick }}" style="cursor:pointer;background:{{ a.bg }};border:1px solid {{ a.border }};color:{{ a.color }};border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:600;font-family:'JetBrains Mono',monospace" style-hover="border-color:rgba(53,192,240,.45)">{{ a.code }}</button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ correoCarpetaFalta }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;color:#f5b544;line-height:1.5">Este ambiente no tiene carpeta de despliegue. Edítalo en la sección Ambientes o el correo va a salir con el marcador sin resolver.</span>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:12px;font-weight:600;color:#8a95b6">2 · Proyectos</span>
+                <sc-for list="{{ correoProyectos }}" as="p" hint-placeholder-count="3">
+                  <div style="background:{{ p.bg }};border:1px solid {{ p.border }};border-radius:12px;padding:11px 13px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                      <button onClick="{{ p.toggle }}" style="flex:1;min-width:140px;text-align:left;cursor:pointer;background:none;border:0;padding:0;display:flex;align-items:center;gap:9px">
+                        <span style="flex:none;width:16px;height:16px;border-radius:5px;border:1px solid {{ p.boxBorder }};background:{{ p.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="11" height="11"><use href="{{ p.iconHref }}"></use></svg></span>
+                        <span style="font-size:13px;font-weight:600;color:{{ p.color }}">{{ p.nombre }}</span>
+                      </button>
+                      <sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}">
+                        <span style="flex:none;display:inline-flex;background:#0a1122;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:2px;gap:2px">
+                          <button onClick="{{ p.pickApi }}" style="cursor:pointer;background:none;border:0;color:#8a95b6;padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:600" style-hover="color:#35c0f0">API</button>
+                          <button onClick="{{ p.pickGateway }}" style="cursor:pointer;background:none;border:0;color:#8a95b6;padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:600" style-hover="color:#35c0f0">Gateway</button>
+                          <button onClick="{{ p.pickAmbos }}" style="cursor:pointer;background:none;border:0;color:#8a95b6;padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:600" style-hover="color:#35c0f0">Ambos</button>
+                        </span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;flex-direction:column;gap:5px;padding-left:25px">
+                        <sc-if value="{{ p.sinComponentes }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:11.5px;color:#f5b544">Este proyecto no tiene componentes enlazados.</span>
+                        </sc-if>
+                        <sc-for list="{{ p.items }}" as="d" hint-placeholder-count="2">
+                          <button onClick="{{ d.toggle }}" style="text-align:left;cursor:pointer;background:none;border:0;padding:2px 0;display:flex;align-items:center;gap:8px">
+                            <span style="flex:none;width:14px;height:14px;border-radius:4px;border:1px solid {{ d.boxBorder }};background:{{ d.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="9" height="9"><use href="{{ d.iconHref }}"></use></svg></span>
+                            <span style="font-size:12px;color:{{ d.color }};font-family:'JetBrains Mono',monospace">{{ d.titulo }}</span>
+                            <span style="font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ d.servidor }}</span>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <span style="font-size:12px;font-weight:600;color:#8a95b6">3 · Otros desplegables de la empresa</span>
+                <span style="font-size:11.5px;color:#66739a;line-height:1.5">Gateways compartidos y componentes sin proyecto.</span>
+                <sc-if value="{{ correoOtrosEmpty }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;color:#66739a">Todos los desplegables están enlazados a algún proyecto.</span>
+                </sc-if>
+                <sc-for list="{{ correoOtros }}" as="d" hint-placeholder-count="3">
+                  <button onClick="{{ d.toggle }}" style="text-align:left;cursor:pointer;background:{{ d.bg }};border:1px solid {{ d.border }};border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px;flex-wrap:wrap" style-hover="border-color:rgba(53,192,240,.45)">
+                    <span style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ d.boxBorder }};background:{{ d.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="10" height="10"><use href="{{ d.iconHref }}"></use></svg></span>
+                    <span style="flex:1;min-width:120px;font-size:12.5px;color:{{ d.color }};font-family:'JetBrains Mono',monospace">{{ d.titulo }}</span>
+                    <span style="flex:none;font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ d.servidor }}</span>
+                  </button>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <span style="font-size:12px;font-weight:600;color:#8a95b6">4 · Destinatarios</span>
+                <sc-if value="{{ correoContactosEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:12px;padding:16px;color:#f5b544;font-size:12.5px">Esta empresa no tiene contactos. Agrégalos en la sección Contactos.</div>
+                </sc-if>
+                <sc-for list="{{ correoContactos }}" as="k" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:1px">
+                      <span style="font-size:12.5px;color:#c7d0ea">{{ k.name }}</span>
+                      <span style="font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ k.email }}</span>
+                    </span>
+                    <span style="flex:none;display:inline-flex;background:#0a1122;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:2px;gap:2px">
+                      <button onClick="{{ k.pickTo }}" style="cursor:pointer;background:{{ k.toBg }};border:0;color:{{ k.toColor }};padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600">Para</button>
+                      <button onClick="{{ k.pickCc }}" style="cursor:pointer;background:{{ k.ccBg }};border:0;color:{{ k.ccColor }};padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600">CC</button>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-size:12px;font-weight:600;color:#8a95b6">5 · Nota adicional</span>
+                <textarea value="{{ form.nota }}" onInput="{{ setCorreoNota }}" placeholder="Los adjuntos, el orden de los scripts SQL, permisos por crear..." rows="3" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:13px;outline:none;resize:vertical;font-family:inherit" style-focus="border-color:#35c0f0"></textarea>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:9px;padding-top:18px;border-top:1px solid rgba(255,255,255,.07)">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <span style="font-size:12px;font-weight:600;color:#8a95b6">6 · Vista previa</span>
+                  <span style="margin-left:auto;font-size:11.5px;color:{{ correoCharsColor }};font-family:'JetBrains Mono',monospace">{{ correoChars }}</span>
+                </div>
+                <div style="background:#0a1122;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-size:11.5px;color:#66739a">Asunto</span>
+                  <span style="font-size:12.5px;color:#c7d0ea">{{ correoAsunto }}</span>
+                </div>
+                <textarea value="{{ correoCuerpo }}" onInput="{{ setCorreoCuerpo }}" rows="14" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 12px;color:#e9edf7;font-size:12.5px;outline:none;resize:vertical;font-family:'JetBrains Mono',monospace;line-height:1.55" style-focus="border-color:#35c0f0"></textarea>
+                <sc-if value="{{ correoLargo }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;color:#f5b544;line-height:1.5">El correo quedó muy largo y Outlook lo puede cortar. Usa "Copiar cuerpo" y pégalo en un correo nuevo.</span>
+                </sc-if>
+                <sc-if value="{{ correoBloqueoShow }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;color:#f97b7b;line-height:1.5">{{ correoBloqueo }}</span>
+                </sc-if>
+                <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:2px">
+                  <button onClick="{{ abrirCorreo }}" disabled="{{ correoNoPuede }}" style="display:inline-flex;align-items:center;gap:8px;background:{{ correoBtnBg }};border:0;color:{{ correoBtnColor }};cursor:{{ correoBtnCursor }};padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600">Abrir en correo</button>
+                  <button onClick="{{ copiarCorreoCuerpo }}" style="display:inline-flex;align-items:center;gap:8px;background:#1a2340;border:1px solid rgba(255,255,255,.1);color:{{ correoCopyColor }};cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500" style-hover="border-color:rgba(53,192,240,.4)"><svg width="14" height="14"><use href="{{ correoCopyIcon }}"></use></svg>{{ correoCopyLabel }}</button>
+                </div>
+              </div>
+
+            </div>
+          </sc-if>
+
           <!-- links de GitHub del proyecto (N filas) -->
           <sc-if value="{{ modalGithubLinks }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:12px">
@@ -948,6 +1232,7 @@ class Component extends DCLogic {
     window.addEventListener('resize', this._onResize);
     this._onFsChange=()=>{ const fs=!!document.fullscreenElement; if(fs!==this.state.apiFullscreen) this.setState({apiFullscreen:fs}); };
     document.addEventListener('fullscreenchange', this._onFsChange);
+    window.__app=this;
   }
   componentWillUnmount(){
     if(this._authSub && this._authSub.data) this._authSub.data.subscription.unsubscribe();
@@ -967,7 +1252,7 @@ class Component extends DCLogic {
   async loadData(){
     this.setState({loadError:''});
     const sb=this._sb;
-    const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred] = await Promise.all([
+    const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto] = await Promise.all([
       sb.from('companies').select('*'),
       sb.from('projects').select('*'),
       sb.from('project_deployments').select('*'),
@@ -979,8 +1264,14 @@ class Component extends DCLogic {
       sb.from('environments').select('*'),
       sb.from('statuses').select('*'),
       sb.from('project_credentials').select('*'),
+      sb.from('company_servers').select('*'),
+      sb.from('deployables').select('*'),
+      sb.from('project_deployables').select('*'),
+      sb.from('deployment_instructions').select('*'),
+      sb.from('deployable_instructions').select('*'),
+      sb.from('company_contacts').select('*'),
     ]);
-    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred].find(r=>r.error);
+    const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto].find(r=>r.error);
     if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
     // catalogos parametricos
@@ -988,12 +1279,22 @@ class Component extends DCLogic {
     const envById={}; (env.data||[]).forEach(e=>{ envById[e.id]=e; });
     const envCode=d=>{ const e=envById[d.environment_id]; return (e&&e.code) || d.env || ''; };
 
+    const byOrder=(a,b)=>(a.sort_order||0)-(b.sort_order||0);
     const data = (co.data||[]).map(c=>{
       const ambientes=(env.data||[]).filter(e=>e.company_id===c.id)
         .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
-        .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0}));
+        .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0, deployFolder:e.deploy_folder||''}));
       return {
       id:c.id, nombre:c.name, mono:c.initial, color:c.color, ambientes,
+      servidores:(srv.data||[]).filter(x=>x.company_id===c.id).sort(byOrder)
+        .map(x=>({id:x.id, code:x.code, ip:x.ip, sortOrder:x.sort_order||0})),
+      desplegables:(dep.data||[]).filter(x=>x.company_id===c.id).sort(byOrder)
+        .map(x=>({id:x.id, name:x.name, kind:x.kind||'api', serverId:x.server_id||null, port:x.port||'', sortOrder:x.sort_order||0,
+                  instruccionIds:(dins.data||[]).filter(l=>l.deployable_id===x.id).map(l=>l.instruction_id)})),
+      instrucciones:(ins.data||[]).filter(x=>x.company_id===c.id).sort(byOrder)
+        .map(x=>({id:x.id, text:x.text, sortOrder:x.sort_order||0})),
+      contactos:(cto.data||[]).filter(x=>x.company_id===c.id).sort(byOrder)
+        .map(x=>({id:x.id, name:x.name, email:x.email, defaultField:x.default_field||'', sortOrder:x.sort_order||0})),
       proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
         const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
         const byAmb=a=>deploys.find(d=>(d.environment_id&&d.environment_id===a.id) || (!d.environment_id&&d.env===a.code))||{};
@@ -1005,6 +1306,7 @@ class Component extends DCLogic {
         }));
         return {
           id:p.id, nombre:p.name, descripcion:p.description||'',
+          desplegableIds:(pdep.data||[]).filter(l=>l.project_id===p.id).map(l=>l.deployable_id),
           recursos:{
             despliegues:ambientes.map(a=>{ const d=byAmb(a); return {env:a.code, environmentId:a.id, label:a.label, url:d.url||'', version:d.version||'', updatedAt:d.updated_at||null}; }),
             manualTecnico:{url:p.technical_manual_url||''},
@@ -1104,6 +1406,41 @@ class Component extends DCLogic {
   }
   docIcon(t){ t=(t||'').toLowerCase(); if(t.includes('pdf'))return '#ic-filetext'; if(t.includes('fig')||t.includes('imag'))return '#ic-image'; if(t.includes('diag'))return '#ic-diagram'; if(t.includes('cálc')||t.includes('xls'))return '#ic-chart'; return '#ic-file'; }
   activeBloq(r){ return (r.bloqueantes||[]).filter(b=>!b.resuelto).length; }
+  fmtDeployItem(i){
+    let s=i.name||'';
+    const port=(i.port==null?'':String(i.port)).trim();
+    if(port) s+=':'+port;
+    const ins=(i.instructions||[]).map(t=>(t||'').trim()).filter(Boolean);
+    if(ins.length) s+=', '+ins.join(', ');
+    return s;
+  }
+  buildDeployEmail(o){
+    const envCode=o.envCode||'';
+    const saludo=(o.hour<12)?'Buenos días,':'Buenas tardes,';
+    const subject=('Despliegue ambiente '+envCode+' '+(o.projectNames||[]).join(', ')).trim();
+    const folder=(o.deployFolder||'').trim()||'{deploy_folder}';
+    const lines=[saludo,'',
+      'Se hace la solicitud de cargar a ambiente '+envCode+' los siguientes aplicativos ubicados en la carpeta '+folder+' de los servidores:',''];
+    const srvs=(o.servers||[]).slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+    const items=o.items||[];
+    srvs.forEach(sv=>{
+      const mine=items.filter(i=>i.serverId===sv.id);
+      if(!mine.length) return;
+      lines.push(sv.code+': '+sv.ip);
+      mine.forEach(i=>lines.push(this.fmtDeployItem(i)));
+      lines.push('');
+    });
+    const huerfanos=items.filter(i=>!srvs.some(sv=>sv.id===i.serverId));
+    if(huerfanos.length){
+      lines.push('Servidor sin asignar:');
+      huerfanos.forEach(i=>lines.push(this.fmtDeployItem(i)));
+      lines.push('');
+    }
+    const nota=(o.nota||'').trim();
+    if(nota){ lines.push(nota); lines.push(''); }
+    lines.push('Quedo atento.');
+    return {subject, body:lines.join('\r\n')};
+  }
 
   empresa(){ return this.state.data.find(e=>e.id===this.state.empresaId); }
   proyecto(){ const e=this.empresa(); return e && e.proyectos.find(p=>p.id===this.state.proyectoId); }
@@ -1113,6 +1450,7 @@ class Component extends DCLogic {
   openEmpresa(id){ this.setState({empresaId:id,view:'proyectos',proyectoId:null,reqId:null}); }
   openProyecto(id){ this.setState({proyectoId:id,view:'proyecto',reqId:null}); }
   goProyectos(){ this.setState({view:'proyectos',proyectoId:null,reqId:null}); }
+  goConfiguracion(){ if(!this.isDev()) return; this.setState({view:'configuracion',proyectoId:null,reqId:null}); }
   goProyecto(){ this.setState({view:'proyecto',reqId:null}); }
   goRequerimientos(){ if(!this.isDev()) return; this.setState({view:'requerimientos'}); }
   openReq(id){ if(!this.isDev()) return; this.setState({reqId:id,view:'requerimiento',reqTab:'documentos'}); }
@@ -1190,8 +1528,8 @@ class Component extends DCLogic {
   addDespliegue(){ if(!this.isDev()) return; const ambs=(this.empresa()||{}).ambientes||[]; if(!ambs.length){ this.setState({modal:{type:'aviso',title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de agregar despliegues.'}, form:{}}); return; } this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:(ambs[0].id),url:'',version:''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
   editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this._origEnvRows=p.recursos.despliegues.reduce((a,d)=>{a[d.environmentId]={url:d.url,version:d.version,updatedAt:d.updatedAt}; return a;},{}); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
-  addAmbiente(){ if(!this.isDev()) return; this.openModal({type:'ambiente',mode:'crear',title:'Nuevo ambiente',form:{code:'',label:'',stage:''}}); }
-  editAmbiente(id){ if(!this.isDev()) return; const a=((this.empresa()||{}).ambientes||[]).find(x=>x.id===id); if(!a) return; this.openModal({type:'ambiente',mode:'editar',id,title:'Editar ambiente',form:{code:a.code||'',label:a.label||'',stage:a.stage||''}}); }
+  addAmbiente(){ if(!this.isDev()) return; this.openModal({type:'ambiente',mode:'crear',title:'Nuevo ambiente',form:{code:'',label:'',deployFolder:'',stage:''}}); }
+  editAmbiente(id){ if(!this.isDev()) return; const a=((this.empresa()||{}).ambientes||[]).find(x=>x.id===id); if(!a) return; this.openModal({type:'ambiente',mode:'editar',id,title:'Editar ambiente',form:{code:a.code||'',label:a.label||'',deployFolder:a.deployFolder||'',stage:a.stage||''}}); }
   async delAmbiente(id){
     if(!this.isDev()||this._busy) return;
     const emp=this.empresa(); if(!emp) return;
@@ -1214,6 +1552,228 @@ class Component extends DCLogic {
       await this.loadData();
     }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
     finally{ this._busy=false; }
+  }
+  addServidor(){ if(!this.isDev()) return; this.openModal({type:'servidor',mode:'crear',title:'Nuevo servidor',form:{code:'',ip:''}}); }
+  editServidor(id){ if(!this.isDev()) return; const s=((this.empresa()||{}).servidores||[]).find(x=>x.id===id); if(!s) return; this.openModal({type:'servidor',mode:'editar',id,title:'Editar servidor',form:{code:s.code||'',ip:s.ip||''}}); }
+  async delServidor(id){
+    if(!this.isDev()||this._busy) return;
+    const emp=this.empresa(); if(!emp) return;
+    const usados=(emp.desplegables||[]).filter(d=>d.serverId===id);
+    if(usados.length){ this.setState({modal:{type:'aviso',title:'Servidor en uso',mensaje:'Hay '+usados.length+' desplegable(s) en este servidor. Muévelos a otro servidor antes de eliminarlo.'}, form:{}}); return; }
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      const { error } = await this._sb.from('company_servers').delete().eq('id', id);
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  addInstruccion(){ if(!this.isDev()) return; this.openModal({type:'instruccion',mode:'crear',title:'Nueva instrucción',form:{text:''}}); }
+  editInstruccion(id){ if(!this.isDev()) return; const i=((this.empresa()||{}).instrucciones||[]).find(x=>x.id===id); if(!i) return; this.openModal({type:'instruccion',mode:'editar',id,title:'Editar instrucción',form:{text:i.text||''}}); }
+  async delInstruccion(id){
+    if(!this.isDev()||this._busy) return;
+    const emp=this.empresa(); if(!emp) return;
+    const usos=(emp.desplegables||[]).filter(d=>(d.instruccionIds||[]).includes(id)).length;
+    if(usos){ this.setState({modal:{type:'aviso',title:'Instrucción en uso',mensaje:'Esta instrucción está aplicada a '+usos+' desplegable(s). Se van a borrar esos enlaces. Quítala de los desplegables si no quieres perderlos.'}, form:{}}); return; }
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      let { error } = await this._sb.from('deployable_instructions').delete().eq('instruction_id', id);
+      if(error) throw error;
+      ({ error } = await this._sb.from('deployment_instructions').delete().eq('id', id));
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  addContacto(){ if(!this.isDev()) return; this.openModal({type:'contacto',mode:'crear',title:'Nuevo contacto',form:{name:'',email:'',defaultField:''}}); }
+  editContacto(id){ if(!this.isDev()) return; const k=((this.empresa()||{}).contactos||[]).find(x=>x.id===id); if(!k) return; this.openModal({type:'contacto',mode:'editar',id,title:'Editar contacto',form:{name:k.name||'',email:k.email||'',defaultField:k.defaultField||''}}); }
+  async delContacto(id){
+    if(!this.isDev()||this._busy) return;
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      const { error } = await this._sb.from('company_contacts').delete().eq('id', id);
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  addDesplegable(){
+    if(!this.isDev()) return;
+    const srvs=(this.empresa()||{}).servidores||[];
+    if(!srvs.length){ this.setState({modal:{type:'aviso',title:'Sin servidores',mensaje:'Crea al menos un servidor antes de agregar desplegables.'}, form:{}}); return; }
+    this.openModal({type:'desplegable',mode:'crear',title:'Nuevo desplegable',form:{name:'',kind:'api',serverId:srvs[0].id,port:'',instruccionIds:[]}});
+  }
+  editDesplegable(id){
+    if(!this.isDev()) return;
+    const d=((this.empresa()||{}).desplegables||[]).find(x=>x.id===id); if(!d) return;
+    this.openModal({type:'desplegable',mode:'editar',id,title:'Editar desplegable',form:{name:d.name||'',kind:d.kind||'api',serverId:d.serverId||'',port:d.port||'',instruccionIds:(d.instruccionIds||[]).slice()}});
+  }
+  toggleDesplegableInstruccion(insId){
+    this.setState(s=>{
+      const cur=(s.form.instruccionIds||[]).slice();
+      const i=cur.indexOf(insId);
+      if(i>=0) cur.splice(i,1); else cur.push(insId);
+      return {form:{...s.form, instruccionIds:cur}};
+    });
+  }
+  async delDesplegable(id){
+    if(!this.isDev()||this._busy) return;
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      let { error } = await this._sb.from('deployable_instructions').delete().eq('deployable_id', id);
+      if(error) throw error;
+      ({ error } = await this._sb.from('project_deployables').delete().eq('deployable_id', id));
+      if(error) throw error;
+      ({ error } = await this._sb.from('deployables').delete().eq('id', id));
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  openComponentesProy(){
+    if(!this.isDev()) return;
+    const p=this.proyecto(); if(!p) return;
+    this.openModal({type:'componentes',mode:'editar',title:'Componentes desplegables',form:{desplegableIds:(p.desplegableIds||[]).slice()}});
+  }
+  openCorreoDespliegue(){
+    if(!this.isDev()) return;
+    const emp=this.empresa(); if(!emp) return;
+    const ambs=emp.ambientes||[];
+    if(!ambs.length){ this.setState({modal:{type:'aviso',title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de armar correos.'}, form:{}}); return; }
+    if(!(emp.desplegables||[]).length){ this.setState({modal:{type:'aviso',title:'Sin desplegables',mensaje:'Crea los desplegables de esta empresa antes de armar correos.'}, form:{}}); return; }
+    const ctos=emp.contactos||[];
+    this.openModal({type:'correo',mode:'crear',title:'Enviar correo despliegue',form:{
+      envId: ambs[0].id,
+      proyectoIds: [],
+      itemIds: [],
+      toIds: ctos.filter(k=>k.defaultField==='to').map(k=>k.id),
+      ccIds: ctos.filter(k=>k.defaultField==='cc').map(k=>k.id),
+      nota: '',
+      cuerpoEditado: null,
+    }});
+  }
+  // --- Wizard de correo de despliegue: selección (Tarea 9). La Tarea 10 extiende con vista previa/mailto. ---
+  setCorreoAmbiente(id){ this.setState(s=>({form:{...s.form, envId:id, cuerpoEditado:null}})); }
+  setCorreoNota(e){ const v=e.target.value; this.setState(s=>({form:{...s.form, nota:v, cuerpoEditado:null}})); }
+  _correoDesplegablesDe(pid){
+    const emp=this.empresa()||{};
+    const p=(emp.proyectos||[]).find(x=>x.id===pid)||{};
+    const ids=p.desplegableIds||[];
+    return (emp.desplegables||[]).filter(d=>ids.includes(d.id));
+  }
+  // Ids de desplegables cubiertos por los proyectos marcados en `proyectoIds` (excluyendo `exceptPid` si se da).
+  _correoCubiertosPorOtros(proyectoIds, exceptPid){
+    const cubiertos=new Set();
+    (proyectoIds||[]).forEach(otroPid=>{
+      if(otroPid===exceptPid) return;
+      this._correoDesplegablesDe(otroPid).forEach(d=>cubiertos.add(d.id));
+    });
+    return cubiertos;
+  }
+  toggleCorreoProyecto(pid){
+    this.setState(s=>{
+      const proys=(s.form.proyectoIds||[]).slice();
+      const items=new Set(s.form.itemIds||[]);
+      const mios=this._correoDesplegablesDe(pid).map(d=>d.id);
+      const i=proys.indexOf(pid);
+      if(i>=0){
+        proys.splice(i,1);
+        // Solo se quita un item si ningún otro proyecto marcado lo sigue teniendo.
+        const cubiertos=this._correoCubiertosPorOtros(proys);
+        mios.forEach(id=>{ if(!cubiertos.has(id)) items.delete(id); });
+        return {form:{...s.form, proyectoIds:proys, itemIds:[...items], cuerpoEditado:null}};
+      }
+      proys.push(pid);
+      mios.forEach(id=>items.add(id));
+      return {form:{...s.form, proyectoIds:proys, itemIds:[...items], cuerpoEditado:null}};
+    });
+  }
+  setCorreoProyectoKind(pid, kind){
+    // kind: 'api' | 'gateway' | 'ambos'.  'api' incluye los de tipo 'app'.
+    this.setState(s=>{
+      const proys=s.form.proyectoIds||[];
+      const items=new Set(s.form.itemIds||[]);
+      const mios=this._correoDesplegablesDe(pid);
+      const miosIds=mios.map(d=>d.id);
+      const quiero=mios.filter(d=> kind==='ambos' ? true : kind==='gateway' ? d.kind==='gateway' : d.kind!=='gateway').map(d=>d.id);
+      // Solo se quita un item propio si ningún otro proyecto marcado lo sigue teniendo.
+      const cubiertos=this._correoCubiertosPorOtros(proys, pid);
+      miosIds.forEach(id=>{ if(!cubiertos.has(id)) items.delete(id); });
+      quiero.forEach(id=>items.add(id));
+      return {form:{...s.form, itemIds:[...items], cuerpoEditado:null}};
+    });
+  }
+  toggleCorreoItem(id){
+    this.setState(s=>{
+      const items=(s.form.itemIds||[]).slice();
+      const i=items.indexOf(id);
+      if(i>=0) items.splice(i,1); else items.push(id);
+      return {form:{...s.form, itemIds:items, cuerpoEditado:null}};
+    });
+  }
+  toggleCorreoContacto(id, field){
+    this.setState(s=>{
+      const key = field==='to' ? 'toIds' : 'ccIds';
+      const otro = field==='to' ? 'ccIds' : 'toIds';
+      const cur=(s.form[key]||[]).slice();
+      const i=cur.indexOf(id);
+      if(i>=0) cur.splice(i,1); else cur.push(id);
+      // Un contacto no puede estar en Para y CC a la vez.
+      const otros=(s.form[otro]||[]).filter(x=>x!==id || i>=0);
+      return {form:{...s.form, [key]:cur, [otro]:otros}};
+    });
+  }
+  // --- Wizard de correo de despliegue: vista previa y mailto (Tarea 10). ---
+  correoPayload(){
+    const emp=this.empresa()||{}, f=this.state.form||{};
+    const amb=(emp.ambientes||[]).find(a=>a.id===f.envId)||{};
+    const deps=emp.desplegables||[];
+    const insById={}; (emp.instrucciones||[]).forEach(i=>{ insById[i.id]=i.text; });
+    const sel=f.itemIds||[];
+    const items=deps.filter(d=>sel.includes(d.id))
+      .slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0))
+      .map(d=>({ name:d.name, port:d.port, serverId:d.serverId,
+                 instructions:(d.instruccionIds||[]).map(i=>insById[i]).filter(Boolean) }));
+    const nombres=(emp.proyectos||[]).filter(p=>(f.proyectoIds||[]).includes(p.id)).map(p=>p.nombre);
+    const built=this.buildDeployEmail({
+      envCode: amb.code||'', deployFolder: amb.deployFolder||'',
+      projectNames: nombres, servers: emp.servidores||[], items,
+      nota: f.nota||'', hour: new Date().getHours(),
+    });
+    const byId={}; (emp.contactos||[]).forEach(k=>{ byId[k.id]=k; });
+    const mails=(ids)=>(ids||[]).map(id=>(byId[id]||{}).email).filter(Boolean);
+    const cuerpo = (f.cuerpoEditado==null) ? built.body : f.cuerpoEditado;
+    return { subject:built.subject, body:cuerpo, to:mails(f.toIds), cc:mails(f.ccIds), itemsCount:items.length };
+  }
+  correoMailtoUrl(p){
+    const q=[];
+    if(p.cc.length) q.push('cc='+p.cc.join(','));
+    q.push('subject='+encodeURIComponent(p.subject));
+    q.push('body='+encodeURIComponent(p.body));
+    return 'mailto:'+p.to.join(',')+'?'+q.join('&');
+  }
+  setCorreoCuerpo(e){ const v=e.target.value; this.setState(s=>({form:{...s.form, cuerpoEditado:v}})); }
+  abrirCorreo(){
+    const p=this.correoPayload();
+    if(!p.to.length || !p.itemsCount) return;
+    window.location.href=this.correoMailtoUrl(p);
+  }
+  copiarCorreoCuerpo(){ this.copyToClipboard(this.correoPayload().body, 'correo-cuerpo'); }
+  toggleProyDesplegable(id){
+    this.setState(s=>{
+      const cur=(s.form.desplegableIds||[]).slice();
+      const i=cur.indexOf(id);
+      if(i>=0) cur.splice(i,1); else cur.push(id);
+      return {form:{...s.form, desplegableIds:cur}};
+    });
   }
   editGithubLinks(){ if(!this.isDev()) return; const p=this.proyecto(); const links=p.recursos.github.map(g=>({label:g.label,url:g.url})); this.openModal({type:'githubLinks',mode:'editar',title:'Repositorios de GitHub',form:{links:links.length?links:[{label:'',url:''}]}}); }
   openVerGithubLinks(){ const p=this.proyecto(); this.setState({modal:{type:'verGithubLinks', title:'Repositorios de GitHub', links:p.recursos.github}, form:{}}); }
@@ -1320,7 +1880,7 @@ class Component extends DCLogic {
         const ambs=(this.empresa()||{}).ambientes||[];
         if(ambs.some(a=>a.code===code && a.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya existe un ambiente con ese código en esta empresa.'}); return; }
         if(stage && ambs.some(a=>a.stage===stage && a.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya hay un ambiente con esa etapa en esta empresa.'}); return; }
-        const payload={ company_id:this.state.empresaId, code, label:(f.label||'').trim()||code, stage:stage||null };
+        const payload={ company_id:this.state.empresaId, code, label:(f.label||'').trim()||code, stage:stage||null, deploy_folder:(f.deployFolder||'').trim()||null };
         if(m.mode==='crear'){
           const maxOrder=ambs.reduce((mx,a)=>Math.max(mx,a.sortOrder||0),0);
           const { error } = await sb.from('environments').insert({ id:this.gid('env'), sort_order:maxOrder+1, ...payload });
@@ -1329,6 +1889,76 @@ class Component extends DCLogic {
           const { error } = await sb.from('environments').update(payload).eq('id', m.id);
           if(error) throw error;
         }
+      } else if(t==='servidor'){
+        const code=(f.code||'').trim(); const ip=(f.ip||'').trim();
+        if(!code){ this.setState({saveStatus:'idle', modalErr:'El código es obligatorio.'}); return; }
+        if(!ip){ this.setState({saveStatus:'idle', modalErr:'La IP es obligatoria.'}); return; }
+        const srvs=(this.empresa()||{}).servidores||[];
+        if(srvs.some(x=>x.code===code && x.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya existe un servidor con ese código en esta empresa.'}); return; }
+        const payload={ company_id:this.state.empresaId, code, ip };
+        if(m.mode==='crear'){
+          const maxOrder=srvs.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const { error } = await sb.from('company_servers').insert({ id:this.gid('srv'), sort_order:maxOrder+1, ...payload });
+          if(error) throw error;
+        } else {
+          const { error } = await sb.from('company_servers').update(payload).eq('id', m.id);
+          if(error) throw error;
+        }
+      } else if(t==='instruccion'){
+        const text=(f.text||'').trim();
+        if(!text){ this.setState({saveStatus:'idle', modalErr:'El texto es obligatorio.'}); return; }
+        const list=(this.empresa()||{}).instrucciones||[];
+        if(list.some(x=>x.text===text && x.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya existe esa instrucción en esta empresa.'}); return; }
+        const payload={ company_id:this.state.empresaId, text };
+        if(m.mode==='crear'){
+          const maxOrder=list.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const { error } = await sb.from('deployment_instructions').insert({ id:this.gid('ins'), sort_order:maxOrder+1, ...payload });
+          if(error) throw error;
+        } else {
+          const { error } = await sb.from('deployment_instructions').update(payload).eq('id', m.id);
+          if(error) throw error;
+        }
+      } else if(t==='contacto'){
+        const name=(f.name||'').trim(); const email=(f.email||'').trim();
+        if(!name){ this.setState({saveStatus:'idle', modalErr:'El nombre es obligatorio.'}); return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.setState({saveStatus:'idle', modalErr:'Escribe un correo válido. Los alias internos de Outlook no funcionan.'}); return; }
+        const list=(this.empresa()||{}).contactos||[];
+        if(list.some(x=>x.email.toLowerCase()===email.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ese correo ya está registrado en esta empresa.'}); return; }
+        const payload={ company_id:this.state.empresaId, name, email, default_field:(f.defaultField||null)||null };
+        if(m.mode==='crear'){
+          const maxOrder=list.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const { error } = await sb.from('company_contacts').insert({ id:this.gid('cto'), sort_order:maxOrder+1, ...payload });
+          if(error) throw error;
+        } else {
+          const { error } = await sb.from('company_contacts').update(payload).eq('id', m.id);
+          if(error) throw error;
+        }
+      } else if(t==='desplegable'){
+        const name=(f.name||'').trim();
+        if(!name){ this.setState({saveStatus:'idle', modalErr:'El nombre es obligatorio.'}); return; }
+        if(!f.serverId){ this.setState({saveStatus:'idle', modalErr:'Elige un servidor.'}); return; }
+        const list=(this.empresa()||{}).desplegables||[];
+        if(list.some(x=>x.name.toLowerCase()===name.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:'idle', modalErr:'Ya existe un desplegable con ese nombre en esta empresa.'}); return; }
+        const payload={ company_id:this.state.empresaId, name, kind:f.kind||'api', server_id:f.serverId, port:(f.port||'').trim()||null };
+        let depId=m.id;
+        if(m.mode==='crear'){
+          depId=this.gid('dep');
+          const maxOrder=list.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const { error } = await sb.from('deployables').insert({ id:depId, sort_order:maxOrder+1, ...payload });
+          if(error) throw error;
+        } else {
+          const { error } = await sb.from('deployables').update(payload).eq('id', m.id);
+          if(error) throw error;
+        }
+        let { error } = await sb.from('deployable_instructions').delete().eq('deployable_id', depId);
+        if(error) throw error;
+        const insRows=(f.instruccionIds||[]).map(iid=>({ deployable_id:depId, instruction_id:iid }));
+        if(insRows.length){ ({ error } = await sb.from('deployable_instructions').insert(insRows)); if(error) throw error; }
+      } else if(t==='componentes'){
+        let { error } = await sb.from('project_deployables').delete().eq('project_id', this.state.proyectoId);
+        if(error) throw error;
+        const rows=(f.desplegableIds||[]).map(id=>({ project_id:this.state.proyectoId, deployable_id:id }));
+        if(rows.length){ ({ error } = await sb.from('project_deployables').insert(rows)); if(error) throw error; }
       }
       this.setState({saveStatus:'saved'});
       this.closeModal();
@@ -1618,9 +2248,10 @@ class Component extends DCLogic {
     const emp=this.empresa(), proy=this.proyecto(), req=this.req();
     const R={
       goHome:()=>this.goHome(), goProyectos:()=>this.goProyectos(), goProyecto:()=>this.goProyecto(),
-      goRequerimientos:()=>this.goRequerimientos(),
+      goRequerimientos:()=>this.goRequerimientos(), goConfiguracion:()=>this.goConfiguracion(),
       viewEmpresas:v==='empresas', viewProyectos:v==='proyectos', viewProyecto:v==='proyecto',
       viewRequerimientos:v==='requerimientos', viewRequerimiento:v==='requerimiento', viewApidoc:v==='apidoc',
+      viewConfiguracion:v==='configuracion',
       stop:(e)=>this.stop(e), closeModal:()=>this.closeModal(),
       addDoc:()=>this.addDoc(), addDespliegue:()=>this.addDespliegue(), addBloqueante:()=>this.addBloqueante(),
       editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(), editCredenciales:()=>this.editCredenciales(),
@@ -1673,6 +2304,7 @@ class Component extends DCLogic {
     if(emp && v!=='empresas'){ crumbs.push({label:emp.nombre,go:()=>this.goProyectos(),color:v==='proyectos'?'#e9edf7':'#8a95b6',weight:v==='proyectos'?600:400,sep:true}); }
     if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'#e9edf7':'#8a95b6',weight:v==='proyecto'?600:400,sep:true}); }
     if(v==='apidoc'){ crumbs.push({label:'Documentación API',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
+    if(v==='configuracion'){ crumbs.push({label:'Configuración',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(v==='requerimientos'){ crumbs.push({label:'Requerimientos',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(v==='requerimiento'&&req){ crumbs.push({label:'Requerimientos',go:()=>this.goRequerimientos(),color:'#8a95b6',weight:400,sep:true}); crumbs.push({label:req.code||req.titulo,go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     R.crumbs=crumbs;
@@ -1723,8 +2355,45 @@ class Component extends DCLogic {
       R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
       R.showAmbientes=isDev;
       R.ambientesEmpty=!(emp.ambientes||[]).length;
-      R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'#66739a', stageBg: sm?sm[2]:'rgba(255,255,255,.05)', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
+      R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'#66739a', stageBg: sm?sm[2]:'rgba(255,255,255,.05)', carpetaTexto: a.deployFolder ? a.deployFolder : 'Sin carpeta de despliegue', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
       R.addAmbiente=()=>this.addAmbiente();
+      R.showParam=isDev;
+      R.openCorreoDespliegue=()=>this.openCorreoDespliegue();
+      const _srvs=(emp&&emp.servidores)||[];
+      R.servidoresEmpty=!_srvs.length;
+      R.servidoresList=_srvs.map(s=>({ code:s.code, ip:s.ip, edit:()=>this.editServidor(s.id), del:()=>this.delServidor(s.id) }));
+      R.addServidor=()=>this.addServidor();
+      const _inss=(emp&&emp.instrucciones)||[];
+      R.instruccionesEmpty=!_inss.length;
+      R.instruccionesList=_inss.map(i=>({ text:i.text, edit:()=>this.editInstruccion(i.id), del:()=>this.delInstruccion(i.id) }));
+      R.addInstruccion=()=>this.addInstruccion();
+      const _ctos=(emp&&emp.contactos)||[];
+      R.contactosEmpty=!_ctos.length;
+      R.contactosList=_ctos.map(k=>{
+        const meta = k.defaultField==='to' ? ['Para','#35c0f0','rgba(53,192,240,.16)']
+                   : k.defaultField==='cc' ? ['CC','#a78bfa','rgba(167,139,250,.16)']
+                   : ['Manual','#8a95b6','rgba(154,166,200,.14)'];
+        return { name:k.name, email:k.email, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
+                 edit:()=>this.editContacto(k.id), del:()=>this.delContacto(k.id) };
+      });
+      R.addContacto=()=>this.addContacto();
+      const _deps=(emp&&emp.desplegables)||[];
+      const _srvById={}; _srvs.forEach(x=>{ _srvById[x.id]=x; });
+      const _insById={}; _inss.forEach(x=>{ _insById[x.id]=x; });
+      R.desplegablesEmpty=!_deps.length;
+      R.desplegablesList=_deps.map(d=>{
+        const srv=_srvById[d.serverId];
+        const meta = d.kind==='gateway' ? ['Gateway','#a78bfa','rgba(167,139,250,.16)']
+                   : d.kind==='app'     ? ['App','#f5b544','rgba(245,181,68,.16)']
+                   :                      ['API','#35c0f0','rgba(53,192,240,.16)'];
+        const insTxt=(d.instruccionIds||[]).map(i=>(_insById[i]||{}).text).filter(Boolean);
+        const partes=[srv?(srv.code+': '+srv.ip):'Servidor sin asignar'];
+        if(insTxt.length) partes.push(insTxt.join(', '));
+        return { titulo: d.name + (d.port?(':'+d.port):''), detalle: partes.join(' · '),
+                 kindLabel:meta[0], kindColor:meta[1], kindBg:meta[2],
+                 edit:()=>this.editDesplegable(d.id), del:()=>this.delDesplegable(d.id) };
+      });
+      R.addDesplegable=()=>this.addDesplegable();
       // toggle grid / lista de la grilla de proyectos
       const pv=s.projectsView||'grid';
       R.projectsGrid=pv!=='list'; R.projectsListView=pv==='list';
@@ -1792,6 +2461,21 @@ class Component extends DCLogic {
       };
       R.credsEmpty=!(rec.credenciales||[]).length;
 
+      const _pDeps=(emp&&emp.desplegables)||[];
+      const _pSrvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ _pSrvById[x.id]=x; });
+      const _kindMeta=(k)=> k==='gateway' ? ['Gateway','#a78bfa','rgba(167,139,250,.16)']
+                          : k==='app'     ? ['App','#f5b544','rgba(245,181,68,.16)']
+                          :                 ['API','#35c0f0','rgba(53,192,240,.16)'];
+      const _pSel=(proy&&proy.desplegableIds)||[];
+      const _pMine=_pDeps.filter(d=>_pSel.includes(d.id));
+      R.componentesProyEmpty=!_pMine.length;
+      R.componentesProy=_pMine.map(d=>{
+        const meta=_kindMeta(d.kind), srv=_pSrvById[d.serverId];
+        return { titulo: d.name + (d.port?(':'+d.port):''), servidor: srv?srv.code:'sin servidor',
+                 kindLabel:meta[0], kindColor:meta[1], kindBg:meta[2] };
+      });
+      R.openComponentesProy=()=>this.openComponentesProy();
+
       const fdef=[['todos','Todos',null]].concat(ord.canonical.map(k=>[k,this.estMeta(k)[0],k]));
       R.filterChips=fdef.map(([key,label,est])=>{ const count= est? counts[est] : reqs.length; const active=s.filter===key; return { label,count, set:()=>this.setFilter(key), border: active?'rgba(53,192,240,.55)':'rgba(255,255,255,.1)', bg: active?'rgba(53,192,240,.14)':'transparent', color: active?'#35c0f0':'#b7c0dd' }; });
       const filtered= s.filter==='todos'? reqs : reqs.filter(r=>r.estado===s.filter);
@@ -1851,10 +2535,13 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote')?'520px':'440px';
-      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente'].includes(md.type);
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales'||md.type==='componentes'||md.type==='correo') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote'||md.type==='desplegable')?'520px':'440px';
+      R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente','servidor','instruccion','contacto','desplegable'].includes(md.type);
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
+      R.modalDesplegable = md.type==='desplegable';
+      R.modalComponentes = md.type==='componentes';
+      R.modalCorreo = md.type==='correo';
       R.modalVerDespliegue = md.type==='verDespliegue';
       R.modalGithubLinks = md.type==='githubLinks';
       R.modalCredenciales = md.type==='credenciales';
@@ -1865,8 +2552,8 @@ class Component extends DCLogic {
       R.modalGenericFooter = md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='batchPromote';
       R.modalAviso = md.type==='aviso';
       R.avisoMensaje = md.mensaje||'';
-      R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks'||md.type==='aviso') ? 'Cerrar' : 'Cancelar';
-      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='batchPromote' && md.type!=='aviso';
+      R.modalSecondaryLabel = (md.type==='verDespliegue'||md.type==='verGithubLinks'||md.type==='aviso'||md.type==='correo') ? 'Cerrar' : 'Cancelar';
+      R.modalShowSave = md.type!=='verDespliegue' && md.type!=='verGithubLinks' && md.type!=='promoteConfirm' && md.type!=='discord' && md.type!=='batchPromote' && md.type!=='aviso' && md.type!=='correo';
       R.form={...s.form};
       R.f_url=(e)=>this.setForm('url',e.target.value);
       R.f_version=(e)=>this.setForm('version',e.target.value);
@@ -1961,6 +2648,7 @@ class Component extends DCLogic {
       const ch=(k)=>(e)=>this.setForm(k,e.target.value);
       const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id}));
       const ambienteOptions=((emp&&emp.ambientes)||[]).map(a=>({value:a.id,label:(a.label&&a.label!==a.code)?(a.label+' ('+a.code+')'):a.code}));
+      const servidorOptions=((emp&&emp.servidores)||[]).map(x=>({value:x.id,label:x.code+' — '+x.ip}));
       const stageOptions=[{value:'',label:'— Sin etapa'}].concat(estadoOptions);
       const fields={
         empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
@@ -1970,7 +2658,11 @@ class Component extends DCLogic {
         despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
         bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
         password:[{label:'Nueva contraseña',key:'newPassword',kind:'text',type:'password',placeholder:'mínimo 6 caracteres'},{label:'Confirmar contraseña',key:'confirmPassword',kind:'text',type:'password',placeholder:'repite la contraseña'}],
-        ambiente:[{label:'Código',key:'code',kind:'text',placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:'text',placeholder:'Ej: Producción'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:'select',options:stageOptions}],
+        ambiente:[{label:'Código',key:'code',kind:'text',placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:'text',placeholder:'Ej: Producción'},{label:'Carpeta de despliegue',key:'deployFolder',kind:'text',placeholder:'Ej: Despliegues40'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:'select',options:stageOptions}],
+        servidor:[{label:'Código',key:'code',kind:'text',placeholder:'Ej: APPS, DMZ, MZ'},{label:'IP',key:'ip',kind:'text',placeholder:'Ej: 172.30.100.11'}],
+        instruccion:[{label:'Texto de la instrucción',key:'text',kind:'area',placeholder:'Ej: por favor conservar carpeta logs'}],
+        contacto:[{label:'Nombre',key:'name',kind:'text',placeholder:'Ej: Pilar Zamora'},{label:'Correo',key:'email',kind:'text',placeholder:'nombre@empresa.com'},{label:'Va por defecto en',key:'defaultField',kind:'select',options:[{value:'',label:'— No premarcado'},{value:'to',label:'Para'},{value:'cc',label:'CC'}]}],
+        desplegable:[{label:'Nombre de despliegue',key:'name',kind:'text',placeholder:'Ej: AssistanceTySApi'},{label:'Tipo',key:'kind',kind:'select',options:[{value:'api',label:'API'},{value:'app',label:'App'},{value:'gateway',label:'Gateway'}]},{label:'Servidor',key:'serverId',kind:'select',options:servidorOptions},{label:'Puerto (opcional)',key:'port',kind:'text',placeholder:'Ej: 1801 — vacío para instaladores'}],
       };
       R.formFields=(fields[md.type]||[]).map(fd=>{
         const isPassword = fd.type==='password';
@@ -2020,6 +2712,122 @@ class Component extends DCLogic {
         });
         R.addCredRow=()=>this.addCredRow();
       }
+      if(md.type==='desplegable'){
+        const sel=s.form.instruccionIds||[];
+        const inss=(emp&&emp.instrucciones)||[];
+        R.desplegableSinInstrucciones=!inss.length;
+        R.desplegableInstrucciones=inss.map(i=>{
+          const on=sel.includes(i.id);
+          return { text:i.text, toggle:()=>this.toggleDesplegableInstruccion(i.id),
+                   bg: on?'rgba(53,192,240,.10)':'#0c1428',
+                   border: on?'rgba(53,192,240,.45)':'rgba(255,255,255,.10)',
+                   boxBorder: on?'#35c0f0':'rgba(255,255,255,.22)',
+                   boxBg: on?'#35c0f0':'transparent',
+                   iconHref: on?'#ic-check':'#ic-x',
+                   color: on?'#e9edf7':'#8a95b6' };
+        });
+      }
+      if(md.type==='componentes'){
+        const sel=s.form.desplegableIds||[];
+        const opts=(emp&&emp.desplegables)||[];
+        const srvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ srvById[x.id]=x; });
+        const kindMeta=(k)=> k==='gateway' ? ['Gateway','#a78bfa','rgba(167,139,250,.16)']
+                           : k==='app'     ? ['App','#f5b544','rgba(245,181,68,.16)']
+                           :                 ['API','#35c0f0','rgba(53,192,240,.16)'];
+        R.componentesOpcionesEmpty=!opts.length;
+        R.componentesOpciones=opts.map(d=>{
+          const on=sel.includes(d.id), meta=kindMeta(d.kind), srv=srvById[d.serverId];
+          return { titulo: d.name + (d.port?(':'+d.port):''), servidor: srv?srv.code:'sin servidor',
+                   kindLabel:meta[0], kindColor:meta[1], kindBg:meta[2],
+                   toggle:()=>this.toggleProyDesplegable(d.id),
+                   bg: on?'rgba(53,192,240,.10)':'#0c1428',
+                   border: on?'rgba(53,192,240,.45)':'rgba(255,255,255,.10)',
+                   boxBorder: on?'#35c0f0':'rgba(255,255,255,.22)',
+                   boxBg: on?'#35c0f0':'transparent',
+                   iconHref: on?'#ic-check':'#ic-x',
+                   color: on?'#e9edf7':'#8a95b6' };
+        });
+      }
+      if(md.type==='correo'){
+        // Wizard de correo de despliegue: selección (Tarea 9). La Tarea 10 agrega vista previa + mailto a este mismo bloque.
+        const f=s.form||{};
+        const ambs=(emp&&emp.ambientes)||[];
+        const deps=(emp&&emp.desplegables)||[];
+        const proys=(emp&&emp.proyectos)||[];
+        const ctos=(emp&&emp.contactos)||[];
+        const srvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ srvById[x.id]=x; });
+        const sel=f.itemIds||[];
+        const ambSel=ambs.find(a=>a.id===f.envId);
+        const box=(on)=>({ boxBorder: on?'#35c0f0':'rgba(255,255,255,.22)', boxBg: on?'#35c0f0':'transparent',
+                           iconHref: on?'#ic-check':'#ic-x', color: on?'#e9edf7':'#8a95b6',
+                           bg: on?'rgba(53,192,240,.10)':'#0c1428', border: on?'rgba(53,192,240,.45)':'rgba(255,255,255,.10)' });
+        const itemRow=(d)=>{ const srv=srvById[d.serverId];
+          return Object.assign({ titulo: d.name + (d.port?(':'+d.port):''), servidor: srv?srv.code:'sin servidor',
+                                 toggle:()=>this.toggleCorreoItem(d.id) }, box(sel.includes(d.id))); };
+
+        R.correoAmbientes=ambs.map(a=>{ const on=a.id===f.envId;
+          return { code:a.code, pick:()=>this.setCorreoAmbiente(a.id),
+                   bg: on?'rgba(53,192,240,.14)':'#0c1428', border: on?'#35c0f0':'rgba(255,255,255,.10)',
+                   color: on?'#35c0f0':'#8a95b6' }; });
+        R.correoCarpetaFalta = !!(ambSel && !ambSel.deployFolder);
+
+        const proySel=f.proyectoIds||[];
+        R.correoProyectos=proys.map(p=>{
+          const on=proySel.includes(p.id);
+          const mios=deps.filter(d=>(p.desplegableIds||[]).includes(d.id));
+          return Object.assign({ nombre:p.nombre, on, sinComponentes: on && !mios.length,
+                                 toggle:()=>this.toggleCorreoProyecto(p.id),
+                                 pickApi:()=>this.setCorreoProyectoKind(p.id,'api'),
+                                 pickGateway:()=>this.setCorreoProyectoKind(p.id,'gateway'),
+                                 pickAmbos:()=>this.setCorreoProyectoKind(p.id,'ambos'),
+                                 items: mios.map(itemRow) }, box(on));
+        });
+
+        const enAlgunProyecto=new Set();
+        proys.forEach(p=>(p.desplegableIds||[]).forEach(id=>enAlgunProyecto.add(id)));
+        const otros=deps.filter(d=>!enAlgunProyecto.has(d.id));
+        R.correoOtrosEmpty=!otros.length;
+        R.correoOtros=otros.map(itemRow);
+
+        R.correoContactosEmpty=!ctos.length;
+        R.correoContactos=ctos.map(k=>{
+          const inTo=(f.toIds||[]).includes(k.id), inCc=(f.ccIds||[]).includes(k.id);
+          return { name:k.name, email:k.email,
+                   pickTo:()=>this.toggleCorreoContacto(k.id,'to'),
+                   pickCc:()=>this.toggleCorreoContacto(k.id,'cc'),
+                   toBg: inTo?'rgba(53,192,240,.22)':'transparent', toColor: inTo?'#35c0f0':'#8a95b6',
+                   ccBg: inCc?'rgba(167,139,250,.22)':'transparent', ccColor: inCc?'#a78bfa':'#8a95b6' };
+        });
+        R.setCorreoNota=(e)=>this.setCorreoNota(e);
+
+        // --- Vista previa y mailto (Tarea 10) ---
+        const p=this.correoPayload();
+        const url=this.correoMailtoUrl(p);
+        const falta=[];
+        if(!f.envId) falta.push('elige un ambiente');
+        if(!p.itemsCount) falta.push('marca al menos un desplegable');
+        if(!p.to.length) falta.push('agrega al menos un destinatario en Para');
+        const puede=!falta.length;
+        const copiado=s.copiedKey==='correo-cuerpo';
+        R.correoAsunto=p.subject;
+        R.correoCuerpo=p.body;
+        R.correoChars=url.length+' / 2048 caracteres';
+        R.correoCharsColor= url.length>1900 ? '#f5b544' : '#66739a';
+        R.correoLargo= url.length>1900;
+        R.correoBloqueo= falta.length ? ('Para poder abrir el correo: '+falta.join(', ')+'.') : '';
+        R.correoBloqueoShow=!!falta.length;
+        R.correoNoPuede=!puede;
+        R.correoBtnBg= puede ? 'linear-gradient(135deg,#2b3bd6,#23a9e0)' : 'rgba(255,255,255,.06)';
+        R.correoBtnColor= puede ? '#fff' : '#66739a';
+        R.correoBtnCursor= puede ? 'pointer' : 'not-allowed';
+        R.abrirCorreo=()=>this.abrirCorreo();
+        R.copiarCorreoCuerpo=()=>this.copiarCorreoCuerpo();
+        R.correoCopyLabel= copiado ? 'Copiado' : 'Copiar cuerpo';
+        R.correoCopyIcon= copiado ? '#ic-check' : '#ic-copy';
+        R.correoCopyColor= copiado ? '#39d39b' : '#c7d0ea';
+        R.setCorreoCuerpo=(e)=>this.setCorreoCuerpo(e);
+      }
+      // --- Fin wizard de correo de despliegue (Tarea 9/10). ---
     }
     return R;
   }
