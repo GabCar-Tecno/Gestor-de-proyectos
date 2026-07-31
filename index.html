@@ -245,7 +245,7 @@ button{color:inherit}
     </div>
   </sc-if>
 
-  <main style="flex:1;padding:clamp(20px,3.2vw,40px) clamp(16px,3vw,44px) 80px;max-width:1240px;width:100%;margin:0 auto">
+  <main style="flex:1;padding:clamp(20px,3.2vw,40px) clamp(16px,3vw,44px) 80px;max-width:{{ mainMaxW }};width:100%;margin:0 auto">
 
     <!-- ===================== EMPRESAS ===================== -->
     <sc-if value="{{ viewEmpresas }}" hint-placeholder-val="{{ true }}">
@@ -511,13 +511,12 @@ button{color:inherit}
               </sc-for>
             </div>
           </div>
-          <!-- Componentes desplegables del proyecto -->
+          <!-- Componentes desplegables del proyecto (solo DEV: expone servidores internos) -->
+          <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
           <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:150px">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:14.5px;font-weight:600">Componentes desplegables</span>
-              <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
-                <button onClick="{{ openComponentesProy }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
-              </sc-if>
+              <button onClick="{{ openComponentesProy }}" style="background:none;border:0;color:#66739a;cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px" style-hover="color:#35c0f0">Editar</button>
             </div>
             <sc-if value="{{ componentesProyEmpty }}" hint-placeholder-val="{{ false }}">
               <span style="font-size:12.5px;color:#66739a;line-height:1.5">Sin componentes. Enlaza las APIs, apps y gateways que se despliegan con este proyecto.</span>
@@ -532,6 +531,7 @@ button{color:inherit}
               </sc-for>
             </div>
           </div>
+          </sc-if>
           <!-- recurso cards -->
           <sc-for list="{{ proyecto.recursoCards }}" as="r" hint-placeholder-count="3">
             <button onClick="{{ r.open }}" style="text-align:left;cursor:pointer;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:150px;transition:border-color .18s" style-hover="border-color:rgba(53,192,240,.4)">
@@ -919,13 +919,26 @@ button{color:inherit}
                 <sc-if value="{{ correoOtrosEmpty }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size:12px;color:#66739a">Todos los desplegables están enlazados a algún proyecto.</span>
                 </sc-if>
-                <sc-for list="{{ correoOtros }}" as="d" hint-placeholder-count="3">
-                  <button onClick="{{ d.toggle }}" style="text-align:left;cursor:pointer;background:{{ d.bg }};border:1px solid {{ d.border }};border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px;flex-wrap:wrap" style-hover="border-color:rgba(53,192,240,.45)">
-                    <span style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ d.boxBorder }};background:{{ d.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="10" height="10"><use href="{{ d.iconHref }}"></use></svg></span>
-                    <span style="flex:1;min-width:120px;font-size:12.5px;color:{{ d.color }};font-family:'JetBrains Mono',monospace">{{ d.titulo }}</span>
-                    <span style="flex:none;font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ d.servidor }}</span>
-                  </button>
-                </sc-for>
+                <sc-if value="{{ correoOtrosHay }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <button onClick="{{ toggleCorreoOtros }}" style="width:100%;text-align:left;cursor:pointer;background:#0c1428;border:1px solid {{ correoOtrosBorder }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px" style-hover="border-color:rgba(53,192,240,.45)">
+                      <span style="flex:1;min-width:0;font-size:12.5px;color:{{ correoOtrosResumenColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ correoOtrosResumen }}</span>
+                      <span style="flex:none;font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ correoOtrosConteo }}</span>
+                      <svg width="13" height="13" style="flex:none;color:#66739a;transform:{{ correoOtrosChevron }}"><use href="#ic-chevron"></use></svg>
+                    </button>
+                    <sc-if value="{{ correoOtrosOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+                        <sc-for list="{{ correoOtros }}" as="d" hint-placeholder-count="3">
+                          <button onClick="{{ d.toggle }}" style="text-align:left;cursor:pointer;background:{{ d.rowBg }};border:0;border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:9px" style-hover="background:rgba(255,255,255,.05)">
+                            <span style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ d.boxBorder }};background:{{ d.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="10" height="10"><use href="{{ d.iconHref }}"></use></svg></span>
+                            <span style="flex:1;min-width:0;font-size:12.5px;color:{{ d.color }};font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.titulo }}</span>
+                            <span style="flex:none;font-size:11.5px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ d.servidor }}</span>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
               </div>
 
               <div style="display:flex;flex-direction:column;gap:9px">
@@ -933,18 +946,53 @@ button{color:inherit}
                 <sc-if value="{{ correoContactosEmpty }}" hint-placeholder-val="{{ false }}">
                   <div style="background:#0c1428;border:1px dashed rgba(255,255,255,.12);border-radius:12px;padding:16px;color:#f5b544;font-size:12.5px">Esta empresa no tiene contactos. Agrégalos en la sección Contactos.</div>
                 </sc-if>
-                <sc-for list="{{ correoContactos }}" as="k" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <span style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:1px">
-                      <span style="font-size:12.5px;color:#c7d0ea">{{ k.name }}</span>
-                      <span style="font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace">{{ k.email }}</span>
-                    </span>
-                    <span style="flex:none;display:inline-flex;background:#0a1122;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:2px;gap:2px">
-                      <button onClick="{{ k.pickTo }}" style="cursor:pointer;background:{{ k.toBg }};border:0;color:{{ k.toColor }};padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600">Para</button>
-                      <button onClick="{{ k.pickCc }}" style="cursor:pointer;background:{{ k.ccBg }};border:0;color:{{ k.ccColor }};padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600">CC</button>
-                    </span>
+                <sc-if value="{{ correoContactosHay }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+
+                    <div style="flex:1;min-width:210px;display:flex;flex-direction:column;gap:6px">
+                      <span style="font-size:11.5px;font-weight:600;color:#66739a">Para</span>
+                      <button onClick="{{ toggleCorreoTo }}" style="width:100%;text-align:left;cursor:pointer;background:#0c1428;border:1px solid {{ correoToBorder }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px" style-hover="border-color:rgba(53,192,240,.45)">
+                        <span style="flex:1;min-width:0;font-size:12.5px;color:{{ correoToResumenColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ correoToResumen }}</span>
+                        <svg width="13" height="13" style="flex:none;color:#66739a;transform:{{ correoToChevron }}"><use href="#ic-chevron"></use></svg>
+                      </button>
+                      <sc-if value="{{ correoToOpen }}" hint-placeholder-val="{{ false }}">
+                        <div style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+                          <sc-for list="{{ correoContactosTo }}" as="k" hint-placeholder-count="3">
+                            <button onClick="{{ k.toggle }}" style="text-align:left;cursor:pointer;background:{{ k.rowBg }};border:0;border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:9px" style-hover="background:rgba(255,255,255,.05)">
+                              <span style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ k.boxBorder }};background:{{ k.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="10" height="10"><use href="{{ k.iconHref }}"></use></svg></span>
+                              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                                <span style="font-size:12.5px;color:{{ k.color }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ k.name }}</span>
+                                <span style="font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ k.email }}</span>
+                              </span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+
+                    <div style="flex:1;min-width:210px;display:flex;flex-direction:column;gap:6px">
+                      <span style="font-size:11.5px;font-weight:600;color:#66739a">CC</span>
+                      <button onClick="{{ toggleCorreoCc }}" style="width:100%;text-align:left;cursor:pointer;background:#0c1428;border:1px solid {{ correoCcBorder }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px" style-hover="border-color:rgba(167,139,250,.45)">
+                        <span style="flex:1;min-width:0;font-size:12.5px;color:{{ correoCcResumenColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ correoCcResumen }}</span>
+                        <svg width="13" height="13" style="flex:none;color:#66739a;transform:{{ correoCcChevron }}"><use href="#ic-chevron"></use></svg>
+                      </button>
+                      <sc-if value="{{ correoCcOpen }}" hint-placeholder-val="{{ false }}">
+                        <div style="background:#0a1122;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+                          <sc-for list="{{ correoContactosCc }}" as="k" hint-placeholder-count="3">
+                            <button onClick="{{ k.toggle }}" style="text-align:left;cursor:pointer;background:{{ k.rowBg }};border:0;border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:9px" style-hover="background:rgba(255,255,255,.05)">
+                              <span style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ k.boxBorder }};background:{{ k.boxBg }};display:flex;align-items:center;justify-content:center;color:#080d1b"><svg width="10" height="10"><use href="{{ k.iconHref }}"></use></svg></span>
+                              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                                <span style="font-size:12.5px;color:{{ k.color }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ k.name }}</span>
+                                <span style="font-size:11px;color:#66739a;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ k.email }}</span>
+                              </span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+
                   </div>
-                </sc-for>
+                </sc-if>
               </div>
 
               <div style="display:flex;flex-direction:column;gap:7px">
@@ -1204,6 +1252,7 @@ class Component extends DCLogic {
       recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       showLoginPass:false, showRecoveryPass1:false, showRecoveryPass2:false, modalShowPass:{},
       data:[], statuses:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false, apiFullscreen:false, credShown:{},
+      correoOpen:{},
       narrow: (typeof window!=='undefined' && window.innerWidth<=760),
     };
   }
@@ -1659,8 +1708,13 @@ class Component extends DCLogic {
       nota: '',
       cuerpoEditado: null,
     }});
+    this.setState({correoOpen:{}});
   }
   // --- Wizard de correo de despliegue: selección (Tarea 9). La Tarea 10 extiende con vista previa/mailto. ---
+  // Paneles colapsables del wizard ('otros', 'to', 'cc'): solo estado de UI, no toca el form.
+  toggleCorreoPanel(key){
+    this.setState(s=>{ const cur=s.correoOpen||{}; return {correoOpen:{...cur, [key]:!cur[key]}}; });
+  }
   setCorreoAmbiente(id){ this.setState(s=>({form:{...s.form, envId:id, cuerpoEditado:null}})); }
   setCorreoNota(e){ const v=e.target.value; this.setState(s=>({form:{...s.form, nota:v, cuerpoEditado:null}})); }
   _correoDesplegablesDe(pid){
@@ -1764,7 +1818,11 @@ class Component extends DCLogic {
   abrirCorreo(){
     const p=this.correoPayload();
     if(!p.to.length || !p.itemsCount) return;
-    window.location.href=this.correoMailtoUrl(p);
+    // En pestaña nueva: si el mailto lo atiende un webmail no se pierde la app, y si lo atiende
+    // Outlook de escritorio el navegador igual dispara el handler sin navegar esta pestaña.
+    const a=document.createElement('a');
+    a.href=this.correoMailtoUrl(p); a.target='_blank'; a.rel='noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
   }
   copiarCorreoCuerpo(){ this.copyToClipboard(this.correoPayload().body, 'correo-cuerpo'); }
   toggleProyDesplegable(id){
@@ -2329,6 +2387,8 @@ class Component extends DCLogic {
 
     // Documentación Técnica (por proyecto)
     R.viewApidoc=v==='apidoc';
+    // La doc de Redoc necesita más ancho que el resto de las vistas (menú lateral + panel de ejemplos).
+    R.mainMaxW= v==='apidoc' ? '1800px' : '1240px';
     R.apiTabUrl=s.apiTab==='url'; R.apiTabJson=s.apiTab==='json';
     R.apiTabUrlColor=s.apiTab==='url'?'#35c0f0':'#8a95b6';
     R.apiTabJsonColor=s.apiTab==='json'?'#35c0f0':'#8a95b6';
@@ -2787,17 +2847,45 @@ class Component extends DCLogic {
         proys.forEach(p=>(p.desplegableIds||[]).forEach(id=>enAlgunProyecto.add(id)));
         const otros=deps.filter(d=>!enAlgunProyecto.has(d.id));
         R.correoOtrosEmpty=!otros.length;
-        R.correoOtros=otros.map(itemRow);
+        R.correoOtrosHay=!!otros.length;
+        R.correoOtros=otros.map(d=>Object.assign(itemRow(d), {rowBg: sel.includes(d.id)?'rgba(53,192,240,.10)':'transparent'}));
+
+        // Panel colapsable de "otros desplegables": resumen de lo marcado en el botón.
+        const abiertos=s.correoOpen||{};
+        const chevron=(on)=> on?'rotate(-90deg)':'rotate(90deg)';
+        const otrosSel=otros.filter(d=>sel.includes(d.id));
+        R.correoOtrosOpen=!!abiertos.otros;
+        R.correoOtrosChevron=chevron(!!abiertos.otros);
+        R.toggleCorreoOtros=()=>this.toggleCorreoPanel('otros');
+        R.correoOtrosConteo=otrosSel.length+'/'+otros.length;
+        R.correoOtrosResumen= otrosSel.length ? otrosSel.map(d=>d.name+(d.port?(':'+d.port):'')).join(', ') : 'Ninguno seleccionado';
+        R.correoOtrosResumenColor= otrosSel.length?'#c7d0ea':'#66739a';
+        R.correoOtrosBorder= otrosSel.length?'rgba(53,192,240,.45)':'rgba(255,255,255,.12)';
 
         R.correoContactosEmpty=!ctos.length;
-        R.correoContactos=ctos.map(k=>{
-          const inTo=(f.toIds||[]).includes(k.id), inCc=(f.ccIds||[]).includes(k.id);
-          return { name:k.name, email:k.email,
-                   pickTo:()=>this.toggleCorreoContacto(k.id,'to'),
-                   pickCc:()=>this.toggleCorreoContacto(k.id,'cc'),
-                   toBg: inTo?'rgba(53,192,240,.22)':'transparent', toColor: inTo?'#35c0f0':'#8a95b6',
-                   ccBg: inCc?'rgba(167,139,250,.22)':'transparent', ccColor: inCc?'#a78bfa':'#8a95b6' };
-        });
+        R.correoContactosHay=!!ctos.length;
+        // Destinatarios en dos desplegables (Para / CC). toggleCorreoContacto ya impide que un
+        // contacto quede en los dos campos a la vez.
+        const ctoRow=(k,field)=>{
+          const on=(f[field==='to'?'toIds':'ccIds']||[]).includes(k.id);
+          return Object.assign({ name:k.name, email:k.email, toggle:()=>this.toggleCorreoContacto(k.id,field),
+                                 rowBg: on?(field==='to'?'rgba(53,192,240,.10)':'rgba(167,139,250,.10)'):'transparent' },
+                               box(on));
+        };
+        R.correoContactosTo=ctos.map(k=>ctoRow(k,'to'));
+        R.correoContactosCc=ctos.map(k=>ctoRow(k,'cc'));
+        const nombresDe=(ids)=>ctos.filter(k=>(ids||[]).includes(k.id)).map(k=>k.name);
+        const nomTo=nombresDe(f.toIds), nomCc=nombresDe(f.ccIds);
+        R.correoToOpen=!!abiertos.to; R.correoCcOpen=!!abiertos.cc;
+        R.correoToChevron=chevron(!!abiertos.to); R.correoCcChevron=chevron(!!abiertos.cc);
+        R.toggleCorreoTo=()=>this.toggleCorreoPanel('to');
+        R.toggleCorreoCc=()=>this.toggleCorreoPanel('cc');
+        R.correoToResumen= nomTo.length ? nomTo.join(', ') : 'Sin destinatarios';
+        R.correoToResumenColor= nomTo.length?'#c7d0ea':'#f5b544';
+        R.correoToBorder= nomTo.length?'rgba(53,192,240,.45)':'rgba(245,181,68,.45)';
+        R.correoCcResumen= nomCc.length ? nomCc.join(', ') : 'Nadie en copia';
+        R.correoCcResumenColor= nomCc.length?'#c7d0ea':'#66739a';
+        R.correoCcBorder= nomCc.length?'rgba(167,139,250,.45)':'rgba(255,255,255,.12)';
         R.setCorreoNota=(e)=>this.setCorreoNota(e);
 
         // --- Vista previa y mailto (Tarea 10) ---
