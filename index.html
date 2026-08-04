@@ -710,10 +710,10 @@ button{color:inherit}
       </div>
     </sc-if>
 
-    <!-- ===================== DOCUMENTACIÓN API (por proyecto) ===================== -->
+    <!-- ===================== DOCUMENTACIÓN TÉCNICA (por proyecto) ===================== -->
     <sc-if value="{{ viewApidoc }}" hint-placeholder-val="{{ false }}">
       <div style="animation:vwIn .3s ease">
-        <div style="margin-bottom:18px"><h1 style="margin:0 0 4px;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">Documentación API</h1><p style="margin:0;color:#8a95b6;font-size:13.5px">{{ proyecto.nombre }}</p></div>
+        <div style="margin-bottom:18px"><h1 style="margin:0 0 4px;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">Documentación Técnica</h1><p style="margin:0;color:#8a95b6;font-size:13.5px">{{ proyecto.nombre }}</p></div>
 
         <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
         <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px;margin-bottom:16px">
@@ -2303,7 +2303,7 @@ class Component extends DCLogic {
     const crumbs=[{label:'Empresas',go:()=>this.goHome(),color:v==='empresas'?'#e9edf7':'#8a95b6',weight:v==='empresas'?600:400,sep:false}];
     if(emp && v!=='empresas'){ crumbs.push({label:emp.nombre,go:()=>this.goProyectos(),color:v==='proyectos'?'#e9edf7':'#8a95b6',weight:v==='proyectos'?600:400,sep:true}); }
     if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'#e9edf7':'#8a95b6',weight:v==='proyecto'?600:400,sep:true}); }
-    if(v==='apidoc'){ crumbs.push({label:'Documentación API',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
+    if(v==='apidoc'){ crumbs.push({label:'Documentación Técnica',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(v==='configuracion'){ crumbs.push({label:'Configuración',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(v==='requerimientos'){ crumbs.push({label:'Requerimientos',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(v==='requerimiento'&&req){ crumbs.push({label:'Requerimientos',go:()=>this.goRequerimientos(),color:'#8a95b6',weight:400,sep:true}); crumbs.push({label:req.code||req.titulo,go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
@@ -2327,7 +2327,7 @@ class Component extends DCLogic {
     else if(v==='proyectos'){ R.primaryLabel='Nuevo proyecto'; R.primaryAction=()=>this.addProyecto(); }
     else if(v==='requerimientos'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReq(); }
 
-    // Documentación API (por proyecto)
+    // Documentación Técnica (por proyecto)
     R.viewApidoc=v==='apidoc';
     R.apiTabUrl=s.apiTab==='url'; R.apiTabJson=s.apiTab==='json';
     R.apiTabUrlColor=s.apiTab==='url'?'#35c0f0':'#8a95b6';
@@ -2438,7 +2438,7 @@ class Component extends DCLogic {
             copyBorder: copied?'rgba(57,211,155,.4)':'rgba(255,255,255,.09)',
             copyTitle: copied?'Copiado':'Copiar URL' };
         }),
-        recursoCards:[ cardOf('manualTecnico','Manual Técnico','#ic-book'), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación API',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
+        recursoCards:[ ...(isDev ? [cardOf('manualTecnico','Manual Técnico','#ic-book')] : []), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación Técnica',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'#66739a',open:()=>this.openApiDoc()} ],
         credenciales:(rec.credenciales||[]).map(c=>{
           const shown=!!s.credShown[c.id]; const k='cred:'+c.id; const copied=s.copiedKey===k;
           return { label:c.label||'(sin nombre)',
