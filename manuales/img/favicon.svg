@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 128 128"
+  role="img"
+  aria-labelledby="title desc">
+  <title id="title">Coltanques Manuales</title>
+  <desc id="desc">Isotipo oficial de Coltanques con distintivo de manual.</desc>
+
+  <!-- Fondo cuadrado: el distintivo no sale del contenedor -->
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#FFFFFF"/>
+
+  <!-- Isotipo: mismos paths originales de LogoF.svg, correctamente centrado -->
+  <g transform="translate(14 15) scale(0.16949 0.16917) translate(-343 -253)">
+    <g transform="translate(0 1254) scale(0.1 -0.1)">
+      <path d="M6360 9979 c-833 -157 -1454 -388 -1970 -732 -715 -476 -1061 -1146 -929 -1799 64 -317 244 -614 514 -846 515 -443 1335 -640 2335 -561 960 75 2007 419 2903 952 105 63 147 97 100 83 -22 -6 -166 -40 -428 -101 -364 -84 -580 -137 -589 -145 -4 -5 18 -13 50 -20 151 -30 153 -39 29 -93 -261 -113 -671 -212 -1090 -262 -180 -22 -576 -30 -750 -16 -998 84 -1666 398 -1973 928 -54 91 -97 201 -129 322 -34 127 -38 368 -10 501 68 315 237 602 518 877 166 163 388 322 689 494 233 133 674 341 838 395 42 14 84 27 92 30 13 4 13 6 0 14 -20 13 -20 13 -200 -21z" fill="#111822"/>
+      <path d="M5905 9020 c-323 -51 -605 -263 -746 -564 -69 -147 -84 -226 -83 -426 0 -147 4 -187 22 -253 129 -468 580 -789 1038 -738 161 17 298 63 431 143 127 76 285 253 361 403 100 200 128 467 72 695 -88 358 -386 649 -744 726 -88 19 -271 26 -351 14z" fill="#EA0B2A"/>
+    </g>
+  </g>
+
+  <!-- Distintivo de manual: aumentado para conservar legibilidad a 16–32 px -->
+  <g transform="translate(70 48)">
+    <!-- Distintivo rojo en primer plano -->
+    <circle cx="23" cy="25" r="24" fill="#EA0029"/>
+
+    <!-- Documento: grande y ligeramente elevado, superpuesto al isotipo -->
+    <path d="M9 5h20l10 10v37H9z"
+      fill="#FFFFFF"
+      stroke="#101820"
+      stroke-width="2.5"
+      stroke-linejoin="round"/>
+    <path d="M29 5v11h10M14 26h20M14 34h20M14 42h16"
+      fill="none"
+      stroke="#101820"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+  </g>
+</svg>
