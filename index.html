@@ -32,8 +32,23 @@ button{color:inherit}
 .redoc-embed:fullscreen{--redoc-h:100vh;border-radius:0!important}
 .redoc-scroll{height:100%;overflow-y:auto;overflow-x:hidden}
 .redoc-embed .menu-content{height:var(--redoc-h)!important}
+.master-table{display:flex;flex-direction:column;background:#0c1428;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
+.master-table-head,.master-row{display:grid;grid-template-columns:minmax(125px,1.1fr) 105px minmax(190px,1.8fr) 130px minmax(150px,1.4fr) 145px;gap:12px;align-items:center}
+.master-table-head{padding:12px 16px;background:#111a30;color:#8a95b6;font-size:10.5px;font-weight:600;letter-spacing:.45px;text-transform:uppercase}
+.master-row{width:100%;text-align:left;cursor:pointer;background:transparent;border:0;border-top:1px solid rgba(255,255,255,.055);color:#e9edf7;padding:13px 16px;transition:background .15s}
+.master-row:hover{background:rgba(53,192,240,.055)}
+.master-cell-label{display:none}
+.master-cell-main{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.master-cell-sub{display:block;margin-top:3px;color:#66739a;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1000px){.master-table-head,.master-row{grid-template-columns:minmax(110px,1fr) 90px minmax(150px,1.5fr) 110px minmax(120px,1fr) 125px;gap:8px;padding-left:12px;padding-right:12px}}
 /* ===== Móvil (<=760px: mismo corte que el estado `narrow` del JS) ===== */
 @media (max-width:760px){
+.master-table{background:transparent;border:0;gap:10px;overflow:visible}
+.master-table-head{display:none}
+.master-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 14px;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:14px}
+.master-row:hover{background:#141f38}
+.master-cell-label{display:block;margin-bottom:4px;color:#66739a;font-size:9.5px;font-weight:600;letter-spacing:.35px;text-transform:uppercase}
+.master-cell-app,.master-cell-description,.master-cell-observations{grid-column:1/-1}
 /* La cabecera se salía ~23px del ancho: el avatar quedaba cortado. */
 .app-header{gap:10px!important}
 .brand-sub{display:none}
@@ -235,6 +250,10 @@ button{color:inherit}
     </sc-if>
     <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;min-width:0"></div>
+    </sc-if>
+
+    <sc-if value="{{ showMasterNav }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ goMaestro }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:{{ masterNavBg }};border:1px solid {{ masterNavBorder }};color:{{ masterNavColor }};padding:8px 11px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer">Maestro</button>
     </sc-if>
 
     <sc-if value="{{ showSave }}" hint-placeholder-val="{{ false }}">
@@ -606,7 +625,47 @@ button{color:inherit}
       </div>
     </sc-if>
 
-    <!-- ===================== REQUERIMIENTOS (lista) ===================== -->
+    <!-- ===================== MAESTRO CENTRAL DE REQUERIMIENTOS ===================== -->
+    <sc-if value="{{ viewMaestro }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:vwIn .3s ease">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+          <div><h1 style="margin:0 0 5px;font-size:clamp(22px,3vw,29px);font-weight:700;letter-spacing:-.5px">Tablero de requerimientos</h1><p style="margin:0;color:#8a95b6;font-size:13.5px">Consulta y administra los cambios de todas las aplicaciones.</p></div>
+          <span style="font-size:11px;color:#8a95b6;background:#111a30;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:7px 12px">{{ maestroVisibleCount }} de {{ maestroCount }} requerimientos</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px">
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.5px">Requerimientos</div><div style="font-size:22px;font-weight:700;color:#e9edf7;margin-top:3px">{{ maestroCount }}</div></div>
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.5px">Con bloqueantes</div><div style="font-size:22px;font-weight:700;color:#f97b7b;margin-top:3px">{{ maestroBlockedCount }}</div></div>
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.5px">Pendientes de aprobación</div><div style="font-size:22px;font-weight:700;color:#f5b544;margin-top:3px">{{ maestroPendingApprovalCount }}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:12px">
+          <input value="{{ maestroSearch }}" onInput="{{ setMaestroSearch }}" placeholder="Buscar por #Req, descripción, observaciones o aplicación" style="flex:1;min-width:230px;background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 12px;color:#e9edf7;font-size:12.5px;outline:none" style-focus="border-color:#35c0f0"/>
+          <select value="{{ maestroProject }}" onChange="{{ setMaestroProject }}" style="min-width:180px;background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:12px">
+            <option value="todos">Todas las aplicaciones</option>
+            <sc-for list="{{ maestroProjectOptions }}" as="app" hint-placeholder-count="4"><option value="{{ app.value }}">{{ app.label }}</option></sc-for>
+          </select>
+          <select value="{{ maestroStatus }}" onChange="{{ setMaestroStatus }}" style="min-width:170px;background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:10px 11px;color:#e9edf7;font-size:12px">
+            <option value="todos">Todos los estados</option>
+            <sc-for list="{{ maestroStatusOptions }}" as="st" hint-placeholder-count="5"><option value="{{ st.value }}">{{ st.label }}</option></sc-for>
+          </select>
+        </div>
+        <div class="master-table">
+          <div class="master-table-head"><span>Aplicación</span><span>#Req</span><span>Descripción de cambios</span><span>Estado</span><span>Observaciones</span><span>Fecha entrega usuario</span></div>
+          <sc-for list="{{ maestroReqList }}" as="r" hint-placeholder-count="5">
+            <button onClick="{{ r.open }}" class="master-row" title="Abrir detalle y editar requerimiento">
+              <span class="master-cell-app master-cell-main"><span class="master-cell-label">Aplicación</span>{{ r.proyecto }}<span class="master-cell-sub">{{ r.empresa }}</span></span>
+              <span class="master-cell-main" style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#35c0f0"><span class="master-cell-label">#Req</span>{{ r.code }}</span>
+              <span class="master-cell-description master-cell-main"><span class="master-cell-label">Descripción de cambios</span>{{ r.descripcion }}<span class="master-cell-sub">{{ r.titulo }}</span></span>
+              <span class="master-cell-main"><span class="master-cell-label">Estado</span><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:{{ r.estadoColor }};background:{{ r.estadoBg }};padding:5px 9px;border-radius:16px"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.estadoColor }}"></span>{{ r.estado }}</span></span>
+              <span class="master-cell-observations master-cell-main" title="{{ r.observaciones }}"><span class="master-cell-label">Observaciones</span>{{ r.observaciones }}<span class="master-cell-sub">{{ r.observacionesMetaLabel }}</span></span>
+              <span class="master-cell-main" style="font-size:11.5px;color:{{ r.deliveryColor }}"><span class="master-cell-label">Fecha entrega usuario</span>{{ r.fechaEntregaUsuario }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ maestroEmpty }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;padding:44px 20px;color:#66739a;font-size:13.5px;background:#111a30;border:1px solid rgba(255,255,255,.06);border-radius:14px">No hay requerimientos que coincidan con la búsqueda.</div></sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===================== REQUERIMIENTOS (lista por proyecto) ===================== -->
     <sc-if value="{{ viewRequerimientos }}" hint-placeholder-val="{{ true }}">
       <div style="animation:vwIn .3s ease">
         <div style="margin-bottom:20px"><h1 style="margin:0 0 3px;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">Requerimientos</h1><p style="margin:0;color:#8a95b6;font-size:13.5px">{{ proyecto.nombre }}</p></div>
@@ -648,6 +707,9 @@ button{color:inherit}
     <!-- ===================== REQUERIMIENTO (detalle) ===================== -->
     <sc-if value="{{ viewRequerimiento }}" hint-placeholder-val="{{ true }}">
       <div style="animation:vwIn .3s ease;max-width:900px">
+        <div style="margin-bottom:18px">
+          <button onClick="{{ goMaestro }}" style="display:inline-flex;align-items:center;gap:9px;background:#111a30;border:1px solid rgba(53,192,240,.38);color:#35c0f0;cursor:pointer;padding:10px 15px;border-radius:10px;font-size:12.5px;font-weight:600;transition:background .15s,border-color .15s" style-hover="background:rgba(53,192,240,.12);border-color:rgba(53,192,240,.65)"><svg width="15" height="15" style="transform:scaleX(-1)"><use href="#ic-chevron"></use></svg>Volver al tablero maestro</button>
+        </div>
         <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:8px">
           <div style="flex:1;min-width:240px">
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#66739a;margin-bottom:5px">{{ req.code }}</div>
@@ -659,10 +721,24 @@ button{color:inherit}
             <button onClick="{{ promoteReq }}" disabled="{{ promoteReqDisabled }}" title="{{ promoteReqTitle }}" style="display:inline-flex;align-items:center;gap:6px;background:{{ promoteReqBg }};border:1px solid {{ promoteReqBorder }};color:{{ promoteReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"><svg width="14" height="14"><use href="#ic-deploy"></use></svg>Promover</button>
             <button onClick="{{ markReqBlocked }}" disabled="{{ blockReqDisabled }}" title="{{ blockReqTitle }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid {{ blockReqBorder }};color:{{ blockReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"><svg width="14" height="14"><use href="#ic-alert"></use></svg>Marcar bloqueado</button>
             <button onClick="{{ editReq }}" style="background:#1a2340;border:1px solid rgba(255,255,255,.1);color:#c7d0ea;cursor:pointer;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:500" style-hover="border-color:rgba(53,192,240,.4)">Editar</button>
+            <button onClick="{{ deleteReq }}" style="background:none;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:500">Eliminar</button>
             </sc-if>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;color:#8a95b6;font-size:13px;margin-bottom:24px"><span style="width:24px;height:24px;border-radius:50%;background:#22304f;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#c7d0ea;font-weight:600">{{ req.iniciales }}</span>Responsable: <span style="color:#c7d0ea">{{ req.responsable }}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#8a95b6;font-size:13px;margin-bottom:24px"><span style="width:24px;height:24px;border-radius:50%;background:#22304f;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#c7d0ea;font-weight:600">{{ req.iniciales }}</span>Responsable: <span style="color:#c7d0ea">{{ req.responsable }}</span><sc-if value="{{ req.hasStatusDate }}" hint-placeholder-val="{{ false }}"><span style="color:#3a476b">·</span>Estado actualizado: <span style="color:#c7d0ea">{{ req.statusDate }}</span></sc-if></div>
+
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:20px;padding:11px 13px;background:#111a30;border:1px solid rgba(255,255,255,.06);border-radius:10px">
+          <span style="font-size:12px;color:#8a95b6">Aprobación para producción</span>
+          <span style="font-size:11.5px;font-weight:600;color:{{ req.approvalColor }};background:{{ req.approvalBg }};padding:4px 9px;border-radius:15px">{{ req.approvalLabel }}</span>
+          <sc-if value="{{ req.hasApprovalDate }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;color:#66739a">Aprobado {{ req.approvalDate }}</span></sc-if>
+          <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}"><select value="{{ req.approvalValue }}" onChange="{{ req.setApproval }}" style="margin-left:auto;background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 9px;color:#e9edf7;font-size:11.5px"><option value="pending">Pendiente</option><option value="approved">Aprobado</option><option value="rejected">Rechazado</option></select></sc-if>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:22px">
+          <div style="grid-column:1/-1;background:#111a30;border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.45px;margin-bottom:5px">Descripción de cambios</div><div style="font-size:13px;line-height:1.6;color:#c7d0ea">{{ req.descripcionCambios }}</div></div>
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.45px;margin-bottom:5px">Observaciones</div><div style="font-size:12px;line-height:1.55;color:#c7d0ea">{{ req.observaciones }}</div></div>
+          <div style="background:#111a30;border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:13px 15px"><div style="font-size:10px;color:#66739a;text-transform:uppercase;letter-spacing:.45px;margin-bottom:5px">Fecha entrega usuario</div><div style="font-size:12px;color:#c7d0ea">{{ req.fechaEntregaUsuario }}</div></div>
+        </div>
 
         <div class="tabs-scroll" style="display:flex;gap:4px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:22px;overflow-x:auto;-webkit-overflow-scrolling:touch">
           <sc-for list="{{ reqTabs }}" as="t" hint-placeholder-count="3">
@@ -676,7 +752,7 @@ button{color:inherit}
             <sc-for list="{{ req.documentos }}" as="d" hint-placeholder-count="2">
               <div style="background:#111a30;border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
                 <div onClick="{{ d.open }}" style="cursor:pointer;height:120px;background:repeating-linear-gradient(#0e1730 0 22px,#111c38 22px 24px);position:relative;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.06)">
-                  <span style="position:absolute;top:8px;left:10px;font-size:9px;font-weight:600;letter-spacing:1px;color:#66739a">VISTA PREVIA · DRIVE</span>
+                  <span style="position:absolute;top:8px;left:10px;font-size:9px;font-weight:600;letter-spacing:1px;color:#66739a">DOCUMENTACIÓN DEL REQUERIMIENTO</span>
                   <svg width="32" height="32" style="color:#7c88ad"><use href="{{ d.iconHref }}"></use></svg>
                 </div>
                 <div style="padding:12px 13px;display:flex;align-items:center;gap:10px">
@@ -702,6 +778,7 @@ button{color:inherit}
                 <span style="width:66px;flex:none;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#35c0f0">{{ d.env }}</span>
                 <span style="flex:1;min-width:180px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#8a95b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.url }}</span>
                 <span style="flex:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:#39d39b;background:rgba(57,211,155,.12);padding:3px 9px;border-radius:7px">{{ d.version }}</span>
+                <span style="flex:none;font-size:10.5px;color:#66739a">{{ d.updatedLabel }}</span>
                 <button onClick="{{ d.copy }}" title="{{ d.copyTitle }}" style="flex:none;width:32px;height:32px;border-radius:8px;background:{{ d.copyBg }};border:1px solid {{ d.copyBorder }};color:{{ d.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s" style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"><svg width="14" height="14"><use href="{{ d.copyIconHref }}"></use></svg></button>
                 <button onClick="{{ d.open }}" style="flex:none;display:inline-flex;align-items:center;gap:6px;background:#1a2340;border:1px solid rgba(255,255,255,.1);color:#c7d0ea;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px" style-hover="border-color:rgba(53,192,240,.4)">Abrir<svg width="13" height="13"><use href="#ic-ext"></use></svg></button>
                 <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
@@ -824,6 +901,15 @@ button{color:inherit}
               </sc-for>
               <sc-if value="{{ modalErrShow }}" hint-placeholder-val="{{ false }}"><div style="color:#f97b7b;font-size:12.5px;line-height:1.5">{{ modalErr }}</div></sc-if>
             </div>
+          </sc-if>
+
+          <sc-if value="{{ modalDocumento }}" hint-placeholder-val="{{ false }}">
+            <label style="display:flex;flex-direction:column;gap:7px;margin-top:16px">
+              <span style="font-size:12px;font-weight:500;color:#8a95b6">Adjuntar archivo a Supabase Storage</span>
+              <input type="file" onChange="{{ onDocumentFile }}" style="background:#0c1428;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;color:#c7d0ea;font-size:12px"/>
+              <span style="font-size:11px;color:#66739a">{{ documentFileName }}</span>
+              <span style="font-size:11px;color:#66739a">Puedes adjuntar un archivo o usar el enlace existente. El almacenamiento privado requiere aplicar la migración incluida en supabase/migrations.</span>
+            </label>
           </sc-if>
 
           <!-- recurso: vista previa + link -->
@@ -1275,12 +1361,14 @@ class Component extends DCLogic {
       view:'empresas', empresaId:null, proyectoId:null, reqId:null,
       reqTab:'documentos', filter:'todos', modal:null, form:{},
       projectsView:'grid', reqSelectMode:false, reqSelected:{},
+      maestroSearch:'', maestroStatus:'todos', maestroProject:'todos',
       apiTab:'url', apiUrlInput:'', apiJsonInput:'', apiErr:'', apiHasRender:false,
       session:null, authChecked:false, profileRole:null,
       loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
       recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
       showLoginPass:false, showRecoveryPass1:false, showRecoveryPass2:false, modalShowPass:{},
       data:[], statuses:[], dataLoaded:false, loadError:'', copiedKey:'', userMenuOpen:false, apiFullscreen:false, credShown:{},
+      documentFileName:'',
       correoOpen:{},
       narrow: (typeof window!=='undefined' && window.innerWidth<=760),
     };
@@ -1377,7 +1465,9 @@ class Component extends DCLogic {
         const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
         const byAmb=a=>deploys.find(d=>(d.environment_id&&d.environment_id===a.id) || (!d.environment_id&&d.env===a.code))||{};
         const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
-          id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:(r.status_id||r.status),
+          id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
+          aprobacionProduccion:r.production_approval_status||'pending', aprobadoProduccionAt:r.production_approved_at||null,
+          descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'',
           documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
           despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
           bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
@@ -1531,6 +1621,39 @@ class Component extends DCLogic {
   goConfiguracion(){ if(!this.isDev()) return; this.setState({view:'configuracion',proyectoId:null,reqId:null}); }
   goProyecto(){ this.setState({view:'proyecto',reqId:null}); }
   goRequerimientos(){ if(!this.isDev()) return; this.setState({view:'requerimientos'}); }
+  goMaestro(){ if(!this.isDev()) return; this.setState({view:'maestro',empresaId:null,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
+  setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
+  setMaestroStatus(e){ this.setState({maestroStatus:e.target.value}); }
+  setMaestroProject(e){ this.setState({maestroProject:e.target.value}); }
+  async setProductionApproval(value){
+    const req=this.req();
+    if(!this.isDev()||!req||this._busy) return;
+    this._busy=true; this.setState({saveStatus:'saving'});
+    try{
+      const payload={production_approval_status:value,production_approved_at:value==='approved'?new Date().toISOString():null};
+      const {error}=await this._sb.from('requirements').update(payload).eq('id',req.id);
+      if(error) throw error;
+      this.setState({saveStatus:'saved'});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
+  }
+  setMasterReqCompany(id){ this.setState(s=>({form:{...s.form,empresaId:id,proyectoId:''}})); }
+  setMasterReqProject(id){ this.setState(s=>({form:{...s.form,proyectoId:id}})); }
+  setDeploymentEnvironment(id){
+    const project=this.proyecto();
+    const row=((project&&project.recursos&&project.recursos.despliegues)||[]).find(d=>d.environmentId===id)||{};
+    this.setState(s=>({form:{...s.form,env:id,url:row.url||'',version:row.version||''}}));
+  }
+  addReqGlobal(){
+    if(!this.isDev()) return;
+    const first=this.statusOrder().flow[0]||'desarrollo';
+    this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}});
+  }
+  openReqFromMaster(companyId, projectId, reqId){
+    if(!this.isDev()) return;
+    this.setState({empresaId:companyId,proyectoId:projectId,reqId,view:'requerimiento',reqTab:'documentos'});
+  }
   openReq(id){ if(!this.isDev()) return; this.setState({reqId:id,view:'requerimiento',reqTab:'documentos'}); }
   setReqTab(t){ this.setState({reqTab:t}); }
   setFilter(f){ this.setState({filter:f}); }
@@ -1551,7 +1674,7 @@ class Component extends DCLogic {
 
   // ---------- MODALS ----------
   openModal(cfg){ if(!this.isDev()) return; this.setState({modal:cfg, form:cfg.form||{}}); }
-  closeModal(){ this.setState({modal:null, form:{}}); }
+  closeModal(){ this._documentFile=null; this.setState({modal:null, form:{},documentFileName:''}); }
   stop(e){ e.stopPropagation(); }
   // El modal sólo se cierra si el clic EMPIEZA y TERMINA sobre el fondo. Al seleccionar texto
   // dentro del modal y soltar el mouse fuera, el navegador dispara el click sobre el ancestro
@@ -1606,10 +1729,26 @@ class Component extends DCLogic {
 
   addEmpresa(){ if(!this.isDev()) return; this.openModal({type:'empresa',mode:'crear',title:'Nueva empresa',form:{nombre:''}}); }
   addProyecto(){ if(!this.isDev()) return; this.openModal({type:'proyecto',mode:'crear',title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-  addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',responsable:'',estado:first}}); }
-  editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,responsable:r.responsable,estado:r.estado}}); }
-  addDoc(){ if(!this.isDev()) return; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); }
-  addDespliegue(){ if(!this.isDev()) return; const ambs=(this.empresa()||{}).ambientes||[]; if(!ambs.length){ this.setState({modal:{type:'aviso',title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de agregar despliegues.'}, form:{}}); return; } this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:(ambs[0].id),url:'',version:''}}); }
+  addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}}); }
+  editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',responsable:r.responsable,estado:r.estado}}); }
+  addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); this.setState({documentFileName:''}); }
+  setDocumentFile(e){
+    this._documentFile=e.target.files&&e.target.files[0]||null;
+    const file=this._documentFile, current=this.state.form||{};
+    this.setState({documentFileName:file?file.name:'',form:file?{...current,nombre:current.nombre||file.name.replace(/\.[^.]+$/,''),tipo:current.tipo==='Documento'?(file.type||current.tipo):current.tipo}:current});
+  }
+  async openDoc(url){
+    if(!url) return;
+    if(!url.startsWith('storage://')){ this.openExt(url); return; }
+    const tab=window.open('about:blank','_blank');
+    try{
+      const path=url.slice('storage://'.length);
+      const {data,error}=await this._sb.storage.from('requirement-documents').createSignedUrl(path,300);
+      if(error) throw error;
+      if(tab) tab.location=data.signedUrl; else this.openExt(data.signedUrl);
+    }catch(e){ if(tab) tab.close(); console.error(e); this.setState({modal:{type:'aviso',title:'No se pudo abrir el archivo',mensaje:e.message||'Verifica el acceso al almacenamiento.'},form:{}}); }
+  }
+  addDespliegue(){ if(!this.isDev()) return; const ambs=(this.empresa()||{}).ambientes||[]; if(!ambs.length){ this.setState({modal:{type:'aviso',title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de agregar despliegues.'}, form:{}}); return; } const envId=ambs[0].id, row=(((this.proyecto()||{}).recursos||{}).despliegues||[]).find(d=>d.environmentId===envId)||{}; this.openModal({type:'despliegue',mode:'crear',title:'Agregar despliegue',form:{env:envId,url:row.url||'',version:row.version||''}}); }
   addBloqueante(){ if(!this.isDev()) return; this.openModal({type:'bloqueante',mode:'crear',title:'Agregar bloqueante',form:{texto:''}}); }
   editDesplieguesProy(){ if(!this.isDev()) return; const p=this.proyecto(); this._origEnvRows=p.recursos.despliegues.reduce((a,d)=>{a[d.environmentId]={url:d.url,version:d.version,updatedAt:d.updatedAt}; return a;},{}); this.openModal({type:'desplieguesProy',mode:'editar',title:'Despliegues del proyecto',form:{envRows:p.recursos.despliegues.map(d=>({...d}))}}); }
   addAmbiente(){ if(!this.isDev()) return; this.openModal({type:'ambiente',mode:'crear',title:'Nuevo ambiente',form:{code:'',label:'',deployFolder:'',stage:''}}); }
@@ -1907,18 +2046,20 @@ class Component extends DCLogic {
         }
       } else if(t==='requerimiento'){
         if(!f.titulo) return;
+        const targetProjectId=m.global?f.proyectoId:this.state.proyectoId;
+        if(m.global&&!targetProjectId){ this.setState({saveStatus:'idle',modalErr:'Selecciona el proyecto del requerimiento.'}); return; }
         const prevEstado = m.mode==='editar' ? ((this.req()||{}).estado) : null;
         const statusChanged = m.mode==='crear' ? true : (prevEstado !== f.estado);
         const targetAmb = ((this.empresa()||{}).ambientes||[]).find(a=>a.stage===f.estado);
-        if(targetAmb && statusChanged){
+        if(!m.global && targetAmb && statusChanged){
           this.setState({saveStatus:'idle'});
           this.openPromoteConfirm(m, f, targetAmb);
           return;
         }
-        const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim() };
+        const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim(), change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null };
         if(statusChanged) payload.status_updated_at=new Date().toISOString();
         if(m.mode==='crear'){
-          const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:this.state.proyectoId, ...payload });
+          const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:targetProjectId, ...payload });
           if(error) throw error;
         } else {
           const { error } = await sb.from('requirements').update(payload).eq('id', m.id);
@@ -1926,8 +2067,19 @@ class Component extends DCLogic {
         }
       } else if(t==='documento'){
         if(!f.nombre) return;
-        const { error } = await sb.from('requirement_documents').insert({ id:this.gid('d'), requirement_id:this.state.reqId, name:f.nombre, type:f.tipo||'Documento', url:f.url||'' });
+        let url=f.url||'';
+        const file=this._documentFile;
+        if(file){
+          const safeName=file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'documento';
+          const path=this.state.reqId+'/'+Date.now()+'_'+safeName;
+          const {error:uploadError}=await sb.storage.from('requirement-documents').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});
+          if(uploadError) throw uploadError;
+          url='storage://'+path;
+        }
+        const { error } = await sb.from('requirement_documents').insert({ id:this.gid('d'), requirement_id:this.state.reqId, name:f.nombre, type:f.tipo||((file&&file.type)||'Documento'), url });
         if(error) throw error;
+        this._documentFile=null;
+        this.setState({documentFileName:''});
       } else if(t==='despliegue'){
         if(!f.url) return;
         const amb=((this.empresa()||{}).ambientes||[]).find(a=>a.id===f.env)||{};
@@ -2068,15 +2220,18 @@ class Component extends DCLogic {
     const p=this.proyecto();
     const envRow=(p.recursos.despliegues.find(d=>d.environmentId===targetAmb.id))||{url:'',version:''};
     const req=m.mode==='editar' ? this.req() : null;
-    // El prellenado sale del despliegue MÁS RECIENTE del requerimiento a ese ambiente (mayor updated_at).
+    // El despliegue vigente del proyecto para ese ambiente es la fuente inicial; se usa el último del requerimiento como respaldo.
     const reqDeps=req ? (req.despliegues||[]).filter(d=>d.environmentId===targetAmb.id) : [];
     const reqEnvRow=reqDeps.reduce((mx,d)=>(!mx || (d.updatedAt||'')>(mx.updatedAt||'')) ? d : mx, null) || {};
     this.setState({
       modal:{ type:'promoteConfirm', title:'Actualizar ambiente',
         targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
-        reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsable:f.responsable, codigo:f.codigo, estado:f.estado },
+        reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsable:f.responsable, codigo:f.codigo, estado:f.estado,
+          descripcionCambios:f.descripcionCambios!==undefined?f.descripcionCambios:(req&&req.descripcionCambios)||'',
+          observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
+          fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'' },
         projectUrl: envRow.url||'Sin URL', projectVersion: envRow.version||'Sin versión' },
-      form:{ url: reqEnvRow.url || envRow.url || '', version: reqEnvRow.version || envRow.version || '' },
+      form:{ url: envRow.url || reqEnvRow.url || '', version: envRow.version || reqEnvRow.version || '' },
       modalErr:'',
     });
   }
@@ -2086,7 +2241,7 @@ class Component extends DCLogic {
     this.setState({saveStatus:'saving', modalErr:''});
     const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
     try{
-      const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), status_updated_at:nowIso };
+      const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, status_updated_at:nowIso };
       let reqId=rp.id;
       if(rp.mode==='crear'){
         reqId=this.gid('r');
@@ -2313,10 +2468,36 @@ class Component extends DCLogic {
     if(!this.isDev()||this._busy) return; this._busy=true;
     try{
       this.setState({saveStatus:'saving'});
+      const {data:doc}=await this._sb.from('requirement_documents').select('url').eq('id',id).maybeSingle();
+      if(doc&&doc.url&&doc.url.startsWith('storage://')){
+        const {error:storageError}=await this._sb.storage.from('requirement-documents').remove([doc.url.slice('storage://'.length)]);
+        if(storageError) throw storageError;
+      }
       const { error } = await this._sb.from('requirement_documents').delete().eq('id',id);
       this.setState({saveStatus:error?'error':'saved'});
       if(!error) await this.loadData();
     } finally { this._busy=false; }
+  }
+  async delReq(id){
+    if(!this.isDev()||this._busy) return;
+    if(!window.confirm('¿Eliminar este requerimiento y sus documentos, despliegues y bloqueantes? Esta acción no se puede deshacer.')) return;
+    this._busy=true;
+    this.setState({saveStatus:'saving'});
+    try{
+      const sb=this._sb;
+      const {data:docs}=await sb.from('requirement_documents').select('url').eq('requirement_id',id);
+      const paths=(docs||[]).filter(d=>d.url&&d.url.startsWith('storage://')).map(d=>d.url.slice('storage://'.length));
+      if(paths.length){ const {error}=await sb.storage.from('requirement-documents').remove(paths); if(error) throw error; }
+      for(const table of ['requirement_documents','requirement_deployments','requirement_blockers']){
+        const { error } = await sb.from(table).delete().eq('requirement_id',id);
+        if(error) throw error;
+      }
+      const { error } = await sb.from('requirements').delete().eq('id',id);
+      if(error) throw error;
+      this.setState({saveStatus:'saved',reqId:null,view:this.state.view==='requerimiento'?'requerimientos':this.state.view});
+      await this.loadData();
+    }catch(e){ this.setState({saveStatus:'error'}); console.error(e); }
+    finally{ this._busy=false; }
   }
   async delDespliegue(id){
     if(!this.isDev()||this._busy) return; this._busy=true;
@@ -2354,6 +2535,7 @@ class Component extends DCLogic {
     const R={
       goHome:()=>this.goHome(), goProyectos:()=>this.goProyectos(), goProyecto:()=>this.goProyecto(),
       goRequerimientos:()=>this.goRequerimientos(), goConfiguracion:()=>this.goConfiguracion(),
+      goMaestro:()=>this.goMaestro(),
       viewEmpresas:v==='empresas', viewProyectos:v==='proyectos', viewProyecto:v==='proyecto',
       viewRequerimientos:v==='requerimientos', viewRequerimiento:v==='requerimiento', viewApidoc:v==='apidoc',
       viewConfiguracion:v==='configuracion',
@@ -2361,6 +2543,7 @@ class Component extends DCLogic {
       overlayDown:(e)=>this.overlayDown(e), overlayClick:(e)=>this.overlayClick(e),
       addDoc:()=>this.addDoc(), addDespliegue:()=>this.addDespliegue(), addBloqueante:()=>this.addBloqueante(),
       editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(), editCredenciales:()=>this.editCredenciales(),
+      deleteReq:()=>req&&this.delReq(req.id),
       f_url:(e)=>this.setForm('url',e.target.value),
       isDev,
     };
@@ -2407,6 +2590,7 @@ class Component extends DCLogic {
 
     // breadcrumbs
     const crumbs=[{label:'Empresas',go:()=>this.goHome(),color:v==='empresas'?'#e9edf7':'#8a95b6',weight:v==='empresas'?600:400,sep:false}];
+    if(v==='maestro'){ crumbs.push({label:'Maestro de requerimientos',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
     if(emp && v!=='empresas'){ crumbs.push({label:emp.nombre,go:()=>this.goProyectos(),color:v==='proyectos'?'#e9edf7':'#8a95b6',weight:v==='proyectos'?600:400,sep:true}); }
     if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'#e9edf7':'#8a95b6',weight:v==='proyecto'?600:400,sep:true}); }
     if(v==='apidoc'){ crumbs.push({label:'Documentación Técnica',go:()=>{},color:'#e9edf7',weight:600,sep:true}); }
@@ -2425,13 +2609,68 @@ class Component extends DCLogic {
     R.currentCrumbLabel = lastCrumb ? lastCrumb.label : '';
 
     // primary action
-    const wantsPrimary = v==='empresas'||v==='proyectos'||v==='requerimientos';
+    const wantsPrimary = v==='empresas'||v==='proyectos'||v==='requerimientos'||v==='maestro';
     R.hasPrimary = wantsPrimary && isDev;
     R.hasPrimaryLocked = wantsPrimary && !isDev;
     R.primaryPad = R.narrow ? '9px' : '9px 15px';
     if(v==='empresas'){ R.primaryLabel='Nueva empresa'; R.primaryAction=()=>this.addEmpresa(); }
     else if(v==='proyectos'){ R.primaryLabel='Nuevo proyecto'; R.primaryAction=()=>this.addProyecto(); }
     else if(v==='requerimientos'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReq(); }
+    else if(v==='maestro'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReqGlobal(); }
+
+    R.showMasterNav=isDev;
+    R.goMaestro=()=>this.goMaestro();
+    R.masterNavBg=v==='maestro'?'rgba(53,192,240,.14)':'transparent';
+    R.masterNavBorder=v==='maestro'?'rgba(53,192,240,.45)':'rgba(255,255,255,.12)';
+    R.masterNavColor=v==='maestro'?'#35c0f0':'#c7d0ea';
+    R.viewMaestro=v==='maestro'&&isDev;
+
+    if(R.viewMaestro){
+      const all=[];
+      (s.data||[]).forEach(company=>(company.proyectos||[]).forEach(project=>(project.requerimientos||[]).forEach(req=>all.push({company,project,req}))));
+      const q=(s.maestroSearch||'').trim().toLocaleLowerCase('es-CO');
+      const statusOptions=(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id}));
+      const projectOptions=all.map(({company,project})=>({value:project.id,label:project.nombre+' · '+company.nombre})).filter((p,i,a)=>a.findIndex(x=>x.value===p.value)===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
+      R.maestroProjectOptions=projectOptions;
+      R.maestroProject=s.maestroProject||'todos';
+      R.setMaestroProject=e=>this.setMaestroProject(e);
+      R.maestroStatusOptions=statusOptions;
+      R.maestroStatus=s.maestroStatus||'todos';
+      R.setMaestroSearch=e=>this.setMaestroSearch(e);
+      R.setMaestroStatus=e=>this.setMaestroStatus(e);
+      const filtered=all.filter(({company,project,req})=>{
+        if(s.maestroStatus&&s.maestroStatus!=='todos'&&req.estado!==s.maestroStatus) return false;
+        if(s.maestroProject&&s.maestroProject!=='todos'&&project.id!==s.maestroProject) return false;
+        if(!q) return true;
+        return [company.nombre,project.nombre,req.codigo,req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
+      });
+      R.maestroCount=all.length;
+      R.maestroVisibleCount=filtered.length;
+      R.maestroBlockedCount=all.filter(({req})=>this.activeBloq(req)>0).length;
+      R.maestroPendingApprovalCount=all.filter(({req})=>(req.aprobacionProduccion||'pending')==='pending').length;
+      R.maestroReqList=filtered.map(({company,project,req})=>{
+        const meta=this.estMeta(req.estado), count=this.activeBloq(req);
+        const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:(company.ambientes||[]).find(a=>a.id===d.environmentId)}));
+        const userDelivery=deliveries.find(x=>((x.amb&&this.estMeta(x.amb.stage)[0])||'').toLocaleLowerCase('es-CO').includes('usuario')||((x.amb&&x.amb.label)||x.d.env||'').toLocaleLowerCase('es-CO').includes('usuario'));
+        const explicitDate=req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):
+          (userDelivery?new Date(userDelivery.d.updatedAt).toLocaleDateString('es-CO'):'Sin definir');
+        const approvalLabel=({pending:'Pendiente',approved:'Aprobado',rejected:'Rechazado'})[req.aprobacionProduccion]||'Pendiente';
+        return {
+          empresa:company.nombre, proyecto:project.nombre,
+          code:(req.codigo&&req.codigo.trim())||('REQ-'+String((project.requerimientos||[]).findIndex(x=>x.id===req.id)+1).padStart(3,'0')), titulo:req.titulo,
+          descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
+          observaciones:(req.observaciones||'').trim()||'—', observacionesMetaLabel:(req.observaciones||'').trim()?'Observación registrada':'Sin observaciones', fechaEntregaUsuario:explicitDate,
+          responsable:req.responsable, estado:meta[0], estadoColor:meta[1], estadoBg:meta[2],
+          bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
+          approvalLabel,
+          approvalColor:req.aprobacionProduccion==='approved'?'#39d39b':req.aprobacionProduccion==='rejected'?'#f97b7b':'#f5b544',
+          approvalBg:req.aprobacionProduccion==='approved'?'rgba(57,211,155,.12)':req.aprobacionProduccion==='rejected'?'rgba(249,123,123,.12)':'rgba(245,181,68,.12)',
+          bloqColor:count?'#f97b7b':'#66739a', deliveryColor:req.fechaEntregaUsuario||userDelivery?'#39d39b':'#66739a',
+          open:()=>this.openReqFromMaster(company.id,project.id,req.id),
+        };
+      });
+      R.maestroEmpty=filtered.length===0;
+    }
 
     // Documentación Técnica (por proyecto)
     R.viewApidoc=v==='apidoc';
@@ -2605,11 +2844,19 @@ class Component extends DCLogic {
       const m=this.estMeta(req.estado);
       R.req={
         code:(req.codigo&&req.codigo.trim())||('REQ-'+String(idx+1).padStart(3,'0')), titulo:req.titulo, responsable:req.responsable, iniciales:this.iniciales(req.responsable),
-        estLabel:m[0],estColor:m[1],estBg:m[2],
-        documentos:req.documentos.map(d=>({nombre:d.nombre,tipo:d.tipo,iconHref:this.docIcon(d.tipo),open:()=>this.openExt(d.url),del:(e)=>{e.stopPropagation();this.delDoc(d.id);}})),
+        descripcionCambios:(req.descripcionCambios||'').trim()||'Sin descripción registrada', observaciones:(req.observaciones||'').trim()||'Sin observaciones',
+        fechaEntregaUsuario:req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):'Sin fecha registrada',
+        estLabel:m[0],estColor:m[1],estBg:m[2],hasStatusDate:!!req.estadoActualizadoAt,statusDate:req.estadoActualizadoAt?new Date(req.estadoActualizadoAt).toLocaleString('es-CO'):'',
+        approvalValue:req.aprobacionProduccion||'pending',
+        approvalLabel:({pending:'Pendiente',approved:'Aprobado',rejected:'Rechazado'})[req.aprobacionProduccion]||'Pendiente',
+        approvalColor:req.aprobacionProduccion==='approved'?'#39d39b':req.aprobacionProduccion==='rejected'?'#f97b7b':'#f5b544',
+        approvalBg:req.aprobacionProduccion==='approved'?'rgba(57,211,155,.12)':req.aprobacionProduccion==='rejected'?'rgba(249,123,123,.12)':'rgba(245,181,68,.12)',
+        hasApprovalDate:!!req.aprobadoProduccionAt,approvalDate:req.aprobadoProduccionAt?new Date(req.aprobadoProduccionAt).toLocaleString('es-CO'):'',
+        setApproval:e=>this.setProductionApproval(e.target.value),
+        documentos:req.documentos.map(d=>({nombre:d.nombre,tipo:d.tipo,iconHref:this.docIcon(d.tipo),open:()=>this.openDoc(d.url),del:(e)=>{e.stopPropagation();this.delDoc(d.id);}})),
         despliegues:req.despliegues.map(d=>{
           const copied=s.copiedKey===d.id;
-          return { env:d.env, url:d.url, version:d.version, open:()=>this.openExt(d.url), del:()=>this.delDespliegue(d.id),
+          return { env:d.env, url:d.url, version:d.version, updatedLabel:d.updatedAt?'Actualizado '+this.relDate(d.updatedAt):'Sin fecha', open:()=>this.openExt(d.url), del:()=>this.delDespliegue(d.id),
             sendDiscord:()=>this.openDiscordStep({projectId:this.state.proyectoId, environmentId:d.environmentId, envCode:d.env, version:d.version, artifactUrl:d.url, requirementTitle:req.titulo}),
             copy:()=>this.copyToClipboard(d.url,d.id),
             copyIconHref: copied?'#ic-check':'#ic-copy',
@@ -2643,8 +2890,11 @@ class Component extends DCLogic {
     if(md){
       R.modalTitle=md.title;
       R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales'||md.type==='componentes'||md.type==='correo') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote'||md.type==='desplegable')?'520px':'440px';
+      R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales'||md.type==='componentes'||md.type==='correo') ? '620px' : (md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote'||md.type==='desplegable'||md.type==='requerimiento')?'520px':'440px';
       R.modalHasForm = ['empresa','proyecto','requerimiento','documento','despliegue','bloqueante','password','ambiente','servidor','instruccion','contacto','desplegable'].includes(md.type);
+      R.modalDocumento=md.type==='documento';
+      R.onDocumentFile=e=>this.setDocumentFile(e);
+      R.documentFileName=s.documentFileName||'';
       R.modalRecurso = md.type==='recurso';
       R.modalDesplieguesProy = md.type==='desplieguesProy';
       R.modalDesplegable = md.type==='desplegable';
@@ -2758,12 +3008,15 @@ class Component extends DCLogic {
       const ambienteOptions=((emp&&emp.ambientes)||[]).map(a=>({value:a.id,label:(a.label&&a.label!==a.code)?(a.label+' ('+a.code+')'):a.code}));
       const servidorOptions=((emp&&emp.servidores)||[]).map(x=>({value:x.id,label:x.code+' — '+x.ip}));
       const stageOptions=[{value:'',label:'— Sin etapa'}].concat(estadoOptions);
+      const companyOptions=[{value:'',label:'Selecciona una empresa'}].concat((s.data||[]).map(c=>({value:c.id,label:c.nombre})));
+      const masterCompany=(s.data||[]).find(c=>c.id===s.form.empresaId);
+      const masterProjectOptions=[{value:'',label:masterCompany?'Selecciona un proyecto':'Selecciona primero una empresa'}].concat(((masterCompany&&masterCompany.proyectos)||[]).map(p=>({value:p.id,label:p.nombre})));
       const fields={
         empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
         proyecto:[{label:'Nombre del proyecto',key:'nombre',kind:'text',placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:'area',placeholder:'Breve descripción'}],
-        requerimiento:[{label:'Código / N.º de requerimiento',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título',key:'titulo',kind:'text',placeholder:'Describe el requerimiento'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions}],
-        documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace de Drive',key:'url',kind:'text',placeholder:'https://drive.google.com/...'}],
-        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
+        requerimiento:[...(md.global?[{label:'Empresa',key:'empresaId',kind:'select',options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:'select',options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'#Req',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título / resumen',key:'titulo',kind:'text',placeholder:'Resumen corto del requerimiento'},{label:'Descripción de cambios',key:'descripcionCambios',kind:'area',placeholder:'Detalla los cambios solicitados'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:'area',placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:'text',type:'date'},{label:'Responsable',key:'responsable',kind:'text',placeholder:'Nombre del asignado'}],
+        documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:'text',placeholder:'https://...'}],
+        despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
         bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
         password:[{label:'Nueva contraseña',key:'newPassword',kind:'text',type:'password',placeholder:'mínimo 6 caracteres'},{label:'Confirmar contraseña',key:'confirmPassword',kind:'text',type:'password',placeholder:'repite la contraseña'}],
         ambiente:[{label:'Código',key:'code',kind:'text',placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:'text',placeholder:'Ej: Producción'},{label:'Carpeta de despliegue',key:'deployFolder',kind:'text',placeholder:'Ej: Despliegues40'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:'select',options:stageOptions}],
@@ -2775,7 +3028,7 @@ class Component extends DCLogic {
       R.formFields=(fields[md.type]||[]).map(fd=>{
         const isPassword = fd.type==='password';
         const shown = !!s.modalShowPass[fd.key];
-        return { label:fd.label, value:s.form[fd.key]||'', onChange:ch(fd.key), placeholder:fd.placeholder||'',
+        return { label:fd.label, value:s.form[fd.key]||'', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
           isSelect:fd.kind==='select', isText:fd.kind==='text', isArea:fd.kind==='area', options:fd.options||[],
           inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'),
           isPassword, padRight: isPassword?'38px':'12px',
