@@ -14,7 +14,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:#e7ebf0;color:#263247;font-family:'Poppins',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:#ffffff;color:#263247;font-family:'Poppins',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 ::selection{background:rgba(53,192,240,.32)}
 a{color:#087f9f;text-decoration:none}
 a:hover{color:#086b88}
@@ -33,7 +33,7 @@ button{color:inherit}
 .redoc-scroll{height:100%;overflow-y:auto;overflow-x:hidden}
 .redoc-embed .menu-content{height:var(--redoc-h)!important}
 .app-header{background:rgba(237,240,245,.96)!important;border-bottom-color:#cbd3df!important;color:#263247!important}
-.master-board-light{margin:-12px;padding:clamp(16px,2.2vw,26px);border-radius:18px;background:#e7ebf0;color:#263247}
+.master-board-light{margin:-12px;padding:clamp(16px,2.2vw,26px);border-radius:18px;background:#ffffff;color:#263247}
 .master-board-light h1{color:#102a70}
 .master-board-light .master-table{background:#eef1f5;border:1px solid #cbd3df;box-shadow:0 4px 14px rgba(16,42,112,.045)}
 .master-board-light .master-table-head{background:#dfe5ed;color:#42536a}
@@ -46,7 +46,7 @@ button{color:inherit}
 .master-metric{--metric-color:#1557b0;--metric-tint:#edf5ff;position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:108px;display:flex;align-items:center;padding:18px 20px;border:1px solid rgba(71,91,119,.14);border-radius:16px;background:linear-gradient(125deg,var(--metric-tint),#f7f9fc);box-shadow:0 3px 12px rgba(16,42,112,.045)}
 .master-metric::after{content:"";position:absolute;z-index:0;width:95px;height:64px;right:-2px;bottom:-3px;border-radius:70% 0 0 0;background:var(--metric-color);opacity:.075;transform:rotate(-8deg)}
 .master-metric-copy{position:relative;z-index:1;min-width:0;width:100%}
-.master-metric-label{display:block;color:#526176;font-size:11px;font-weight:600;letter-spacing:.25px;line-height:1.35;text-transform:uppercase}
+.master-metric-label{display:block;color:var(--metric-color);font-size:11px;font-weight:600;letter-spacing:.25px;line-height:1.35;text-transform:uppercase}
 .master-metric-value{display:block;margin-top:2px;color:var(--metric-color);font-size:34px;font-weight:700;line-height:1.05}
 .master-filter-bar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(210px,280px) minmax(190px,245px);align-items:center;gap:10px;margin-bottom:14px;padding:8px;border:1px solid #e0e6ee;border-radius:15px;background:#f8fafc;box-shadow:0 3px 12px rgba(16,42,112,.035)}
 .master-filter-control{min-width:0;height:50px;display:flex;align-items:center;gap:11px;padding:0 14px;border:1px solid #dce4ed;border-radius:11px;background:#f1f4f8;color:#526176;transition:border-color .16s,box-shadow .16s,background .16s}
@@ -300,9 +300,6 @@ button{color:inherit}
     <div style="flex:1;min-width:0"></div>
     </sc-if>
 
-    <sc-if value="{{ showMasterNav }}" hint-placeholder-val="{{ false }}">
-      <button onClick="{{ goMaestro }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:{{ masterNavBg }};border:1px solid {{ masterNavBorder }};color:{{ masterNavColor }};padding:8px 11px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer">Maestro</button>
-    </sc-if>
 
     <sc-if value="{{ showSave }}" hint-placeholder-val="{{ false }}">
       <div style="flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12px;color:{{ saveTextColor }};padding:5px 10px;border-radius:20px;background:rgba(71,91,119,.12);border:1px solid rgba(71,91,119,.16)"><span style="width:7px;height:7px;border-radius:50%;background:{{ saveDot }}"></span>{{ saveLabelTxt }}</div>
@@ -354,7 +351,8 @@ button{color:inherit}
           <sc-for list="{{ empresasList }}" as="e" hint-placeholder-count="3">
             <button onClick="{{ e.open }}" style="text-align:left;cursor:pointer;background:#eef1f5;border:1px solid rgba(71,91,119,.16);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .18s,transform .18s" style-hover="border-color:rgba(53,192,240,.45);transform:translateY(-3px)">
               <div style="display:flex;align-items:center;justify-content:space-between">
-                <div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;color:#fff;background:{{ e.color }}">{{ e.mono }}</div>
+                <sc-if value="{{ e.logo }}" hint-placeholder-val="{{ false }}"><div style="height:64px;padding:6px 10px;border-radius:14px;background:#fff;border:1px solid rgba(71,91,119,.14);display:flex;align-items:center;justify-content:center"><img src="{{ e.logo }}" alt="{{ e.nombre }}" style="height:100%;width:auto;max-width:160px;object-fit:contain;display:block"></div></sc-if>
+                <sc-if value="{{ !e.logo }}" hint-placeholder-val="{{ true }}"><div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;color:#fff;background:{{ e.color }}">{{ e.mono }}</div></sc-if>
                 <span style="font-size:11px;color:#647187">›</span>
               </div>
               <div>
@@ -371,7 +369,8 @@ button{color:inherit}
     <sc-if value="{{ viewProyectos }}" hint-placeholder-val="{{ true }}">
       <div style="animation:vwIn .3s ease">
         <div style="margin-bottom:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-          <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div>
+          <sc-if value="{{ empresa.logo }}" hint-placeholder-val="{{ false }}"><div style="height:64px;padding:6px 10px;border-radius:14px;background:#fff;border:1px solid rgba(71,91,119,.14);display:flex;align-items:center;justify-content:center"><img src="{{ empresa.logo }}" alt="{{ empresa.nombre }}" style="height:100%;width:auto;max-width:160px;object-fit:contain;display:block"></div></sc-if>
+          <sc-if value="{{ !empresa.logo }}" hint-placeholder-val="{{ true }}"><div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div></sc-if>
           <div>
             <h1 style="margin:0;font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.5px">{{ empresa.nombre }}</h1>
             <p style="margin:2px 0 0;color:#59677a;font-size:13.5px">{{ empresa.proyectosLabel }}</p>
@@ -379,6 +378,9 @@ button{color:inherit}
           <div class="emp-actions" style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:10px">
             <sc-if value="{{ showParam }}" hint-placeholder-val="{{ false }}">
               <button onClick="{{ openCorreoDespliegue }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#2b3bd6,#23a9e0);border:0;color:#fff;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap" style-hover="opacity:.9"><svg width="14" height="14"><use href="#ic-mail"></use></svg>Enviar correo despliegue</button>
+            </sc-if>
+            <button onClick="{{ goMaestro }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:#102a70;border:1px solid #102a70;color:#fff;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap" style-hover="background:#16388f"><svg width="14" height="14"><use href="#ic-grid"></use></svg>Gestión de proyectos</button>
+            <sc-if value="{{ showParam }}" hint-placeholder-val="{{ false }}">
               <button onClick="{{ goConfiguracion }}" style="flex:none;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid rgba(71,91,119,.24);color:#354258;cursor:pointer;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap" style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)">Configuración</button>
             </sc-if>
             <div style="flex:none;display:inline-flex;background:#e3e8ef;border:1px solid rgba(71,91,119,.2);border-radius:10px;padding:3px;gap:2px">
@@ -432,7 +434,8 @@ button{color:inherit}
     <sc-if value="{{ viewConfiguracion }}" hint-placeholder-val="{{ false }}">
       <div style="animation:vwIn .3s ease">
         <div style="margin-bottom:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-          <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div>
+          <sc-if value="{{ empresa.logo }}" hint-placeholder-val="{{ false }}"><div style="height:64px;padding:6px 10px;border-radius:14px;background:#fff;border:1px solid rgba(71,91,119,.14);display:flex;align-items:center;justify-content:center"><img src="{{ empresa.logo }}" alt="{{ empresa.nombre }}" style="height:100%;width:auto;max-width:160px;object-fit:contain;display:block"></div></sc-if>
+          <sc-if value="{{ !empresa.logo }}" hint-placeholder-val="{{ true }}"><div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}">{{ empresa.mono }}</div></sc-if>
           <div>
             <h1 style="margin:0;font-size:clamp(20px,3vw,26px);font-weight:700;letter-spacing:-.5px">Configuración</h1>
             <p style="margin:2px 0 0;color:#59677a;font-size:13.5px">{{ empresa.nombre }}</p>
@@ -721,7 +724,7 @@ button{color:inherit}
           <sc-for list="{{ maestroReqList }}" as="r" hint-placeholder-count="5">
             <button onClick="{{ r.open }}" class="master-row" title="Abrir detalle y editar requerimiento">
               <span class="master-cell-app master-cell-main"><span class="master-cell-label">Aplicación</span>{{ r.proyecto }}<span class="master-cell-sub">{{ r.empresa }}</span></span>
-              <span class="master-cell-main" style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#164bb8"><span class="master-cell-label">#Req</span>{{ r.code }}</span>
+              <span class="master-cell-main" style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:#164bb8"><span class="master-cell-label">#Req</span>{{ r.code }}</span>
               <span class="master-cell-description master-cell-main"><span class="master-cell-label">Descripción de cambios</span>{{ r.descripcion }}<span class="master-cell-sub">{{ r.titulo }}</span></span>
               <span class="master-cell-main"><span class="master-cell-label">Estado</span><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:{{ r.estadoColor }};background:{{ r.estadoBg }};padding:5px 9px;border-radius:16px"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.estadoColor }}"></span>{{ r.estado }}</span></span>
               <span class="master-cell-observations master-cell-main" title="{{ r.observaciones }}"><span class="master-cell-label">Observaciones</span>{{ r.observaciones }}<span class="master-cell-sub">{{ r.observacionesMetaLabel }}</span></span>
@@ -1718,7 +1721,7 @@ class Component extends DCLogic {
   goConfiguracion(){ if(!this.isDev()) return; this.setState({view:'configuracion',proyectoId:null,reqId:null}); }
   goProyecto(){ this.setState({view:'proyecto',reqId:null}); }
   goRequerimientos(){ if(!this.isDev()) return; this.setState({view:'requerimientos'}); }
-  goMaestro(){ this.setState({view:'maestro',empresaId:null,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
+  goMaestro(){ this.setState({view:'maestro',proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
   setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
   toggleMaestroProjectMenu(){ this.setState(s=>({maestroProjectMenuOpen:!s.maestroProjectMenuOpen,maestroStatusMenuOpen:false})); }
   toggleMaestroStatusMenu(){ this.setState(s=>({maestroStatusMenuOpen:!s.maestroStatusMenuOpen,maestroProjectMenuOpen:false})); }
@@ -1736,7 +1739,7 @@ class Component extends DCLogic {
   addReqGlobal(){
     if(!this.isDev()) return;
     const first=this.statusOrder().flow[0]||'desarrollo';
-    this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}});
+    this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}});
   }
   openReqFromMaster(companyId, projectId, reqId){
     const company=(this.state.data||[]).find(c=>c.id===companyId);
@@ -2698,8 +2701,8 @@ class Component extends DCLogic {
 
     // breadcrumbs
     const crumbs=[{label:'Empresas',go:()=>this.goHome(),color:v==='empresas'?'#263247':'#59677a',weight:v==='empresas'?600:400,sep:false}];
-    if(v==='maestro'){ crumbs.push({label:'Maestro de requerimientos',go:()=>{},color:'#263247',weight:600,sep:true}); }
     if(emp && v!=='empresas'){ crumbs.push({label:emp.nombre,go:()=>this.goProyectos(),color:v==='proyectos'?'#263247':'#59677a',weight:v==='proyectos'?600:400,sep:true}); }
+    if(v==='maestro'){ crumbs.push({label:'Gestión de proyectos',go:()=>{},color:'#263247',weight:600,sep:true}); }
     if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'#263247':'#59677a',weight:v==='proyecto'?600:400,sep:true}); }
     if(v==='apidoc'){ crumbs.push({label:'Documentación Técnica',go:()=>{},color:'#263247',weight:600,sep:true}); }
     if(v==='configuracion'){ crumbs.push({label:'Configuración',go:()=>{},color:'#263247',weight:600,sep:true}); }
@@ -2726,16 +2729,12 @@ class Component extends DCLogic {
     else if(v==='requerimientos'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReq(); }
     else if(v==='maestro'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReqGlobal(); }
 
-    R.showMasterNav=true;
     R.goMaestro=()=>this.goMaestro();
-    R.masterNavBg=v==='maestro'?'rgba(53,192,240,.14)':'transparent';
-    R.masterNavBorder=v==='maestro'?'rgba(53,192,240,.45)':'rgba(71,91,119,.22)';
-    R.masterNavColor=v==='maestro'?'#35c0f0':'#354258';
     R.viewMaestro=v==='maestro'; R.maestroSoloLectura=!isDev;
 
     if(R.viewMaestro){
       const all=[];
-      (s.data||[]).forEach(company=>(company.proyectos||[]).forEach(project=>(project.requerimientos||[]).forEach(req=>all.push({company,project,req}))));
+      (s.data||[]).filter(company=>!s.empresaId||company.id===s.empresaId).forEach(company=>(company.proyectos||[]).forEach(project=>(project.requerimientos||[]).forEach(req=>all.push({company,project,req}))));
       const q=(s.maestroSearch||'').trim().toLocaleLowerCase('es-CO');
       const stateText=(id)=>{const st=(s.statuses||[]).find(x=>x.id===id);return ((st&&st.label)||id||'').toLocaleLowerCase('es-CO');};
       const stateGroup=(id)=>{const x=stateText(id);return x.includes('bloq')?'bloqueado':x.includes('prod')?'produccion':x.includes('usuario')||x.includes('prueba')||x==='qa'?'usuario':x.includes('desarroll')?'desarrollo':'otros';};
@@ -2745,7 +2744,7 @@ class Component extends DCLogic {
       R.maestroProjectMenuOpen=!!s.maestroProjectMenuOpen; R.maestroStatusMenuOpen=!!s.maestroStatusMenuOpen;
       R.toggleMaestroProjectMenu=()=>this.toggleMaestroProjectMenu(); R.toggleMaestroStatusMenu=()=>this.toggleMaestroStatusMenu();
       R.closeMaestroProjectMenu=()=>this.closeMaestroProjectMenu(); R.closeMaestroStatusMenu=()=>this.closeMaestroStatusMenu();
-      R.maestroProject=s.maestroProject||'todos';
+      R.maestroProject=allProjectOptions.some(x=>x.value===s.maestroProject)?s.maestroProject:'todos';
       R.maestroProjectLabel=(allProjectOptions.find(x=>x.value===R.maestroProject)||allProjectOptions[0]).label;
       R.maestroProjectOptions=allProjectOptions.map(app=>{const selected=R.maestroProject===app.value;return Object.assign({},app,{selected,bg:selected?'#e8f1ff':'transparent',color:selected?'#102a70':'#354258',weight:selected?600:500,choose:()=>this.chooseMaestroProject(app.value)});});
       R.maestroSearch=s.maestroSearch||'';
@@ -2755,7 +2754,7 @@ class Component extends DCLogic {
       R.setMaestroSearch=e=>this.setMaestroSearch(e);
       const filtered=all.filter(({company,project,req})=>{
         if(s.maestroStatus&&s.maestroStatus!=='todos'&&stateGroup(req.estado)!==s.maestroStatus.replace('grupo:','')) return false;
-        if(s.maestroProject&&s.maestroProject!=='todos'&&project.id!==s.maestroProject) return false;
+        if(R.maestroProject!=='todos'&&project.id!==R.maestroProject) return false;
         if(!q) return true;
         return [company.nombre,project.nombre,req.codigo,req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
       });
@@ -2816,11 +2815,13 @@ class Component extends DCLogic {
     R.redocContainerRef=(el)=>{ this._redocContainerEl=el; };
 
     // empresas list
-    R.empresasList=s.data.map(e=>({ id:e.id,nombre:e.nombre,mono:e.mono,color:e.color, proyectosLabel:`${e.proyectos.length} proyecto${e.proyectos.length===1?'':'s'}`, open:()=>this.openEmpresa(e.id) }));
+    const empresaLogos={ coltanques:'./assets/logos/coltanques.svg', tecno:'./assets/logos/tecno.svg' };
+    const logoDe=e=>empresaLogos[(e.nombre||'').trim().toLowerCase()]||'';
+    R.empresasList=s.data.map(e=>({ id:e.id,nombre:e.nombre,mono:e.mono,color:e.color, logo:logoDe(e), proyectosLabel:`${e.proyectos.length} proyecto${e.proyectos.length===1?'':'s'}`, open:()=>this.openEmpresa(e.id) }));
 
     if(emp){
       const ord=this.statusOrder();
-      R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
+      R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, logo:logoDe(emp), proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
       R.showAmbientes=isDev;
       R.ambientesEmpty=!(emp.ambientes||[]).length;
       R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'#647187', stageBg: sm?sm[2]:'rgba(16,42,112,.045)', carpetaTexto: a.deployFolder ? a.deployFolder : 'Sin carpeta de despliegue', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
