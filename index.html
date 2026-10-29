@@ -964,6 +964,17 @@
             <path d="M4.5 12.5l5 5L20 6.5" />
           </symbol>
           <symbol
+            id="ic-download"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 4v11M7 10.5l5 5 5-5M4.5 19.5h15" />
+          </symbol>
+          <symbol
             id="ic-ext"
             viewBox="0 0 24 24"
             fill="none"
@@ -3904,18 +3915,53 @@
                       aplicaciones.
                     </p>
                   </div>
-                  <span
+                  <div
                     style="
-                      font-size: 11px;
-                      color: #475569;
-                      background: #eef1f5;
-                      border: 1px solid #dce4ef;
-                      border-radius: 20px;
-                      padding: 7px 12px;
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      flex-wrap: wrap;
                     "
-                    >{{ maestroVisibleCount }} de {{ maestroCount }}
-                    requerimientos</span
                   >
+                    <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+                      <button
+                        type="button"
+                        onClick="{{ exportMaestroExcel }}"
+                        disabled="{{ exportingExcel }}"
+                        title="Descarga en Excel los requerimientos visibles"
+                        style="
+                          display: inline-flex;
+                          align-items: center;
+                          gap: 7px;
+                          cursor: pointer;
+                          border: 1px solid rgba(71, 91, 119, 0.24);
+                          background: none;
+                          color: #59677a;
+                          padding: 7px 13px;
+                          border-radius: 20px;
+                          font-size: 12px;
+                          font-weight: 500;
+                        "
+                        style-hover="color:#08764f;border-color:rgba(8,118,79,.4)"
+                      >
+                        <svg width="14" height="14">
+                          <use href="#ic-download"></use></svg
+                        >{{ exportExcelLabel }}
+                      </button>
+                    </sc-if>
+                    <span
+                      style="
+                        font-size: 11px;
+                        color: #475569;
+                        background: #eef1f5;
+                        border: 1px solid #dce4ef;
+                        border-radius: 20px;
+                        padding: 7px 12px;
+                      "
+                      >{{ maestroVisibleCount }} de {{ maestroCount }}
+                      requerimientos</span
+                    >
+                  </div>
                 </div>
                 <div class="master-metrics">
                   <div
@@ -8428,7 +8474,7 @@
             view:'empresas', empresaId:null, proyectoId:null, reqId:null,
             reqTab:'documentos', filter:'todos', modal:null, form:{},
             projectsView:'grid', reqSelectMode:false, reqSelected:{},
-            maestroSearch:'', maestroStatus:'todos', maestroProject:'todos', maestroProjectMenuOpen:false, maestroStatusMenuOpen:false,
+            maestroSearch:'', maestroStatus:'todos', maestroProject:'todos', maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
             apiTab:'url', apiUrlInput:'', apiJsonInput:'', apiErr:'', apiHasRender:false,
             session:null, authChecked:false, profileRole:null, devProfiles:[],
             loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
@@ -8752,16 +8798,60 @@
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
           const form={codigo:req.codigo||'',titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:'maestro'};
-          // ambiente actual: el ambiente cuya etapa es el estado del requerimiento; si no hay, el último despliegue del requerimiento
-          const sameEnv=(d,a)=>d.environmentId?d.environmentId===a.id:String(d.env||'').trim().toLowerCase()===String(a.code||'').trim().toLowerCase();
-          const reqDeps=(req.despliegues||[]).filter(d=>d.url);
-          const amb=(company.ambientes||[]).find(a=>a.stage&&a.stage===req.estado);
-          let env=null;
-          if(amb){ const d=reqDeps.find(d=>sameEnv(d,amb))||((project.recursos||{}).despliegues||[]).find(d=>d.environmentId===amb.id&&d.url)||{}; env={label:amb.label,url:d.url||'',version:d.version||''}; }
-          else if(reqDeps.length){ const d=reqDeps.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0]; const a=(company.ambientes||[]).find(a=>sameEnv(d,a)); env={label:(a&&a.label)||d.env,url:d.url,version:d.version||''}; }
+          const env=this.reqCurrentEnv(company,project,req);
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
           if(this.isDev()) this.setState({...ctx,modal:{type:'requerimiento',mode:'editar',id:req.id,title:'Editar requerimiento',displayTitle:title,reqContext:context,form},form});
           else this.setState({...ctx,modal:{type:'maestroLectura',title,reqContext:context,detail:{...envDetail,company:company.nombre,project:project.nombre,code,title,description:req.descripcionCambios||'',descriptionBlocks:this.formatRequirementDescription(req.descripcionCambios||''),hasDescription:!!(req.descripcionCambios||'').trim(),descriptionMissing:!(req.descripcionCambios||'').trim(),status:this.estMeta(req.estado)[0],statusHelp:this.masterStatusHelp(req.estado),observations:req.observaciones||'No hay observaciones registradas todavia.',delivery:req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):'Aun no se ha definido',productionDate:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Aun no se ha definido',hours:req.horas!==''&&req.horas!=null?req.horas+' horas':'Sin definir',owner:req.responsable||'No asignado',ownerTags:this.parseOwners(req.responsable).map(name=>({name,initials:this.iniciales(name)})),noOwners:!this.parseOwners(req.responsable).length}},form:{}});
+        }
+        // ambiente actual: el ambiente cuya etapa es el estado del requerimiento; si no hay, el último despliegue del requerimiento
+        reqCurrentEnv(company, project, req){
+          const sameEnv=(d,a)=>d.environmentId?d.environmentId===a.id:String(d.env||'').trim().toLowerCase()===String(a.code||'').trim().toLowerCase();
+          const reqDeps=(req.despliegues||[]).filter(d=>d.url);
+          const amb=(company.ambientes||[]).find(a=>a.stage&&a.stage===req.estado);
+          if(amb){ const d=reqDeps.find(d=>sameEnv(d,amb))||((project.recursos||{}).despliegues||[]).find(d=>d.environmentId===amb.id&&d.url)||{}; return {label:amb.label,url:d.url||'',version:d.version||''}; }
+          if(reqDeps.length){ const d=reqDeps.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0]; const a=(company.ambientes||[]).find(a=>sameEnv(d,a)); return {label:(a&&a.label)||d.env,url:d.url,version:d.version||''}; }
+          return null;
+        }
+        loadXlsx(){
+          if(window.XLSX) return Promise.resolve(window.XLSX);
+          if(!this._xlsxP) this._xlsxP=new Promise((resolve,reject)=>{
+            const sc=document.createElement('script');
+            sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            sc.integrity='sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw'; sc.crossOrigin='anonymous';
+            sc.onload=()=>resolve(window.XLSX);
+            sc.onerror=()=>{ this._xlsxP=null; sc.remove(); reject(new Error('No se pudo cargar la librería de Excel. Revisa tu conexión e intenta de nuevo.')); };
+            document.head.appendChild(sc);
+          });
+          return this._xlsxP;
+        }
+        async exportMaestroExcel(items){
+          if(!this.isDev()||this.state.exportingExcel) return;
+          this.setState({exportingExcel:true});
+          try{
+            const XLSX=await this.loadXlsx();
+            // fechas como número de serie de Excel para que se puedan ordenar y filtrar
+            const serial=(y,m,d,h=0,mi=0)=>(Date.UTC(y,m-1,d,h,mi)-Date.UTC(1899,11,30))/864e5;
+            const day=v=>{ const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||''); return p?serial(+p[1],+p[2],+p[3]):null; };
+            const stamp=v=>{ const d=v?new Date(v):null; return d&&!isNaN(d)?serial(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes()):null; };
+            const cols=[
+              ['Aplicación',26],['#Req',9],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
+              ['Horas estimadas',10],['Entrega usuario',13,'dd/mm/yyyy'],['Paso a producción',13,'dd/mm/yyyy'],['Último cambio de estado',17,'dd/mm/yyyy hh:mm'],
+            ];
+            const rows=items.map(({project,req})=>{
+              const code=(req.codigo||'').trim(), horas=req.horas===''||req.horas==null?null:Number(req.horas);
+              return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
+                (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
+                day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt)];
+            });
+            const ws=XLSX.utils.aoa_to_sheet([cols.map(c=>c[0]),...rows]);
+            cols.forEach(([,,fmt],c)=>{ if(fmt) rows.forEach((_,r)=>{ const cell=ws[XLSX.utils.encode_cell({r:r+1,c})]; if(cell&&cell.t==='n') cell.z=fmt; }); });
+            ws['!cols']=cols.map(c=>({wch:c[1]}));
+            ws['!autofilter']={ref:ws['!ref']};
+            const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Requerimientos');
+            const t=new Date(), pad=n=>String(n).padStart(2,'0');
+            XLSX.writeFile(wb,'requerimientos-'+t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate())+'.xlsx');
+          }catch(e){ console.error(e); this.setState({modal:{type:'aviso',title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this.setState({exportingExcel:false}); }
         }
         masterStatusHelp(statusId){
           const label=this.estMeta(statusId)[0].toLocaleLowerCase('es-CO');
@@ -9783,6 +9873,8 @@
               ||codeOf(b.req).localeCompare(codeOf(a.req),'es-CO',{numeric:true}));
             R.maestroCount=all.length;
             R.maestroVisibleCount=filtered.length;
+            R.exportingExcel=!!s.exportingExcel; R.exportExcelLabel=s.exportingExcel?'Generando…':'Descargar Excel';
+            R.exportMaestroExcel=()=>this.exportMaestroExcel(filtered);
             const stateCount=(group)=>all.filter(({req})=>stateGroup(req.estado)===group).length;
             R.maestroStatusCounts=[
               {label:'En desarrollo',count:stateCount('desarrollo'),color:'#b95b00',tint:'#fff5e9'},
