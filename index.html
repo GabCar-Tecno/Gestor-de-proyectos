@@ -510,10 +510,10 @@
           .master-table-head,
           .master-row {
             display: grid;
-            grid-template-columns: minmax(125px, 1.1fr) 105px minmax(
-                190px,
-                1.8fr
-              ) 130px minmax(150px, 1.4fr) 145px;
+            grid-template-columns: minmax(110px, 0.95fr) 78px minmax(
+                210px,
+                2fr
+              ) 112px minmax(185px, 1.75fr) 105px 105px;
             gap: 12px;
             align-items: center;
           }
@@ -565,10 +565,10 @@
           @media (max-width: 1000px) {
             .master-table-head,
             .master-row {
-              grid-template-columns: minmax(110px, 1fr) 90px minmax(
-                  150px,
-                  1.5fr
-                ) 110px minmax(120px, 1fr) 125px;
+              grid-template-columns: minmax(100px, 0.9fr) 70px minmax(
+                  175px,
+                  1.7fr
+                ) 100px minmax(150px, 1.5fr) 95px 100px;
               gap: 8px;
               padding-left: 12px;
               padding-right: 12px;
@@ -658,6 +658,154 @@
             .modal-sheet {
               max-height: calc(100dvh - 24px) !important;
             }
+          }
+          .modal-sheet .master-readonly-copy {
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            text-justify: auto !important;
+            word-spacing: normal !important;
+            overflow-wrap: anywhere;
+          }
+          .master-readonly-description {
+            max-height: min(42vh, 380px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 7px;
+          }
+          .master-readonly-description p {
+            margin: 0 0 10px;
+            white-space: pre-line;
+          }
+          .master-readonly-description p:last-child {
+            margin-bottom: 0;
+          }
+          .master-readonly-description ol,
+          .master-readonly-description ul {
+            margin: 0 0 10px;
+            padding-left: 24px;
+          }
+          .master-readonly-description li {
+            padding-left: 4px;
+            margin: 0 0 6px;
+            white-space: pre-line;
+          }
+          .assignee-picker {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+          }
+          .assignee-picker-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+          .assignee-picker-count {
+            flex: none;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #e8eef7;
+            color: #354b6a;
+            font-size: 11px;
+            font-weight: 600;
+          }
+          .assignee-picker-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+          }
+          .assignee-picker-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 9px 5px 5px;
+            border: 1px solid #c9d8ed;
+            border-radius: 999px;
+            background: #edf4fc;
+            color: #183c75;
+            font-size: 11.5px;
+            font-weight: 500;
+          }
+          .assignee-picker-tag-avatar,
+          .assignee-option-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: none;
+            border-radius: 50%;
+            background: #dce8f8;
+            color: #244f8c;
+            font-size: 10px;
+            font-weight: 700;
+          }
+          .assignee-picker-tag-avatar {
+            width: 22px;
+            height: 22px;
+          }
+          .assignee-options {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 210px;
+            overflow: auto;
+            padding: 2px;
+          }
+          .assignee-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: #354258;
+            text-align: left;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+          }
+          .assignee-option:hover {
+            border-color: #d8e4f3;
+            background: #f3f7fc;
+          }
+          .assignee-option.is-selected {
+            border-color: #c6dcf6;
+            background: #edf5ff;
+            color: #173f79;
+          }
+          .assignee-option-avatar {
+            width: 32px;
+            height: 32px;
+            background: #edf0f5;
+            color: #58677e;
+            font-size: 10.5px;
+          }
+          .assignee-option.is-selected .assignee-option-avatar {
+            background: #d7e9ff;
+            color: #1557a5;
+          }
+          .assignee-option-name {
+            flex: 1;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: 500;
+          }
+          .assignee-checkbox {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: none;
+            width: 19px;
+            height: 19px;
+            border: 1.5px solid #b9c4d2;
+            border-radius: 6px;
+            background: #fff;
+            color: #fff;
+          }
+          .assignee-checkbox.is-selected {
+            border-color: #1763b5;
+            background: #1763b5;
           }
           /* Móvil: la grilla de recursos del proyecto se apila como lista */
           @media (max-width: 640px) {
@@ -3980,9 +4128,10 @@
                 <div class="master-table">
                   <div class="master-table-head">
                     <span>Aplicación</span><span>#Req</span
-                    ><span>Descripción de cambios</span><span>Estado</span
+                    ><span>Título del requerimiento</span><span>Estado</span
                     ><span>Observaciones</span
-                    ><span>Fecha entrega usuario</span>
+                    ><span>Entrega usuario</span
+                    ><span>Paso a producción</span>
                   </div>
                   <sc-for
                     list="{{ maestroReqList }}"
@@ -4013,10 +4162,8 @@
                       >
                       <span class="master-cell-description master-cell-main"
                         ><span class="master-cell-label"
-                          >Descripción de cambios</span
-                        >{{ r.descripcion }}<span class="master-cell-sub"
-                          >{{ r.titulo }}</span
-                        ></span
+                          >Título del requerimiento</span
+                        >{{ r.titulo }}</span
                       >
                       <span class="master-cell-main"
                         ><span class="master-cell-label">Estado</span
@@ -4040,8 +4187,13 @@
                         class="master-cell-main"
                         style="font-size:11.5px;color:{{ r.deliveryColor }}"
                         ><span class="master-cell-label"
-                          >Fecha entrega usuario</span
+                          >Entrega usuario</span
                         >{{ r.fechaEntregaUsuario }}</span
+                      ><span
+                        class="master-cell-main"
+                        style="font-size:11.5px;color:{{ r.productionDateColor }}"
+                        ><span class="master-cell-label">Paso a producción</span
+                        >{{ r.fechaPasoProduccion }}</span
                       >
                     </button>
                   </sc-for>
@@ -4501,7 +4653,7 @@
                       font-weight: 600;
                     "
                     >{{ req.iniciales }}</span
-                  >Responsable:
+                  >Responsables:
                   <span style="color: #354258">{{ req.responsable }}</span
                   ><sc-if
                     value="{{ req.hasStatusDate }}"
@@ -5438,7 +5590,7 @@
                     hint-placeholder-val="{{ false }}"
                   >
                     <div
-                      style="display: flex; flex-direction: column; gap: 15px"
+                      style="display: flex; flex-direction: column; gap: 15px; text-align: left"
                     >
                       <section
                         style="
@@ -5548,6 +5700,14 @@
                           {{ masterDetail.delivery }}
                         </div>
                       </section>
+                      <section style="background:#eef1f5;border:1px solid rgba(71,91,119,.16);border-radius:13px;padding:17px 18px;text-align:left">
+                        <div style="font-size:11px;font-weight:600;color:#59677a;margin-bottom:8px">Fecha paso a producción</div>
+                        <div style="font-size:15px;line-height:1.4;font-weight:600;color:#263247">{{ masterDetail.productionDate }}</div>
+                      </section>
+                      <section style="background:#eef1f5;border:1px solid rgba(71,91,119,.16);border-radius:13px;padding:17px 18px;text-align:left">
+                        <div style="font-size:11px;font-weight:600;color:#59677a;margin-bottom:8px">Horas estimadas</div>
+                        <div style="font-size:15px;line-height:1.4;font-weight:600;color:#263247">{{ masterDetail.hours }}</div>
+                      </section>
                       <section
                         style="
                           background: #eef1f5;
@@ -5569,15 +5729,12 @@
                         <sc-if
                           value="{{ masterDetail.hasDescription }}"
                           hint-placeholder-val="{{ false }}"
-                          ><div
-                            style="
-                              font-size: 14px;
-                              line-height: 1.7;
-                              color: #354258;
-                              white-space: pre-wrap;
-                            "
-                          >
-                            {{ masterDetail.description }}
+                          ><div class="master-readonly-copy master-readonly-description" style="font-size:15px;line-height:1.65;color:#354258;text-align:left !important;text-justify:auto !important;word-spacing:normal !important;overflow-wrap:anywhere">
+                            <sc-for list="{{ masterDetail.descriptionBlocks }}" as="block" hint-placeholder-count="1">
+                              <sc-if value="{{ block.isParagraph }}" hint-placeholder-val="{{ false }}"><p>{{ block.text }}</p></sc-if>
+                              <sc-if value="{{ block.isOrdered }}" hint-placeholder-val="{{ false }}"><ol start="{{ block.start }}"><sc-for list="{{ block.items }}" as="item" hint-placeholder-count="2"><li>{{ item }}</li></sc-for></ol></sc-if>
+                              <sc-if value="{{ block.isBulleted }}" hint-placeholder-val="{{ false }}"><ul><sc-for list="{{ block.items }}" as="item" hint-placeholder-count="2"><li>{{ item }}</li></sc-for></ul></sc-if>
+                            </sc-for>
                           </div></sc-if
                         >
                         <sc-if
@@ -5588,7 +5745,11 @@
                               font-size: 13px;
                               line-height: 1.65;
                               color: #526176;
+                              text-align: left !important;
+                              text-justify: auto !important;
+                              word-spacing: normal !important;
                             "
+                            class="master-readonly-copy"
                           >
                             No se agregaron mas detalles del cambio solicitado.
                           </div></sc-if
@@ -5614,11 +5775,15 @@
                         </div>
                         <div
                           style="
-                            font-size: 13px;
-                            line-height: 1.65;
+                            font-size: 14px;
+                            line-height: 1.6;
                             color: #354258;
-                            white-space: pre-wrap;
+                            text-align: left !important;
+                            text-justify: auto !important;
+                            word-spacing: normal !important;
+                            overflow-wrap: anywhere;
                           "
+                          class="master-readonly-copy"
                         >
                           {{ masterDetail.observations }}
                         </div>
@@ -5634,40 +5799,16 @@
                           padding: 14px 17px;
                         "
                       >
-                        <span
-                          style="
-                            flex: none;
-                            width: 34px;
-                            height: 34px;
-                            border-radius: 50%;
-                            background: #dce4ed;
-                            display: inline-flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: #354258;
-                            font-size: 11px;
-                            font-weight: 600;
-                          "
-                          >{{ masterDetail.ownerInitials }}</span
-                        >
-                        <div>
-                          <div
-                            style="
-                              font-size: 11px;
-                              color: #59677a;
-                              margin-bottom: 3px;
-                            "
-                          >
-                            Persona responsable
-                          </div>
-                          <div
-                            style="
-                              font-size: 13px;
-                              color: #263247;
-                              font-weight: 500;
-                            "
-                          >
-                            {{ masterDetail.owner }}
+                        <div style="width:100%;min-width:0">
+                          <div style="font-size:11px;color:#59677a;margin-bottom:8px">Personas responsables</div>
+                          <div style="display:flex;flex-wrap:wrap;gap:8px">
+                            <sc-for list="{{ masterDetail.ownerTags }}" as="owner" hint-placeholder-count="1">
+                              <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 5px;border:1px solid #c9d8ed;border-radius:999px;background:#edf4fc;color:#183c75;font-size:12px;font-weight:500">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:25px;height:25px;border-radius:50%;background:#d7e9ff;color:#1557a5;font-size:10px;font-weight:700">{{ owner.initials }}</span>
+                                {{ owner.name }}
+                              </span>
+                            </sc-for>
+                            <sc-if value="{{ masterDetail.noOwners }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#647187">Sin asignar</span></sc-if>
                           </div>
                         </div>
                       </section>
@@ -5737,6 +5878,40 @@
                             </select>
                           </sc-if>
                           <sc-if
+                            value="{{ f.isChecklist }}"
+                            hint-placeholder-val="{{ false }}"
+                          >
+                            <div class="assignee-picker">
+                              <div class="assignee-picker-summary">
+                                <span style="font-size:12px;color:#647187">Elige quiénes trabajarán en este requerimiento.</span>
+                                <span class="assignee-picker-count">{{ f.selectedCountLabel }}</span>
+                              </div>
+                              <sc-if value="{{ f.hasSelectedOwners }}" hint-placeholder-val="{{ false }}">
+                                <div class="assignee-picker-tags">
+                                  <sc-for list="{{ f.selectedOwnerTags }}" as="tag" hint-placeholder-count="2">
+                                    <span class="assignee-picker-tag"><span class="assignee-picker-tag-avatar">{{ tag.initials }}</span>{{ tag.label }}</span>
+                                  </sc-for>
+                                </div>
+                              </sc-if>
+                              <div class="assignee-options">
+                              <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3">
+                                <button
+                                  type="button"
+                                  onClick="{{ o.toggle }}"
+                                  class="assignee-option {{ o.selectedClass }}"
+                                >
+                                  <span class="assignee-option-avatar">{{ o.initials }}</span>
+                                  <span class="assignee-option-name">{{ o.label }}</span>
+                                  <span class="assignee-checkbox {{ o.checkboxClass }}">
+                                    <sc-if value="{{ o.selected }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg></sc-if>
+                                  </span>
+                                </button>
+                              </sc-for>
+                              <sc-if value="{{ f.noOptions }}" hint-placeholder-val="{{ false }}"><span style="padding:8px;color:#647187;font-size:12px">No hay desarrolladores disponibles.</span></sc-if>
+                              </div>
+                            </div>
+                          </sc-if>
+                          <sc-if
                             value="{{ f.isText }}"
                             hint-placeholder-val="{{ true }}"
                           >
@@ -5746,6 +5921,8 @@
                                 value="{{ f.value }}"
                                 onInput="{{ f.onChange }}"
                                 placeholder="{{ f.placeholder }}"
+                                min="{{ f.min }}"
+                                step="{{ f.step }}"
                                 style="width:100%;background:#e3e8ef;border:1px solid rgba(71,91,119,.22);border-radius:10px;padding:11px {{ f.padRight }} 11px 12px;color:#263247;font-size:14px;outline:none;box-sizing:border-box"
                                 style-focus="border-color:#35c0f0"
                               />
@@ -5798,6 +5975,8 @@
                                 font-size: 14px;
                                 outline: none;
                                 resize: vertical;
+                                max-height: {{ f.maxAreaHeight }};
+                                overflow-y: auto;
                                 font-family: inherit;
                               "
                               style-focus="border-color:#35c0f0"
@@ -8363,8 +8542,8 @@
               const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
               const byAmb=a=>deploys.find(d=>d.environment_id&&d.environment_id===a.id)||deploys.find(d=>String(d.env||'').trim().toLocaleLowerCase('es-CO')===String(a.code||'').trim().toLocaleLowerCase('es-CO'))||{};
               const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
-                id:r.id, codigo:r.code||'', titulo:r.title, responsable:r.owner||'Sin asignar', estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
-                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'',
+                id:r.id, codigo:r.code||'', titulo:r.title, responsable:this.parseOwners(r.owner).join(', ')||'Sin asignar', responsables:this.parseOwners(r.owner), estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
+                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'',
                 documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
                 despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
                 bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
@@ -8462,7 +8641,28 @@
         gid(p){ return p+'-'+(window.crypto&&crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2)); }
         estMeta(e){ const st=(this.state.statuses||[]).find(x=>x.id===e); return st ? [st.label||e, st.color||'#647187', st.color_bg||'rgba(154,166,200,.16)'] : ['—','#647187','rgba(154,166,200,.16)']; }
         statusOrder(){ const list=(this.state.statuses||[]); const flow=list.filter(st=>!st.is_lateral).map(st=>st.id); const lat=list.filter(st=>st.is_lateral).map(st=>st.id); return {flow, lat, canonical:flow.concat(lat), reversed:flow.slice().reverse().concat(lat)}; }
-        iniciales(n){ return (n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+        iniciales(n){ return (this.parseOwners(n)[0]||n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+        parseOwners(value){ return Array.isArray(value)?value.map(x=>String(x).trim()).filter(Boolean):String(value||'').split(/\s*[,;]\s*/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!=='sin asignar'); }
+        formatRequirementDescription(value){
+          const blocks=[]; let paragraph=[], listType='', listItems=[];
+          const flushParagraph=()=>{ if(paragraph.length){blocks.push({isParagraph:true,text:paragraph.join('\n')}); paragraph=[];} };
+          const flushList=()=>{ if(listItems.length){blocks.push({isOrdered:listType==='ordered',isBulleted:listType==='bulleted',start:listItems[0].number||1,items:listItems.map(item=>item.text)}); listType=''; listItems=[];} };
+          String(value||'').replace(/\r\n?/g,'\n').split('\n').forEach(line=>{
+            const text=line.trim();
+            if(!text){flushParagraph();flushList();return;}
+            const ordered=text.match(/^(\d+)[.)]\s+(.+)$/), bulleted=text.match(/^[-*•]\s+(.+)$/);
+            if(ordered||bulleted){
+              flushParagraph(); const nextType=ordered?'ordered':'bulleted';
+              if(listType&&listType!==nextType) flushList();
+              if(!listType) listType=nextType;
+              listItems.push({number:ordered?Number(ordered[1]):null,text:ordered?ordered[2]:bulleted[1]});
+              return;
+            }
+            flushList(); paragraph.push(text);
+          });
+          flushParagraph();flushList(); return blocks;
+        }
+        toggleRequirementOwner(name){ this.setState(s=>{ const selected=(s.form.responsables||[]).slice(), i=selected.indexOf(name); if(i>=0) selected.splice(i,1); else selected.push(name); return {form:{...s.form,responsables:selected}}; }); }
         hexA(hex,a){ const h=hex.replace('#',''); const r=parseInt(h.substring(0,2),16), g=parseInt(h.substring(2,4),16), b=parseInt(h.substring(4,6),16); return `rgba(${r},${g},${b},${a})`; }
         emailInitials(email){ if(!email) return '?'; const local=email.split('@')[0]; const parts=local.split(/[._-]/).filter(Boolean); if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase(); return local.slice(0,2).toUpperCase(); }
         relDate(iso){
@@ -8541,7 +8741,7 @@
         addReqGlobal(){
           if(!this.isDev()) return;
           const first=this.statusOrder().flow[0]||'desarrollo';
-          this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}});
+          this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}});
         }
         openReqFromMaster(companyId, projectId, reqId){
           const company=(this.state.data||[]).find(c=>c.id===companyId);
@@ -8550,7 +8750,7 @@
           if(!company||!project||!req) return;
           const code=req.codigo||'Sin codigo', title=(req.titulo||'').trim()||code;
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
-          const form={codigo:req.codigo||'',titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',responsable:req.responsable||'',estado:req.estado};
+          const form={codigo:req.codigo||'',titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:'maestro'};
           // ambiente actual: el ambiente cuya etapa es el estado del requerimiento; si no hay, el último despliegue del requerimiento
           const sameEnv=(d,a)=>d.environmentId?d.environmentId===a.id:String(d.env||'').trim().toLowerCase()===String(a.code||'').trim().toLowerCase();
@@ -8561,7 +8761,7 @@
           else if(reqDeps.length){ const d=reqDeps.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0]; const a=(company.ambientes||[]).find(a=>sameEnv(d,a)); env={label:(a&&a.label)||d.env,url:d.url,version:d.version||''}; }
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
           if(this.isDev()) this.setState({...ctx,modal:{type:'requerimiento',mode:'editar',id:req.id,title:'Editar requerimiento',displayTitle:title,reqContext:context,form},form});
-          else this.setState({...ctx,modal:{type:'maestroLectura',title,reqContext:context,detail:{...envDetail,company:company.nombre,project:project.nombre,code,title,description:req.descripcionCambios||'',hasDescription:!!(req.descripcionCambios||'').trim(),descriptionMissing:!(req.descripcionCambios||'').trim(),status:this.estMeta(req.estado)[0],statusHelp:this.masterStatusHelp(req.estado),observations:req.observaciones||'No hay observaciones registradas todavia.',delivery:req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):'Aun no se ha definido',owner:req.responsable||'No asignado',ownerInitials:this.iniciales(req.responsable||'No asignado')}},form:{}});
+          else this.setState({...ctx,modal:{type:'maestroLectura',title,reqContext:context,detail:{...envDetail,company:company.nombre,project:project.nombre,code,title,description:req.descripcionCambios||'',descriptionBlocks:this.formatRequirementDescription(req.descripcionCambios||''),hasDescription:!!(req.descripcionCambios||'').trim(),descriptionMissing:!(req.descripcionCambios||'').trim(),status:this.estMeta(req.estado)[0],statusHelp:this.masterStatusHelp(req.estado),observations:req.observaciones||'No hay observaciones registradas todavia.',delivery:req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):'Aun no se ha definido',productionDate:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Aun no se ha definido',hours:req.horas!==''&&req.horas!=null?req.horas+' horas':'Sin definir',owner:req.responsable||'No asignado',ownerTags:this.parseOwners(req.responsable).map(name=>({name,initials:this.iniciales(name)})),noOwners:!this.parseOwners(req.responsable).length}},form:{}});
         }
         masterStatusHelp(statusId){
           const label=this.estMeta(statusId)[0].toLocaleLowerCase('es-CO');
@@ -8647,8 +8847,8 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:'empresa',mode:'crear',title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:'proyecto',mode:'crear',title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',responsable:'',estado:first}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',responsable:r.responsable,estado:r.estado}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); this.setState({documentFileName:''}); }
         setDocumentFile(e){
           this._documentFile=e.target.files&&e.target.files[0]||null;
@@ -8936,7 +9136,6 @@
           const m=this.state.modal, f=this.state.form; if(!m) return;
           const t=m.type, sb=this._sb;
           if(t!=='password' && !this.isDev()){ this.closeModal(); return; }
-          if(t==='requerimiento'&&f.responsable&&(this.state.devProfiles||[]).length&&!(this.state.devProfiles||[]).some(p=>p.label===f.responsable)){ this.setState({modalErr:'Selecciona un responsable de la lista de usuarios DEV.'}); return; }
           if(this._busy) return; this._busy=true;
           this.setState({saveStatus:'saving', modalErr:''});
           try{
@@ -8975,7 +9174,10 @@
                 this.openPromoteConfirm(m, f, targetAmb);
                 return;
               }
-              const payload={ title:f.titulo, owner:f.responsable||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim(), change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null };
+              const hoursValue=f.horas===''||f.horas==null?null:Number(f.horas);
+              if(hoursValue!==null&&(!Number.isFinite(hoursValue)||hoursValue<0)){ this.setState({saveStatus:'idle',modalErr:'Las horas deben ser un número igual o mayor que cero.'}); return; }
+              const ownerNames=(f.responsables||[]).filter(Boolean);
+              const payload={ title:f.titulo, owner:ownerNames.join(', ')||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim(), change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue };
               if(statusChanged) payload.status_updated_at=new Date().toISOString();
               if(m.mode==='crear'){
                 const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:targetProjectId, ...payload });
@@ -9149,10 +9351,12 @@
           this.setState({
             modal:{ type:'promoteConfirm', title:'Avanzar requerimiento',
               targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
-              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsable:f.responsable, codigo:f.codigo, estado:f.estado,
+              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigo:f.codigo, estado:f.estado,
                 descripcionCambios:f.descripcionCambios!==undefined?f.descripcionCambios:(req&&req.descripcionCambios)||'',
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
-                fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'' },
+                fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'',
+                fechaPasoProduccion:f.fechaPasoProduccion!==undefined?f.fechaPasoProduccion:(req&&req.fechaPasoProduccion)||'',
+                horas:f.horas!==undefined?f.horas:(req&&req.horas) },
               projectUrl:envRow.url||'Sin URL registrada', projectVersion:envRow.version||'Sin version registrada', valueSource:source },
             form:{url,version}, modalErr:'',
           });
@@ -9163,7 +9367,7 @@
           this.setState({saveStatus:'saving', modalErr:''});
           const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
           try{
-            const payload={ title:rp.titulo, owner:rp.responsable||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, status_updated_at:nowIso };
+            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
             let reqId=rp.id;
             if(rp.mode==='crear'){
               reqId=this.gid('r');
@@ -9304,7 +9508,7 @@
           const next=flow[i+1];
           const targetAmb=((this.empresa()||{}).ambientes||[]).find(a=>a.stage===next);
           if(targetAmb){
-            this.openPromoteConfirm({mode:'editar', id:req.id}, {titulo:req.titulo, responsable:req.responsable, codigo:req.codigo, estado:next}, targetAmb);
+            this.openPromoteConfirm({mode:'editar', id:req.id}, {titulo:req.titulo, responsables:req.responsables||this.parseOwners(req.responsable), codigo:req.codigo, estado:next}, targetAmb);
           } else {
             this.saveReqStatus(req.id, next); // el siguiente estado no tiene ambiente: solo se avanza el estado
           }
@@ -9595,6 +9799,7 @@
                 code:(req.codigo&&req.codigo.trim())||('REQ-'+String((project.requerimientos||[]).findIndex(x=>x.id===req.id)+1).padStart(3,'0')), titulo:req.titulo,
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
                 observaciones:(req.observaciones||'').trim()||'—', observacionesMetaLabel:(req.observaciones||'').trim()?'Observación registrada':'Sin observaciones', fechaEntregaUsuario:explicitDate,
+                fechaPasoProduccion:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Sin definir', productionDateColor:req.fechaPasoProduccion?'#08764f':'#64748b',
                 responsable:req.responsable, estado:boardState, estadoColor:boardStateColor, estadoBg:boardStateBg,
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'#f97b7b':'#647187', deliveryColor:req.fechaEntregaUsuario||userDelivery?'#08764f':'#64748b',
@@ -9821,7 +10026,7 @@
             R.modalReqContextShow=!!md.reqContext; R.modalReqContext=md.reqContext||'';
             R.modalFormStyle=md.type==='requerimiento' ? ('display:grid;grid-template-columns:repeat('+(R.narrow?'1':'2')+',minmax(0,1fr));gap:12px') : 'display:flex;flex-direction:column;gap:16px';
             R.saveLabel=md.mode==='crear'?'Crear':'Guardar';
-            R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales'||md.type==='componentes'||md.type==='correo') ? '620px' : (md.type==='requerimiento'?'680px':(md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote'||md.type==='desplegable')?'520px':'440px');
+            R.modalWidth = (md.type==='githubLinks'||md.type==='verGithubLinks'||md.type==='credenciales'||md.type==='componentes'||md.type==='correo'||md.type==='maestroLectura') ? '640px' : (md.type==='requerimiento'?'680px':(md.type==='recurso'||md.type==='desplieguesProy'||md.type==='verDespliegue'||md.type==='promoteConfirm'||md.type==='discord'||md.type==='batchPromote'||md.type==='desplegable')?'520px':'440px');
             R.modalMasterLectura=md.type==='maestroLectura'; R.masterDetail=md.detail||{};
             R.masterOpenEnv=()=>this.openExt(R.masterDetail.envUrl); R.masterGoProject=()=>this.goProyectoFromMaster(R.masterDetail.companyId,R.masterDetail.projectId);
             if(md.type==='maestroLectura'&&md.detail){R.modalTitle=md.detail.title||md.detail.code;R.modalReqContextShow=true;R.modalReqContext='#'+md.detail.code+' - '+md.detail.company+' / '+md.detail.project;}
@@ -9945,11 +10150,12 @@
             const companyOptions=[{value:'',label:'Selecciona una empresa'}].concat((s.data||[]).map(c=>({value:c.id,label:c.nombre})));
             const masterCompany=(s.data||[]).find(c=>c.id===s.form.empresaId);
             const masterProjectOptions=[{value:'',label:masterCompany?'Selecciona un proyecto':'Selecciona primero una empresa'}].concat(((masterCompany&&masterCompany.proyectos)||[]).map(p=>({value:p.id,label:p.nombre})));
-            const responsibleOptions=[{value:'',label:(s.devProfiles||[]).length?'Sin asignar':'No hay usuarios con rol DEV'}].concat((s.devProfiles||[]).map(p=>({value:p.label,label:p.label})));
+            const responsibleOptions=(s.devProfiles||[]).map(p=>({value:p.label,label:p.label}));
+            (s.form.responsables||[]).filter(name=>!responsibleOptions.some(o=>o.value===name)).forEach(name=>responsibleOptions.push({value:name,label:name+' (ya no aparece como DEV)'}));
             const fields={
               empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
               proyecto:[{label:'Nombre del proyecto',key:'nombre',kind:'text',placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:'area',placeholder:'Breve descripción'}],
-              requerimiento:[...(md.global?[{label:'Empresa',key:'empresaId',kind:'select',options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:'select',options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'#Req',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título / resumen',key:'titulo',kind:'text',placeholder:'Resumen corto del requerimiento'},{label:'Descripción de cambios',key:'descripcionCambios',kind:'area',placeholder:'Detalla los cambios solicitados'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:'area',placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:'text',type:'date'},{label:'Responsable',key:'responsable',kind:'select',options:responsibleOptions}],
+              requerimiento:[...(md.global?[{label:'Empresa',key:'empresaId',kind:'select',options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:'select',options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'#Req',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título del requerimiento',key:'titulo',kind:'text',placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:'area',placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:'area',placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:'text',type:'date'},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:'text',type:'date'},{label:'Horas estimadas',key:'horas',kind:'text',type:'number',placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:'checklist',options:responsibleOptions}],
               documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:'text',placeholder:'https://...'}],
               despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
               bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
@@ -9963,13 +10169,13 @@
             R.formFields=(fields[md.type]||[]).map(fd=>{
               const isPassword = fd.type==='password';
               const shown = !!s.modalShowPass[fd.key];
-              const fullReqField=md.type==='requerimiento' && ['titulo','descripcionCambios','observaciones'].includes(fd.key);
-              const currentOwner=s.form.responsable||'';
-              const ownerExists=(s.devProfiles||[]).some(p=>p.label===currentOwner);
-              return { label:fd.label, value:fd.key==='responsable'&&!ownerExists?'':(s.form[fd.key]||''), help:fd.key==='responsable'&&currentOwner&&!ownerExists&&(s.devProfiles||[]).length?'La persona asignada actualmente no aparece entre los usuarios DEV. Selecciona un desarrollador o elige Sin asignar.':'', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
-                gridColumn:md.type==='requerimiento'?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type==='requerimiento'?'#eef1f5':'transparent', fieldBorder:md.type==='requerimiento'?'rgba(71,91,119,.16)':'transparent', rows:fd.key==='observaciones'?3:4,
-                isSelect:fd.kind==='select', isText:fd.kind==='text', isArea:fd.kind==='area', options:fd.options||[],
-                inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'),
+              const fullReqField=md.type==='requerimiento' && ['titulo','descripcionCambios','observaciones','responsables'].includes(fd.key);
+              const isChecklist=fd.kind==='checklist';
+              const selectedOwners=s.form.responsables||[];
+              return { label:fd.label, value:isChecklist?'':(s.form[fd.key]??''), help:fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+                gridColumn:md.type==='requerimiento'?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type==='requerimiento'?'#eef1f5':'transparent', fieldBorder:md.type==='requerimiento'?'rgba(71,91,119,.16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
+                isSelect:fd.kind==='select', isChecklist, noOptions:isChecklist&&!(fd.options||[]).length, hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
+                inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'), min:fd.min||'', step:fd.step||'1',
                 isPassword, padRight: isPassword?'38px':'12px',
                 eyeHref: shown?'#ic-eye-off':'#ic-eye',
                 toggleShow: ()=>this.toggleModalShowPass(fd.key) };
