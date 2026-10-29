@@ -9774,13 +9774,13 @@
               if(!q) return true;
               return [company.nombre,project.nombre,req.codigo,req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
             });
-            // Orden del tablero: desarrollo/QA → pruebas usuario → estimación → (bloqueado/otros) → producción; luego por #Req.
+            // Orden del tablero: desarrollo/QA → pruebas usuario → estimación → (bloqueado/otros) → producción; luego por #Req (mayor primero).
             const boardRank={desarrollo:0,qa:0,usuarios:1,estimacion:2,produccion:4};
             const rankOf=id=>boardRank[String(id||'').toLowerCase()]??3;
             const codeOf=req=>(req.codigo||'').trim();
             filtered.sort((a,b)=>rankOf(a.req.estado)-rankOf(b.req.estado)
               ||(!codeOf(a.req))-(!codeOf(b.req))
-              ||codeOf(a.req).localeCompare(codeOf(b.req),'es-CO',{numeric:true}));
+              ||codeOf(b.req).localeCompare(codeOf(a.req),'es-CO',{numeric:true}));
             R.maestroCount=all.length;
             R.maestroVisibleCount=filtered.length;
             const stateCount=(group)=>all.filter(({req})=>stateGroup(req.estado)===group).length;
@@ -9792,11 +9792,6 @@
             ];
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
-              const rawState=meta[0], normState=rawState.toLocaleLowerCase('es-CO');
-              const boardGroup=stateGroup(req.estado);
-              const boardState=boardGroup==='usuario'?'Pruebas usuario':boardGroup==='desarrollo'?'En desarrollo':boardGroup==='produccion'?'Producci\u00f3n':rawState;
-              const boardPalette={desarrollo:['#1557b0','rgba(21,87,176,.11)'],usuario:['#6246a5','rgba(98,70,165,.11)'],produccion:['#08764f','rgba(8,118,79,.11)'],bloqueado:['#b42332','rgba(180,35,50,.1)']}[boardGroup];
-              const boardStateColor=boardPalette?boardPalette[0]:meta[1], boardStateBg=boardPalette?boardPalette[1]:meta[2];
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:(company.ambientes||[]).find(a=>a.id===d.environmentId)}));
               const userDelivery=deliveries.find(x=>((x.amb&&this.estMeta(x.amb.stage)[0])||'').toLocaleLowerCase('es-CO').includes('usuario')||((x.amb&&x.amb.label)||x.d.env||'').toLocaleLowerCase('es-CO').includes('usuario'));
               const explicitDate=req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):
@@ -9807,7 +9802,7 @@
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
                 observaciones:(req.observaciones||'').trim()||'—', observacionesMetaLabel:(req.observaciones||'').trim()?'Observación registrada':'Sin observaciones', fechaEntregaUsuario:explicitDate,
                 fechaPasoProduccion:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Sin definir', productionDateColor:req.fechaPasoProduccion?'#08764f':'#64748b',
-                responsable:req.responsable, estado:boardState, estadoColor:boardStateColor, estadoBg:boardStateBg,
+                responsable:req.responsable, estado:meta[0], estadoColor:meta[1], estadoBg:meta[2],
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'#f97b7b':'#647187', deliveryColor:req.fechaEntregaUsuario||userDelivery?'#08764f':'#64748b',
                 openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:()=>this.openReqFromMaster(company.id,project.id,req.id),
