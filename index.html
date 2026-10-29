@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="./support.js"></script>
+    <script>
+      try {
+        if (localStorage.getItem("gp-theme") === "dark")
+          document.documentElement.classList.add("dark-mode");
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <x-dc>
@@ -30,6 +36,22 @@
             font-size: 14px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
+          }
+          /* Modo oscuro: invierte la UI clara y re-invierte imágenes/logos para conservar sus colores */
+          html.dark-mode {
+            filter: invert(0.9) hue-rotate(180deg);
+            background: #fff;
+          }
+          html.dark-mode img,
+          html.dark-mode video,
+          html.dark-mode iframe,
+          html.dark-mode .keep-color,
+          html.dark-mode .logo-box {
+            filter: invert(1) hue-rotate(180deg);
+          }
+          /* el recuadro ya se re-invierte completo: su logo no debe invertirse otra vez */
+          html.dark-mode .logo-box img {
+            filter: none;
           }
           ::selection {
             background: rgba(53, 192, 240, 0.32);
@@ -534,6 +556,11 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+          .master-cell-description .master-cell-sub {
+            white-space: normal;
+            overflow: visible;
+            overflow-wrap: anywhere;
           }
           @media (max-width: 1000px) {
             .master-table-head,
@@ -1047,6 +1074,7 @@
               "
             >
               <svg
+                class="keep-color"
                 width="30"
                 height="30"
                 viewBox="0 0 68.755 45.796"
@@ -1070,7 +1098,7 @@
                     letter-spacing: -0.3px;
                   "
                 >
-                  Tecno<span style="color: #35c0f0">Corp</span>
+                  Tecno<span class="keep-color" style="color: #35c0f0">Corp</span>
                 </div>
                 <div
                   style="
@@ -1388,6 +1416,7 @@
               "
             >
               <svg
+                class="keep-color"
                 width="30"
                 height="30"
                 viewBox="0 0 68.755 45.796"
@@ -1411,7 +1440,7 @@
                     letter-spacing: -0.3px;
                   "
                 >
-                  Tecno<span style="color: #35c0f0">Corp</span>
+                  Tecno<span class="keep-color" style="color: #35c0f0">Corp</span>
                 </div>
                 <div
                   class="brand-sub"
@@ -1497,6 +1526,32 @@
                 >Solo lectura</span
               >
             </sc-if>
+            <button
+              onClick="{{ toggleDarkMode }}"
+              title="{{ themeTitle }}"
+              aria-label="{{ themeTitle }}"
+              style="
+                flex: none;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: none;
+                border: 1px solid rgba(71, 91, 119, 0.22);
+                color: #354258;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+              "
+              style-hover="color:#102a70;border-color:rgba(16,42,112,.4)"
+            >
+              <sc-if value="{{ !isDark }}" hint-placeholder-val="{{ true }}"
+                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg
+              ></sc-if>
+              <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"
+                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg
+              ></sc-if>
+            </button>
             <span
               style="
                 flex: none;
@@ -1725,6 +1780,7 @@
                           value="{{ e.logo }}"
                           hint-placeholder-val="{{ false }}"
                           ><div
+                            class="logo-box"
                             style="
                               height: 64px;
                               padding: 6px 10px;
@@ -1798,6 +1854,7 @@
                     value="{{ empresa.logo }}"
                     hint-placeholder-val="{{ false }}"
                     ><div
+                      class="logo-box"
                       style="
                         height: 64px;
                         padding: 6px 10px;
@@ -2183,6 +2240,7 @@
                     value="{{ empresa.logo }}"
                     hint-placeholder-val="{{ false }}"
                     ><div
+                      class="logo-box"
                       style="
                         height: 64px;
                         padding: 6px 10px;
@@ -8393,6 +8451,11 @@
         }
         openPasswordModal(){ this.setState({modal:{type:'password',mode:'editar',title:'Cambiar contraseña'}, form:{newPassword:'',confirmPassword:''}}); }
         toggleUserMenu(){ this.setState(s=>({userMenuOpen:!s.userMenuOpen})); }
+        toggleDarkMode(){
+          const on=document.documentElement.classList.toggle('dark-mode');
+          try{ localStorage.setItem('gp-theme',on?'dark':'light'); }catch(e){}
+          this.setState({darkMode:on});
+        }
         closeUserMenu(){ this.setState({userMenuOpen:false}); }
         openPasswordModalFromMenu(){ this.setState({userMenuOpen:false}); this.openPasswordModal(); }
 
@@ -9419,6 +9482,7 @@
           R.loginEyeHref = s.showLoginPass?'#ic-eye-off':'#ic-eye';
           R.toggleLoginPass=()=>this.toggleLoginPass();
           R.forgotPassword=()=>this.forgotPassword();
+          R.isDark=document.documentElement.classList.contains('dark-mode'); R.themeTitle=R.isDark?'Cambiar a modo claro':'Cambiar a modo oscuro'; R.toggleDarkMode=()=>this.toggleDarkMode();
           R.userMenuOpen=!!s.userMenuOpen; R.toggleUserMenu=()=>this.toggleUserMenu(); R.closeUserMenu=()=>this.closeUserMenu();
           R.openPasswordModalFromMenu=()=>this.openPasswordModalFromMenu();
           R.loginError=s.loginError||''; R.loginErrShow=!!s.loginError;
