@@ -715,6 +715,44 @@
             flex-wrap: wrap;
             gap: 7px;
           }
+          .assignee-dropdown {
+            border: 1px solid #d6deea;
+            border-radius: 11px;
+            background: #f8fafc;
+            overflow: hidden;
+          }
+          .assignee-dropdown-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #263b5b;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            list-style: none;
+          }
+          .assignee-dropdown-trigger::-webkit-details-marker {
+            display: none;
+          }
+          .assignee-dropdown-trigger::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            flex: none;
+            border-right: 1.5px solid #63748d;
+            border-bottom: 1.5px solid #63748d;
+            transform: rotate(45deg) translateY(-2px);
+            transition: transform .15s;
+          }
+          .assignee-dropdown[open] .assignee-dropdown-trigger {
+            border-bottom: 1px solid #e0e6ef;
+            background: #f1f5fa;
+          }
+          .assignee-dropdown[open] .assignee-dropdown-trigger::after {
+            transform: rotate(225deg) translate(-2px, -1px);
+          }
           .assignee-picker-tag {
             display: inline-flex;
             align-items: center;
@@ -4145,9 +4183,7 @@
                     >
                       <span class="master-cell-app master-cell-main"
                         ><span class="master-cell-label">Aplicación</span>{{
-                        r.proyecto }}<span class="master-cell-sub"
-                          >{{ r.empresa }}</span
-                        ></span
+                        r.proyecto }}</span
                       >
                       <span
                         class="master-cell-main"
@@ -4179,9 +4215,7 @@
                         class="master-cell-observations master-cell-main"
                         title="{{ r.observaciones }}"
                         ><span class="master-cell-label">Observaciones</span>{{
-                        r.observaciones }}<span class="master-cell-sub"
-                          >{{ r.observacionesMetaLabel }}</span
-                        ></span
+                        r.observaciones }}<sc-if value="{{ r.sinObservaciones }}" hint-placeholder-val="{{ false }}"><span class="master-cell-sub">Sin observaciones</span></sc-if></span
                       >
                       <span
                         class="master-cell-main"
@@ -5893,6 +5927,11 @@
                                   </sc-for>
                                 </div>
                               </sc-if>
+                              <details class="assignee-dropdown">
+                                <summary class="assignee-dropdown-trigger">
+                                  <span>Seleccionar o quitar responsables</span>
+                                  <span style="margin-left:auto;color:#647187;font-size:11px;font-weight:500">{{ f.optionCountLabel }}</span>
+                                </summary>
                               <div class="assignee-options">
                               <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3">
                                 <button
@@ -5909,6 +5948,7 @@
                               </sc-for>
                               <sc-if value="{{ f.noOptions }}" hint-placeholder-val="{{ false }}"><span style="padding:8px;color:#647187;font-size:12px">No hay desarrolladores disponibles.</span></sc-if>
                               </div>
+                              </details>
                             </div>
                           </sc-if>
                           <sc-if
@@ -9800,7 +9840,7 @@
                 empresa:company.nombre, proyecto:project.nombre,
                 code:(req.codigo&&req.codigo.trim())||('REQ-'+String((project.requerimientos||[]).findIndex(x=>x.id===req.id)+1).padStart(3,'0')), titulo:req.titulo,
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
-                observaciones:(req.observaciones||'').trim()||'—', observacionesMetaLabel:(req.observaciones||'').trim()?'Observación registrada':'Sin observaciones', fechaEntregaUsuario:explicitDate,
+                observaciones:(req.observaciones||'').trim()||'—', sinObservaciones:!(req.observaciones||'').trim(), fechaEntregaUsuario:explicitDate,
                 fechaPasoProduccion:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Sin definir', productionDateColor:req.fechaPasoProduccion?'#08764f':'#64748b',
                 responsable:req.responsable, estado:meta[0], estadoColor:meta[1], estadoBg:meta[2],
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
@@ -10176,7 +10216,7 @@
               const selectedOwners=s.form.responsables||[];
               return { label:fd.label, value:isChecklist?'':(s.form[fd.key]??''), help:fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type==='requerimiento'?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type==='requerimiento'?'#eef1f5':'transparent', fieldBorder:md.type==='requerimiento'?'rgba(71,91,119,.16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
-                isSelect:fd.kind==='select', isChecklist, noOptions:isChecklist&&!(fd.options||[]).length, hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
+                isSelect:fd.kind==='select', isChecklist, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
                 inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'), min:fd.min||'', step:fd.step||'1',
                 isPassword, padRight: isPassword?'38px':'12px',
                 eyeHref: shown?'#ic-eye-off':'#ic-eye',
