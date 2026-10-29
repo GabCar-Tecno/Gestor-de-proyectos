@@ -6,7 +6,11 @@
     <script src="./support.js"></script>
     <script>
       try {
-        if (localStorage.getItem("gp-theme") === "dark")
+        // gp-theme: elección manual con el botón; gp-theme-default: el del rol en el último login
+        const theme =
+          localStorage.getItem("gp-theme") ||
+          localStorage.getItem("gp-theme-default");
+        if (theme === "dark")
           document.documentElement.classList.add("dark-mode");
       } catch (e) {}
     </script>
@@ -8876,7 +8880,9 @@
             return {id:x.id,label:String(label).trim()};
           }).filter(x=>x.id&&x.label).filter((x,i,a)=>a.findIndex(y=>y.label.toLowerCase()===x.label.toLowerCase())===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
           if(profilesError) console.warn('No se pudieron cargar los perfiles de desarrollo:',profilesError.message);
-          this.setState({profileRole: prof ? (prof.role_id || prof.role) : 'client', devProfiles});
+          const profileRole=prof ? (prof.role_id || prof.role) : 'client';
+          this.setState({profileRole, devProfiles});
+          this.applyRoleTheme(profileRole);
           await this.loadData();
         }
 
@@ -9025,6 +9031,15 @@
         toggleDarkMode(){
           const on=document.documentElement.classList.toggle('dark-mode');
           try{ localStorage.setItem('gp-theme',on?'dark':'light'); }catch(e){}
+          this.setState({darkMode:on});
+        }
+        // Si el usuario no ha elegido tema con el botón, los DEV arrancan en oscuro y el resto en claro.
+        applyRoleTheme(role){
+          let chosen=null; try{ chosen=localStorage.getItem('gp-theme'); }catch(e){}
+          if(chosen) return;
+          const theme=role==='dev'?'dark':'light';
+          try{ localStorage.setItem('gp-theme-default',theme); }catch(e){}
+          const on=document.documentElement.classList.toggle('dark-mode',theme==='dark');
           this.setState({darkMode:on});
         }
         closeUserMenu(){ this.setState({userMenuOpen:false}); }
