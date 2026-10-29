@@ -9754,7 +9754,7 @@
             const q=(s.maestroSearch||'').trim().toLocaleLowerCase('es-CO');
             const stateText=(id)=>{const st=(s.statuses||[]).find(x=>x.id===id);return ((st&&st.label)||id||'').toLocaleLowerCase('es-CO');};
             const stateGroup=(id)=>{const x=stateText(id);return x.includes('bloq')?'bloqueado':x.includes('prod')?'produccion':x.includes('usuario')||x.includes('prueba')||x==='qa'?'usuario':x.includes('desarroll')?'desarrollo':'otros';};
-            const statusOptions=[{value:'todos',label:'Todos los estados',dot:'#8492a8'},{value:'grupo:desarrollo',label:'En desarrollo',dot:'#1557b0'},{value:'grupo:usuario',label:'Pruebas usuario',dot:'#6246a5'},{value:'grupo:produccion',label:'Producción',dot:'#08764f'},{value:'grupo:bloqueado',label:'Bloqueados',dot:'#b42332'}];
+            const statusOptions=[{value:'todos',label:'Todos los estados',dot:'#8492a8'},...(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id,dot:st.color||'#8492a8'}))];
             const projectOptions=all.map(({company,project})=>({value:project.id,label:project.nombre+' · '+company.nombre})).filter((p,i,a)=>a.findIndex(x=>x.value===p.value)===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
             const allProjectOptions=[{value:'todos',label:'Todas las aplicaciones'},...projectOptions];
             R.maestroProjectMenuOpen=!!s.maestroProjectMenuOpen; R.maestroStatusMenuOpen=!!s.maestroStatusMenuOpen;
@@ -9764,16 +9764,23 @@
             R.maestroProjectLabel=(allProjectOptions.find(x=>x.value===R.maestroProject)||allProjectOptions[0]).label;
             R.maestroProjectOptions=allProjectOptions.map(app=>{const selected=R.maestroProject===app.value;return Object.assign({},app,{selected,bg:selected?'#e8f1ff':'transparent',color:selected?'#102a70':'#354258',weight:selected?600:500,choose:()=>this.chooseMaestroProject(app.value)});});
             R.maestroSearch=s.maestroSearch||'';
-            R.maestroStatus=s.maestroStatus||'todos';
+            R.maestroStatus=statusOptions.some(x=>x.value===s.maestroStatus)?s.maestroStatus:'todos';
             R.maestroStatusLabel=(statusOptions.find(x=>x.value===R.maestroStatus)||statusOptions[0]).label;
             R.maestroStatusOptions=statusOptions.map(st=>{const selected=R.maestroStatus===st.value;return Object.assign({},st,{selected,bg:selected?'#e8f1ff':'transparent',color:selected?'#102a70':'#354258',weight:selected?600:500,choose:()=>this.chooseMaestroStatus(st.value)});});
             R.setMaestroSearch=e=>this.setMaestroSearch(e);
             const filtered=all.filter(({company,project,req})=>{
-              if(s.maestroStatus&&s.maestroStatus!=='todos'&&stateGroup(req.estado)!==s.maestroStatus.replace('grupo:','')) return false;
+              if(R.maestroStatus!=='todos'&&req.estado!==R.maestroStatus) return false;
               if(R.maestroProject!=='todos'&&project.id!==R.maestroProject) return false;
               if(!q) return true;
               return [company.nombre,project.nombre,req.codigo,req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
             });
+            // Orden del tablero: desarrollo/QA → pruebas usuario → estimación → (bloqueado/otros) → producción; luego por #Req.
+            const boardRank={desarrollo:0,qa:0,usuarios:1,estimacion:2,produccion:4};
+            const rankOf=id=>boardRank[String(id||'').toLowerCase()]??3;
+            const codeOf=req=>(req.codigo||'').trim();
+            filtered.sort((a,b)=>rankOf(a.req.estado)-rankOf(b.req.estado)
+              ||(!codeOf(a.req))-(!codeOf(b.req))
+              ||codeOf(a.req).localeCompare(codeOf(b.req),'es-CO',{numeric:true}));
             R.maestroCount=all.length;
             R.maestroVisibleCount=filtered.length;
             const stateCount=(group)=>all.filter(({req})=>stateGroup(req.estado)===group).length;
