@@ -3961,7 +3961,7 @@
                       flex-wrap: wrap;
                     "
                   >
-                    <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+                    <sc-if value="{{ isPM }}" hint-placeholder-val="{{ true }}">
                       <button
                         type="button"
                         onClick="{{ exportMaestroExcel }}"
@@ -8576,7 +8576,9 @@
           await this.loadData();
         }
 
-        isDev(){ return this.state.profileRole==='dev'; }
+        // El PM tiene los mismos permisos que dev; además es el único que puede descargar el Excel del tablero.
+        isDev(){ return this.state.profileRole==='dev'||this.isPM(); }
+        isPM(){ return this.state.profileRole==='pm'; }
 
         async loadData(){
           this.setState({loadError:''});
@@ -8865,7 +8867,7 @@
           return this._xlsxP;
         }
         async exportMaestroExcel(items){
-          if(!this.isDev()||this.state.exportingExcel) return;
+          if(!this.isPM()||this.state.exportingExcel) return;
           this.setState({exportingExcel:true});
           try{
             const XLSX=await this.loadXlsx();
@@ -9786,7 +9788,7 @@
 
         renderVals(){
           const s=this.state, v=s.view;
-          const isDev=this.isDev();
+          const isDev=this.isDev(), isPM=this.isPM();
           const emp=this.empresa(), proy=this.proyecto(), req=this.req();
           const R={
             goHome:()=>this.goHome(), goProyectos:()=>this.goProyectos(), goProyecto:()=>this.goProyecto(),
@@ -9801,7 +9803,7 @@
             editReq:()=>this.editReq(), editDesplieguesProy:()=>this.editDesplieguesProy(), editCredenciales:()=>this.editCredenciales(),
             deleteReq:()=>req&&this.delReq(req.id),
             f_url:(e)=>this.setForm('url',e.target.value),
-            isDev,
+            isDev, isPM,
           };
 
           // sesión / pantallas
@@ -9833,7 +9835,7 @@
           R.toggleRecoveryPass2=()=>this.toggleRecoveryPass2();
           R.recoveryError=s.recoveryError||''; R.recoveryErrShow=!!s.recoveryError;
           R.recoveryLoading=!!s.recoveryLoading; R.recoveryBtnLabel=s.recoveryLoading?'Guardando…':'Guardar nueva contraseña';
-          R.roleLabel = isDev ? 'DEV' : 'CLIENTE';
+          R.roleLabel = isPM ? 'PM' : isDev ? 'DEV' : 'CLIENTE';
           R.userInitials = s.session ? this.emailInitials(s.session.user.email) : '?';
 
           if(!R.showApp) return R;
