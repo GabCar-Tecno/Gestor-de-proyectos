@@ -5906,16 +5906,18 @@
                         as="f"
                         hint-placeholder-count="2"
                       >
-                        <label
+                        <div
                           style="display:flex;flex-direction:column;gap:8px;grid-column:{{ f.gridColumn }};padding:12px;background:{{ f.fieldBg }};border:1px solid {{ f.fieldBorder }};border-radius:11px;min-width:0"
                         >
-                          <span
+                          <label
+                            for="{{ f.fieldId }}"
+                            id="{{ f.fieldId }}"
                             style="
                               font-size: 11.5px;
                               font-weight: 600;
                               color: #59677a;
                             "
-                            >{{ f.label }}</span
+                            >{{ f.label }}</label
                           >
                           <sc-if
                             value="{{ f.help }}"
@@ -5934,6 +5936,7 @@
                             hint-placeholder-val="{{ false }}"
                           >
                             <select
+                              id="{{ f.fieldId }}"
                               value="{{ f.value }}"
                               onChange="{{ f.onChange }}"
                               style="
@@ -5961,7 +5964,7 @@
                             value="{{ f.isChecklist }}"
                             hint-placeholder-val="{{ false }}"
                           >
-                            <div class="assignee-picker">
+                            <div class="assignee-picker" role="group" aria-labelledby="{{ f.fieldId }}">
                               <div class="assignee-picker-summary">
                                 <span style="font-size:12px;color:#647187">Elige quiénes trabajarán en este requerimiento.</span>
                                 <span class="assignee-picker-count">{{ f.selectedCountLabel }}</span>
@@ -5973,7 +5976,7 @@
                                   </sc-for>
                                 </div>
                               </sc-if>
-                              <details class="assignee-dropdown">
+                              <details id="{{ f.fieldId }}-picker" class="assignee-dropdown">
                                 <summary class="assignee-dropdown-trigger">
                                   <span>Seleccionar o quitar responsables</span>
                                   <span style="margin-left:auto;color:#647187;font-size:11px;font-weight:500">{{ f.optionCountLabel }}</span>
@@ -6003,6 +6006,7 @@
                           >
                             <div style="position: relative">
                               <input
+                                id="{{ f.fieldId }}"
                                 type="{{ f.inputType }}"
                                 value="{{ f.value }}"
                                 onInput="{{ f.onChange }}"
@@ -6046,6 +6050,7 @@
                             hint-placeholder-val="{{ false }}"
                           >
                             <textarea
+                              id="{{ f.fieldId }}"
                               value="{{ f.value }}"
                               onInput="{{ f.onChange }}"
                               placeholder="{{ f.placeholder }}"
@@ -6068,7 +6073,7 @@
                               style-focus="border-color:#35c0f0"
                             ></textarea>
                           </sc-if>
-                        </label>
+                        </div>
                       </sc-for>
                       <sc-if
                         value="{{ modalErrShow }}"
@@ -10308,7 +10313,7 @@
               const fullReqField=md.type==='requerimiento' && ['titulo','descripcionCambios','observaciones','responsables'].includes(fd.key);
               const isChecklist=fd.kind==='checklist';
               const selectedOwners=s.form.responsables||[];
-              return { label:fd.label, value:isChecklist?'':(s.form[fd.key]??''), help:fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist?'':(s.form[fd.key]??''), help:fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type==='requerimiento'?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type==='requerimiento'?'#eef1f5':'transparent', fieldBorder:md.type==='requerimiento'?'rgba(71,91,119,.16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
                 isSelect:fd.kind==='select', isChecklist, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
                 inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'), min:fd.min||'', step:fd.step||'1',
