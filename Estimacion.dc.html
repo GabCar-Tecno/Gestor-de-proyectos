@@ -1,0 +1,796 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease">
+  <div style="margin-bottom: 18px">
+    <button
+      onClick="{{ est.volver }}"
+      style="
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: var(--gp-surface);
+        border: 1px solid rgba(53, 192, 240, 0.38);
+        color: #35c0f0;
+        cursor: pointer;
+        padding: 10px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 600;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      "
+      style-hover="background:rgba(53,192,240,.12);border-color:rgba(53,192,240,.65)"
+    >
+      <svg width="15" height="15" style="transform: scaleX(-1)">
+        <use href="#ic-chevron"></use></svg
+      >Volver a estimaciones
+    </button>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    "
+  >
+    <div style="flex: 1; min-width: 240px">
+      <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 5px">
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11px;
+            color: var(--gp-muted-2);
+          "
+          >{{ est.codeLine }}</span
+        >
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: #35c0f0;
+            background: rgba(53, 192, 240, 0.12);
+            padding: 1px 8px;
+            border-radius: 6px;
+          "
+          >{{ est.version }}</span
+        >
+        <span
+          style="
+            font-size: 11px;
+            font-weight: 600;
+            color: {{ est.phaseColor }};
+            background: {{ est.phaseBg }};
+            padding: 1px 8px;
+            border-radius: 6px;
+          "
+          >{{ est.phaseLabel }}</span
+        >
+      </div>
+      <h1
+        style="
+          margin: 0;
+          font-size: clamp(21px, 2.7vw, 27px);
+          font-weight: 700;
+          letter-spacing: -0.4px;
+          line-height: 1.2;
+        "
+      >
+        {{ est.title }}
+      </h1>
+      <p style="margin: 4px 0 0; color: var(--gp-muted); font-size: 13.5px">{{ est.clientLine }}</p>
+      <sc-if value="{{ est.phaseHint }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 6px 0 0; color: var(--gp-muted-2); font-size: 12.5px">{{ est.phaseHint }}</p>
+      </sc-if>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <sc-if value="{{ est.statusShow }}" hint-placeholder-val="{{ false }}">
+        <span
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: #f5b544;
+            background: rgba(245, 181, 68, 0.12);
+            padding: 5px 10px;
+            border-radius: 20px;
+          "
+          ><span style="width: 7px; height: 7px; border-radius: 50%; background: #f5b544"></span
+          >{{ est.statusLabel }}</span
+        >
+      </sc-if>
+      <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+        <button
+          onClick="{{ est.exportar }}"
+          disabled="{{ est.exporting }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-text-2);
+            cursor: pointer;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+          "
+          style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-download"></use></svg
+          >{{ est.exportLabel }}
+        </button>
+        <button
+          onClick="{{ est.exportarPdf }}"
+          title="Abre una vista para imprimir; en el diálogo elige Guardar como PDF"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-text-2);
+            cursor: pointer;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+          "
+          style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-filetext"></use></svg
+          >Exportar PDF
+        </button>
+      </sc-if>
+      <sc-if value="{{ est.canAdvance }}" hint-placeholder-val="{{ false }}">
+        <button
+          onClick="{{ est.advance }}"
+          title="{{ est.advanceTitle }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid rgba(57, 211, 155, 0.45);
+            color: #39d39b;
+            cursor: pointer;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+          "
+          style-hover="background:rgba(57,211,155,.12)"
+        >
+          {{ est.advanceLabel }}
+        </button>
+      </sc-if>
+      <button
+        onClick="{{ est.save }}"
+        style="
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+          color: #fff;
+          border: 0;
+          padding: 9px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 6px 18px -6px rgba(43, 59, 214, 0.7);
+        "
+      >
+        <svg width="14" height="14">
+          <use href="#ic-check"></use></svg
+        >{{ est.saveLabel }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== IDENTIFICACIÓN ===================== -->
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 16px;
+      padding: 18px 20px 20px;
+    "
+  >
+    <div style="font-weight: 600; font-size: 15px; margin-bottom: 14px">Identificación</div>
+    <div class="est-id-grid">
+      <div class="est-span-2" style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-req" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+          >Requerimiento</label
+        >
+        <select
+          id="est-req"
+          value="{{ est.requirementId }}"
+          onChange="{{ est.on.requirementId }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
+        >
+          <sc-for list="{{ est.reqOptions }}" as="o" hint-placeholder-count="3"
+            ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+          >
+        </select>
+        <sc-if value="{{ est.willCreateReq }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45">{{ est.reqHelp }}</span>
+        </sc-if>
+        <sc-if value="{{ est.hasReq }}" hint-placeholder-val="{{ false }}">
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+              font-size: 12.5px;
+              color: var(--gp-text-2);
+            "
+          >
+            <input
+              type="checkbox"
+              checked="{{ est.updateReqHours }}"
+              onChange="{{ est.on.updateReqHours }}"
+              style="width: 15px; height: 15px; accent-color: #35c0f0; margin: 0"
+            />Actualizar las horas del requerimiento
+          </label>
+          <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45">{{ est.reqHelp }}</span>
+        </sc-if>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-code" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Código</label>
+        <input
+          id="est-code"
+          value="{{ est.code }}"
+          onInput="{{ est.on.code }}"
+          placeholder="Ej: R_17300"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+        <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45"
+          >Un solo PBI. El requerimiento lleva sus propios códigos.</span
+        >
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-version" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Versión</label>
+        <input
+          id="est-version"
+          value="{{ est.versionLabel }}"
+          onInput="{{ est.on.versionLabel }}"
+          placeholder="V1"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div class="est-span-2" style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-initiative" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+          >Nombre de la iniciativa</label
+        >
+        <input
+          id="est-initiative"
+          value="{{ est.initiativeName }}"
+          onInput="{{ est.on.initiativeName }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-date" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Fecha</label>
+        <input
+          id="est-date"
+          type="date"
+          value="{{ est.estimatedOn }}"
+          onInput="{{ est.on.estimatedOn }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:8px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-complexity" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+          >Complejidad</label
+        >
+        <select
+          id="est-complexity"
+          value="{{ est.complexityId }}"
+          onChange="{{ est.on.complexityId }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
+        >
+          <sc-for list="{{ est.complexityOptions }}" as="o" hint-placeholder-count="5"
+            ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+          >
+        </select>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-client" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Cliente</label>
+        <input
+          id="est-client"
+          value="{{ est.clientName }}"
+          onInput="{{ est.on.clientName }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-requester" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+          >Solicitante</label
+        >
+        <input
+          id="est-requester"
+          value="{{ est.requesterName }}"
+          onInput="{{ est.on.requesterName }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+        <label for="est-pm" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">PM</label>
+        <input
+          id="est-pm"
+          value="{{ est.pmName }}"
+          onInput="{{ est.on.pmName }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PARÁMETROS (los defaults cubren el formato) ===================== -->
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      gap: 8px 18px;
+      flex-wrap: wrap;
+      margin: 12px 0 18px;
+      padding: 9px 14px;
+      border: 1px dashed var(--gp-line-22);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--gp-muted);
+    "
+  >
+    <span style="font-weight: 600; color: var(--gp-muted-2)">Parámetros</span>
+    <label style="display: inline-flex; align-items: center; gap: 7px"
+      >Decimales de redondeo
+      <select
+        value="{{ est.roundingDecimals }}"
+        onChange="{{ est.on.roundingDecimals }}"
+        style="background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:8px;padding:4px 6px;color:var(--gp-text);font-size:12px"
+      >
+        <sc-for list="{{ est.decimalOptions }}" as="o" hint-placeholder-count="5"
+          ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+        >
+      </select></label
+    >
+    <label style="display: inline-flex; align-items: center; gap: 7px"
+      >Umbral de alerta
+      <input
+        value="{{ est.alertRatio }}"
+        onInput="{{ est.on.alertRatio }}"
+        inputMode="decimal"
+        style="width:58px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.alertBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+        style-focus="border-color:#35c0f0"
+    /></label>
+    <label style="display: inline-flex; align-items: center; gap: 7px"
+      >Horas diarias
+      <input
+        value="{{ est.dailyHours }}"
+        onInput="{{ est.on.dailyHours }}"
+        inputMode="decimal"
+        style="width:52px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.dailyBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+        style-focus="border-color:#35c0f0"
+    /></label>
+    <label style="display: inline-flex; align-items: center; gap: 7px"
+      >Dedicación %
+      <input
+        value="{{ est.dedicationPct }}"
+        onInput="{{ est.on.dedicationPct }}"
+        inputMode="decimal"
+        style="width:58px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.dedicationBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+        style-focus="border-color:#35c0f0"
+    /></label>
+    <span style="color: var(--gp-muted-2)">= {{ est.summary.dedicated }} dedicadas por día</span>
+  </div>
+
+  <div class="est-layout">
+    <!-- ===================== LÍNEAS ===================== -->
+    <section
+      style="
+        min-width: 0;
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 16px;
+        padding: 16px 16px 18px;
+      "
+    >
+      <div style="overflow-x: auto">
+        <div style="min-width: 880px; display: flex; flex-direction: column; gap: 6px">
+          <div
+            class="est-row"
+            style="
+              padding: 0 4px 8px;
+              border-bottom: 1px solid var(--gp-line-18);
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--gp-muted);
+              line-height: 1.25;
+            "
+          >
+            <span>Tipo</span>
+            <span>Concepto</span>
+            <span style="text-align: right">Horas desarrollador</span>
+            <span style="text-align: right">Optimista</span>
+            <span style="text-align: right">Más probable</span>
+            <span style="text-align: right">Pesimista</span>
+            <span style="text-align: right; color: #35c0f0">Estimación estadística</span>
+            <span></span>
+            <span></span>
+          </div>
+          <sc-for list="{{ est.lines }}" as="l" hint-placeholder-count="6">
+            <sc-if value="{{ l.isSection }}" hint-placeholder-val="{{ false }}">
+              <div
+                class="est-row"
+                style="
+                  margin-top: 8px;
+                  padding: 6px 4px;
+                  background: var(--gp-line-12);
+                  border-radius: 10px;
+                "
+              >
+                <input
+                  value="{{ l.concept }}"
+                  onInput="{{ l.onConcept }}"
+                  placeholder="{{ l.conceptPlaceholder }}"
+                  aria-label="Nombre de la sección"
+                  style="grid-column:1 / 9;width:100%;box-sizing:border-box;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 8px;color:var(--gp-text);font-size:13.5px;font-weight:700;letter-spacing:.2px;outline:none"
+                  style-focus="border-color:#35c0f0;background:var(--gp-field)"
+                  style-hover="border-color:var(--gp-line-22)"
+                />
+                <div style="position: relative; display: flex; gap: 4px; justify-content: flex-end">
+                  <button
+                    onClick="{{ l.openCounter }}"
+                    title="{{ l.insertTitle }}"
+                    aria-label="{{ l.insertTitle }}"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13"><use href="#ic-plus"></use></svg>
+                  </button>
+                  <!-- Contador: cuántas actividades agregar al inicio de esta sección -->
+                  <sc-if value="{{ l.counterOpen }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ est.counter.close }}" style="position: fixed; inset: 0; z-index: 20"></div>
+                    <div
+                      style="
+                        position: absolute;
+                        right: calc(100% + 8px);
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 21;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        white-space: nowrap;
+                        background: var(--gp-surface);
+                        border: 1px solid var(--gp-line-20);
+                        border-radius: 11px;
+                        padding: 7px 8px 7px 12px;
+                        box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.45);
+                        font-size: 12.5px;
+                        color: var(--gp-muted);
+                      "
+                    >
+                      <span>Agregar</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value="{{ est.counter.count }}"
+                        onInput="{{ est.counter.onCount }}"
+                        onKeyDown="{{ est.counter.onKey }}"
+                        onFocus="{{ est.counter.onFocus }}"
+                        autoFocus="{{ true }}"
+                        aria-label="Cantidad de actividades"
+                        style="width:54px;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:8px;padding:5px 7px;color:var(--gp-text);font-size:12.5px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+                        style-focus="border-color:#35c0f0"
+                      />
+                      <span>actividades</span>
+                      <button
+                        onClick="{{ est.counter.add }}"
+                        disabled="{{ est.counter.disabled }}"
+                        style="display:inline-flex;align-items:center;gap:6px;background:rgba(53,192,240,.12);border:1px solid rgba(53,192,240,.4);color:#35c0f0;cursor:pointer;padding:5px 11px;border-radius:8px;font-size:12.5px;font-weight:600;opacity:{{ est.counter.opacity }}"
+                        style-hover="background:rgba(53,192,240,.2)"
+                      >
+                        <svg width="12" height="12"><use href="#ic-check"></use></svg>Agregar
+                      </button>
+                    </div>
+                  </sc-if>
+                  <button
+                    onClick="{{ l.up }}"
+                    disabled="{{ l.upDisabled }}"
+                    title="Subir"
+                    aria-label="Subir"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;opacity:{{ l.upOpacity }}"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13" style="transform: rotate(-90deg)"><use href="#ic-chevron"></use></svg>
+                  </button>
+                  <button
+                    onClick="{{ l.down }}"
+                    disabled="{{ l.downDisabled }}"
+                    title="Bajar"
+                    aria-label="Bajar"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;opacity:{{ l.downOpacity }}"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13" style="transform: rotate(90deg)"><use href="#ic-chevron"></use></svg>
+                  </button>
+                  <button
+                    onClick="{{ l.remove }}"
+                    title="Quitar sección"
+                    aria-label="Quitar sección"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"
+                    style-hover="background:rgba(249,123,123,.1)"
+                  >
+                    <svg width="12" height="12"><use href="#ic-x"></use></svg>
+                  </button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ l.isActivity }}" hint-placeholder-val="{{ true }}">
+              <div class="est-row" style="padding: 0 4px">
+                <select
+                  value="{{ l.typeId }}"
+                  onChange="{{ l.onType }}"
+                  aria-label="Tipo de actividad"
+                  style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:8px;padding:6px 7px;color:var(--gp-text);font-size:12.5px"
+                >
+                  <sc-for list="{{ l.typeOptions }}" as="o" hint-placeholder-count="6"
+                    ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+                  >
+                </select>
+                <textarea
+                  value="{{ l.concept }}"
+                  onInput="{{ l.onConcept }}"
+                  rows="1"
+                  placeholder="{{ l.conceptPlaceholder }}"
+                  aria-label="Concepto"
+                  style="display:block;width:100%;box-sizing:border-box;min-height:33px;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:8px;padding:6px 9px;color:var(--gp-text);font-size:13px;line-height:1.45;font-family:inherit;outline:none;resize:none;overflow:hidden;field-sizing:content"
+                  style-focus="border-color:#35c0f0"
+                ></textarea>
+                <input
+                  value="{{ l.hours }}"
+                  onInput="{{ l.onHours }}"
+                  onKeyDown="{{ l.onHoursKey }}"
+                  title="{{ l.hoursTitle }}"
+                  inputMode="decimal"
+                  placeholder="—"
+                  aria-label="Horas desarrollador"
+                  style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ l.hoursBorder }};border-radius:8px;padding:6px 9px;color:var(--gp-text);font-size:13px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+                  style-focus="border-color:#35c0f0"
+                />
+                <span style="text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:12.5px;color:var(--gp-muted)">{{ l.optimistic }}</span>
+                <span style="text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:12.5px;color:var(--gp-muted)">{{ l.mostProbable }}</span>
+                <span style="text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:12.5px;color:var(--gp-muted)">{{ l.pessimistic }}</span>
+                <span style="text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:13px;font-weight:700;color:#35c0f0">{{ l.statistical }}</span>
+                <span
+                  title="{{ l.reviewTitle }}"
+                  style="width:8px;height:8px;border-radius:50%;background:{{ l.dotColor }};justify-self:center"
+                ></span>
+                <div style="display: flex; gap: 4px; justify-content: flex-end">
+                  <button
+                    onClick="{{ l.insert }}"
+                    title="{{ l.insertTitle }}"
+                    aria-label="{{ l.insertTitle }}"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13"><use href="#ic-plus"></use></svg>
+                  </button>
+                  <button
+                    onClick="{{ l.up }}"
+                    disabled="{{ l.upDisabled }}"
+                    title="Subir"
+                    aria-label="Subir"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;opacity:{{ l.upOpacity }}"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13" style="transform: rotate(-90deg)"><use href="#ic-chevron"></use></svg>
+                  </button>
+                  <button
+                    onClick="{{ l.down }}"
+                    disabled="{{ l.downDisabled }}"
+                    title="Bajar"
+                    aria-label="Bajar"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid var(--gp-line-18);color:var(--gp-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;opacity:{{ l.downOpacity }}"
+                    style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+                  >
+                    <svg width="13" height="13" style="transform: rotate(90deg)"><use href="#ic-chevron"></use></svg>
+                  </button>
+                  <button
+                    onClick="{{ l.remove }}"
+                    title="Quitar actividad"
+                    aria-label="Quitar actividad"
+                    style="width:24px;height:24px;border-radius:7px;background:transparent;border:1px solid rgba(249,123,123,.25);color:#f97b7b;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"
+                    style-hover="background:rgba(249,123,123,.1)"
+                  >
+                    <svg width="12" height="12"><use href="#ic-x"></use></svg>
+                  </button>
+                </div>
+              </div>
+            </sc-if>
+          </sc-for>
+          <sc-if value="{{ est.linesEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 26px; text-align: center; color: var(--gp-muted-2); font-size: 13px">
+              Sin actividades. Agrega una sección o una actividad.
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px">
+        <button
+          onClick="{{ est.addSection }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: none;
+            border: 1px dashed var(--gp-line-25);
+            color: var(--gp-muted);
+            cursor: pointer;
+            padding: 8px 13px;
+            border-radius: 9px;
+            font-size: 12.5px;
+            font-weight: 500;
+          "
+          style-hover="color:#35c0f0;border-color:rgba(53,192,240,.5)"
+        >
+          <svg width="13" height="13"><use href="#ic-plus"></use></svg>Nueva sección
+        </button>
+        <button
+          onClick="{{ est.addActivity }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: none;
+            border: 1px dashed var(--gp-line-25);
+            color: var(--gp-muted);
+            cursor: pointer;
+            padding: 8px 13px;
+            border-radius: 9px;
+            font-size: 12.5px;
+            font-weight: 500;
+          "
+          style-hover="color:#35c0f0;border-color:rgba(53,192,240,.5)"
+        >
+          <svg width="13" height="13"><use href="#ic-plus"></use></svg>Nueva actividad
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================== RESUMEN ===================== -->
+    <aside class="est-summary">
+      <div
+        style="
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-16);
+          border-radius: 16px;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 9px">
+          <svg width="17" height="17" style="color: #35c0f0"><use href="#ic-chart"></use></svg
+          ><span style="font-weight: 600; font-size: 15px">Resumen</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+            <span style="font-size: 12.5px; color: var(--gp-muted)">Subtotal horas desarrollador</span>
+            <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:14px;font-weight:600;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.developer }}</span>
+          </div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+            <span style="font-size: 12.5px; color: var(--gp-muted)">Subtotal estimación estadística</span>
+            <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:16px;font-weight:700;color:#35c0f0;white-space:nowrap">{{ est.summary.statistical }}</span>
+          </div>
+        </div>
+        <div style="height: 1px; background: var(--gp-line-18)"></div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 11px; font-weight: 600; color: var(--gp-muted-2)">Horas por tipo · % del subtotal desarrollador</span>
+          <sc-for list="{{ est.summary.byType }}" as="b" hint-placeholder-count="6">
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <div style="display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:{{ b.color }}">
+                <span style="flex: 1; min-width: 0">{{ b.label }}</span>
+                <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:12px">{{ b.hours }}</span>
+                <span style="width:52px;text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:11.5px;color:var(--gp-muted-2)">{{ b.pct }}</span>
+              </div>
+              <div style="height: 3px; border-radius: 99px; background: var(--gp-line-14); overflow: hidden">
+                <div style="height:100%;width:{{ b.barW }};background:#35c0f0;border-radius:99px"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height: 1px; background: var(--gp-line-18)"></div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+            <span style="font-size: 12.5px; color: var(--gp-muted)"
+              >Horas dedicadas por día<br /><span style="font-size: 11px; color: var(--gp-muted-2)">{{ est.summary.dedicatedDetail }}</span></span
+            >
+            <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:13px;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.dedicated }}</span>
+          </div>
+          <div
+            style="
+              background: rgba(53, 192, 240, 0.1);
+              border: 1px solid rgba(53, 192, 240, 0.3);
+              border-radius: 11px;
+              padding: 11px 13px;
+              display: flex;
+              align-items: baseline;
+              justify-content: space-between;
+              gap: 10px;
+            "
+          >
+            <span style="font-size: 12.5px; color: var(--gp-text-2); font-weight: 600"
+              >Entrega estimada<br /><span style="font-size: 11px; font-weight: 400; color: var(--gp-muted)">Estimación estadística ÷ horas dedicadas</span></span
+            >
+            <span style="font-size:17px;font-weight:700;color:#35c0f0;white-space:nowrap">{{ est.summary.statDays }}</span>
+          </div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+            <span style="font-size: 12.5px; color: var(--gp-muted)"
+              >Días según horas de desarrollador<br /><span style="font-size: 11px; color: var(--gp-muted-2)">Sin el ajuste estadístico</span></span
+            >
+            <span style="font-size:13px;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.devDays }}</span>
+          </div>
+        </div>
+        <div style="height: 1px; background: var(--gp-line-18)"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+          <span style="font-size: 12.5px; color: var(--gp-muted)">Actividades en alerta</span>
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:{{ est.summary.reviewColor }}"
+            ><span style="width:8px;height:8px;border-radius:50%;background:{{ est.summary.reviewColor }}"></span>{{ est.summary.review }}</span
+          >
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- En pantallas angostas el resumen queda debajo de la tabla; esta barra mantiene los totales a la vista. -->
+  <div
+    class="est-mobilebar"
+    style="
+      position: sticky;
+      bottom: 12px;
+      z-index: 5;
+      margin-top: 14px;
+      align-items: center;
+      gap: 6px 16px;
+      flex-wrap: wrap;
+      background: var(--gp-header-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--gp-line-20);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--gp-muted);
+      box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+    "
+  >
+    <span>Desarrollador <b style="color: var(--gp-text-2)">{{ est.summary.developer }}</b></span>
+    <span>Estadística <b style="color: #35c0f0">{{ est.summary.statistical }}</b></span>
+    <span>Entrega <b style="color: var(--gp-text-2)">{{ est.summary.statDays }}</b></span>
+    <span>Alertas <b style="color:{{ est.summary.reviewColor }}">{{ est.summary.review }}</b></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isDev":false,"est":null}'>
+class Component extends DCLogic {
+}
+</script>
