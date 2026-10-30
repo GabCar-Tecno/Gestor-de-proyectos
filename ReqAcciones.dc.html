@@ -1,0 +1,57 @@
+<x-dc>
+<button
+  onClick="{{ promoteReq }}"
+  disabled="{{ promoteReqDisabled }}"
+  title="{{ promoteReqTitle }}"
+  style="display:inline-flex;align-items:center;gap:6px;background:{{ promoteReqBg }};border:1px solid {{ promoteReqBorder }};color:{{ promoteReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"
+>
+  <svg width="14" height="14">
+    <use href="#ic-deploy"></use></svg
+  >{{ promoteReqLabel }}
+</button>
+<button
+  onClick="{{ markReqBlocked }}"
+  disabled="{{ blockReqDisabled }}"
+  title="{{ blockReqTitle }}"
+  style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid {{ blockReqBorder }};color:{{ blockReqColor }};cursor:pointer;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600"
+>
+  <svg width="14" height="14">
+    <use href="#ic-alert"></use></svg
+  >Marcar bloqueado
+</button>
+<button
+  onClick="{{ editReq }}"
+  style="
+    background: var(--gp-surface-2);
+    border: 1px solid var(--gp-line-20);
+    color: var(--gp-text-2);
+    cursor: pointer;
+    padding: 7px 13px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 500;
+  "
+  style-hover="border-color:rgba(53,192,240,.4)"
+>
+  Editar
+</button>
+<button
+  onClick="{{ deleteReq }}"
+  style="
+    background: none;
+    border: 1px solid rgba(249, 123, 123, 0.25);
+    color: #f97b7b;
+    cursor: pointer;
+    padding: 7px 10px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 500;
+  "
+>
+  Eliminar
+</button>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"promoteReq":null,"promoteReqDisabled":null,"promoteReqTitle":null,"promoteReqBg":null,"promoteReqBorder":null,"promoteReqColor":null,"promoteReqLabel":null,"markReqBlocked":null,"blockReqDisabled":null,"blockReqTitle":null,"blockReqBorder":null,"blockReqColor":null,"editReq":null,"deleteReq":null}'>
+class Component extends DCLogic {
+}
+</script>

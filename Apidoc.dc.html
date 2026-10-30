@@ -1,0 +1,279 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease">
+  <div style="margin-bottom: 18px">
+    <h1
+      style="
+        margin: 0 0 4px;
+        font-size: clamp(22px, 3vw, 28px);
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      "
+    >
+      Documentación Técnica
+    </h1>
+    <p style="margin: 0; color: var(--gp-muted); font-size: 13.5px">
+      {{ proyecto.nombre }}
+    </p>
+  </div>
+
+  <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 16px;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          gap: 4px;
+          border-bottom: 1px solid var(--gp-line-18);
+          margin-bottom: 16px;
+        "
+      >
+        <button
+          onClick="{{ setTabUrl }}"
+          style="background:none;border:0;border-bottom:2px solid {{ apiTabUrlBorder }};color:{{ apiTabUrlColor }};padding:9px 13px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:-1px"
+        >
+          URL del spec
+        </button>
+        <button
+          onClick="{{ setTabJson }}"
+          style="background:none;border:0;border-bottom:2px solid {{ apiTabJsonBorder }};color:{{ apiTabJsonColor }};padding:9px 13px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:-1px"
+        >
+          Pegar JSON
+        </button>
+      </div>
+      <sc-if
+        value="{{ apiTabUrl }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+          "
+        >
+          <label
+            style="
+              flex: 1;
+              min-width: 240px;
+              display: flex;
+              flex-direction: column;
+              gap: 7px;
+            "
+            ><span
+              style="
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--gp-muted);
+              "
+              >URL del spec OpenAPI (JSON o YAML)</span
+            >
+            <input
+              value="{{ apiUrlVal }}"
+              onInput="{{ onApiUrl }}"
+              placeholder="https://.../openapi.json"
+              style="
+                background: var(--gp-field);
+                border: 1px solid var(--gp-line-22);
+                border-radius: 10px;
+                padding: 11px 12px;
+                color: var(--gp-text);
+                font-size: 13px;
+                outline: none;
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+              "
+              style-focus="border-color:#35c0f0"
+            />
+          </label>
+          <button
+            onClick="{{ saveApiUrl }}"
+            style="
+              background: linear-gradient(
+                135deg,
+                #2b3bd6,
+                #23a9e0
+              );
+              border: 0;
+              color: #fff;
+              cursor: pointer;
+              padding: 11px 18px;
+              border-radius: 10px;
+              font-size: 13px;
+              font-weight: 600;
+              height: fit-content;
+            "
+          >
+            Cargar y guardar
+          </button>
+        </div>
+      </sc-if>
+      <sc-if
+        value="{{ apiTabJson }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <div
+          style="display: flex; flex-direction: column; gap: 12px"
+        >
+          <textarea
+            value="{{ apiJsonVal }}"
+            onInput="{{ onApiJson }}"
+            placeholder='{ "openapi": "3.0.0", "info": { ... }, "paths": { ... } }'
+            style="
+              width: 100%;
+              min-height: 200px;
+              background: var(--gp-field);
+              border: 1px solid var(--gp-line-22);
+              border-radius: 10px;
+              padding: 14px;
+              color: var(--gp-text);
+              font-size: 12.5px;
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              outline: none;
+              resize: vertical;
+            "
+            style-focus="border-color:#35c0f0"
+          ></textarea>
+          <button
+            onClick="{{ saveApiJson }}"
+            style="
+              align-self: flex-start;
+              background: linear-gradient(
+                135deg,
+                #2b3bd6,
+                #23a9e0
+              );
+              border: 0;
+              color: #fff;
+              cursor: pointer;
+              padding: 11px 18px;
+              border-radius: 10px;
+              font-size: 13px;
+              font-weight: 600;
+            "
+          >
+            Renderizar y guardar
+          </button>
+        </div>
+      </sc-if>
+      <sc-if
+        value="{{ apiErrShow }}"
+        hint-placeholder-val="{{ false }}"
+        ><div
+          style="
+            color: #f97b7b;
+            font-size: 12.5px;
+            margin-top: 12px;
+            line-height: 1.5;
+          "
+        >
+          {{ apiErr }}
+        </div></sc-if
+      >
+    </div>
+  </sc-if>
+
+  <div
+    ref="{{ redocContainerRef }}"
+    class="redoc-embed"
+    style="
+      background: var(--gp-surface);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--gp-line-18);
+      position: relative;
+    "
+  >
+    <sc-if
+      value="{{ showFullscreenBtn }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <button
+        onClick="{{ toggleFullscreen }}"
+        title="{{ fullscreenTitle }}"
+        style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 5;
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-24);
+          color: var(--gp-text-2);
+          cursor: pointer;
+          width: 34px;
+          height: 34px;
+          border-radius: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+        style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+      >
+        <svg width="15" height="15">
+          <use href="{{ fullscreenIconHref }}"></use>
+        </svg>
+      </button>
+    </sc-if>
+    <div class="redoc-scroll">
+      <sc-if
+        value="{{ apiEmptyShow }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <div
+          style="
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--gp-muted);
+            background: var(--gp-field);
+            text-align: center;
+            padding: 24px;
+          "
+        >
+          <svg width="38" height="38" style="color: #3d4a70">
+            <use href="#ic-api"></use>
+          </svg>
+          <div
+            style="
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--gp-text-2);
+            "
+          >
+            Aún no hay una spec cargada
+          </div>
+          <div
+            style="
+              font-size: 13px;
+              max-width: 340px;
+              line-height: 1.5;
+            "
+          >
+            Pega el JSON del OpenAPI o indica la URL de su spec
+            arriba para documentar esta API con Redoc.
+          </div>
+        </div>
+      </sc-if>
+      <div
+        ref="{{ redocRef }}"
+        style="display:{{ redocDisplay }};width:100%"
+      ></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"proyecto":null,"isDev":false,"setTabUrl":null,"apiTabUrlBorder":null,"apiTabUrlColor":null,"setTabJson":null,"apiTabJsonBorder":null,"apiTabJsonColor":null,"apiTabUrl":null,"apiUrlVal":null,"onApiUrl":null,"saveApiUrl":null,"apiTabJson":null,"apiJsonVal":null,"onApiJson":null,"saveApiJson":null,"apiErrShow":false,"apiErr":null,"redocContainerRef":null,"showFullscreenBtn":false,"toggleFullscreen":null,"fullscreenTitle":null,"fullscreenIconHref":null,"apiEmptyShow":false,"redocRef":null,"redocDisplay":null}'>
+class Component extends DCLogic {
+}
+</script>

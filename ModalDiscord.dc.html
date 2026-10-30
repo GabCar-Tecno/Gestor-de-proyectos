@@ -1,0 +1,185 @@
+<x-dc>
+                    <div
+                      style="display: flex; flex-direction: column; gap: 16px"
+                    >
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 13.5px;
+                          color: var(--gp-text-2);
+                          line-height: 1.55;
+                        "
+                      >
+                        El cambio de ambiente y la versión ya quedaron
+                        guardados. Podés avisar al canal de Discord (opcional).
+                      </p>
+                      <sc-if
+                        value="{{ discord.hasEnvCreds }}"
+                        hint-placeholder-val="{{ true }}"
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                          "
+                        >
+                          <span
+                            style="
+                              font-size: 12px;
+                              font-weight: 500;
+                              color: var(--gp-muted);
+                            "
+                            >Usuarios del ambiente</span
+                          >
+                          <sc-for
+                            list="{{ discord.envCreds }}"
+                            as="c"
+                            hint-placeholder-count="1"
+                          >
+                            <button
+                              type="button"
+                              onClick="{{ c.toggle }}"
+                              style="display:flex;align-items:center;gap:11px;text-align:left;background:{{ c.boxBg }};border:1px solid {{ c.boxBorder }};border-radius:10px;padding:10px 12px;cursor:pointer"
+                            >
+                              <span
+                                style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"
+                                ><sc-if
+                                  value="{{ c.selected }}"
+                                  hint-placeholder-val="{{ true }}"
+                                  ><svg width="12" height="12">
+                                    <use href="#ic-check"></use></svg></sc-if
+                              ></span>
+                              <span style="flex: 1; min-width: 0">
+                                <span
+                                  style="
+                                    display: block;
+                                    font-size: 13px;
+                                    color: var(--gp-text);
+                                  "
+                                  >{{ c.label }}</span
+                                >
+                                <span
+                                  style="
+                                    display: block;
+                                    font-family:
+                                      &quot;JetBrains Mono&quot;, monospace;
+                                    font-size: 11.5px;
+                                    color: var(--gp-muted);
+                                  "
+                                  >{{ c.username }}</span
+                                >
+                              </span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <sc-if
+                        value="{{ discord.hasGenCreds }}"
+                        hint-placeholder-val="{{ false }}"
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                          "
+                        >
+                          <span
+                            style="
+                              font-size: 12px;
+                              font-weight: 500;
+                              color: var(--gp-muted);
+                            "
+                            >Usuarios generales</span
+                          >
+                          <sc-for
+                            list="{{ discord.genCreds }}"
+                            as="c"
+                            hint-placeholder-count="1"
+                          >
+                            <button
+                              type="button"
+                              onClick="{{ c.toggle }}"
+                              style="display:flex;align-items:center;gap:11px;text-align:left;background:{{ c.boxBg }};border:1px solid {{ c.boxBorder }};border-radius:10px;padding:10px 12px;cursor:pointer"
+                            >
+                              <span
+                                style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ c.boxBorder }};display:flex;align-items:center;justify-content:center;color:#35c0f0"
+                                ><sc-if
+                                  value="{{ c.selected }}"
+                                  hint-placeholder-val="{{ false }}"
+                                  ><svg width="12" height="12">
+                                    <use href="#ic-check"></use></svg></sc-if
+                              ></span>
+                              <span style="flex: 1; min-width: 0">
+                                <span
+                                  style="
+                                    display: block;
+                                    font-size: 13px;
+                                    color: var(--gp-text);
+                                  "
+                                  >{{ c.label }}</span
+                                >
+                                <span
+                                  style="
+                                    display: block;
+                                    font-family:
+                                      &quot;JetBrains Mono&quot;, monospace;
+                                    font-size: 11.5px;
+                                    color: var(--gp-muted);
+                                  "
+                                  >{{ c.username }}</span
+                                >
+                              </span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <div
+                        style="display: flex; flex-direction: column; gap: 7px"
+                      >
+                        <span
+                          style="
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: var(--gp-muted);
+                          "
+                          >Vista previa del mensaje</span
+                        >
+                        <pre
+                          style="
+                            margin: 0;
+                            white-space: pre-wrap;
+                            word-break: break-word;
+                            background: var(--gp-field);
+                            border: 1px solid var(--gp-line-20);
+                            border-radius: 10px;
+                            padding: 12px 13px;
+                            color: var(--gp-text-2);
+                            font-family: &quot;JetBrains Mono&quot;, monospace;
+                            font-size: 12px;
+                            line-height: 1.55;
+                          "
+                        >
+{{ discord.preview }}</pre
+                        >
+                      </div>
+                      <sc-if
+                        value="{{ modalErrShow }}"
+                        hint-placeholder-val="{{ false }}"
+                        ><div
+                          style="
+                            color: #f97b7b;
+                            font-size: 12.5px;
+                            line-height: 1.5;
+                          "
+                        >
+                          {{ modalErr }}
+                        </div></sc-if
+                      >
+                    </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"discord":null,"modalErrShow":false,"modalErr":null}'>
+class Component extends DCLogic {
+}
+</script>

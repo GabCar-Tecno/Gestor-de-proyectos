@@ -1,0 +1,157 @@
+<x-dc>
+<div
+  style="
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(220px, 1fr)
+    );
+    gap: 14px;
+  "
+>
+  <sc-for
+    list="{{ req.documentos }}"
+    as="d"
+    hint-placeholder-count="2"
+  >
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      "
+    >
+      <div
+        onClick="{{ d.open }}"
+        style="
+          cursor: pointer;
+          height: 120px;
+          background: linear-gradient(
+            180deg,
+            var(--gp-surface),
+            var(--gp-field)
+          );
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-bottom: 1px solid var(--gp-line-14);
+        "
+      >
+        <span
+          style="
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--gp-muted-2);
+          "
+          >DOCUMENTACIÓN DEL REQUERIMIENTO</span
+        >
+        <svg width="32" height="32" style="color: var(--gp-muted)">
+          <use href="{{ d.iconHref }}"></use>
+        </svg>
+      </div>
+      <div
+        style="
+          padding: 12px 13px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <div style="flex: 1; min-width: 0">
+          <div
+            style="
+              font-size: 13px;
+              font-weight: 500;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            {{ d.nombre }}
+          </div>
+          <div style="font-size: 11px; color: var(--gp-muted-2)">
+            {{ d.tipo }}
+          </div>
+        </div>
+        <button
+          onClick="{{ d.open }}"
+          title="Abrir"
+          style="
+            background: none;
+            border: 0;
+            color: #35c0f0;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+          "
+        >
+          <svg width="15" height="15">
+            <use href="#ic-ext"></use>
+          </svg>
+        </button>
+        <sc-if
+          value="{{ isDev }}"
+          hint-placeholder-val="{{ true }}"
+        >
+          <button
+            onClick="{{ d.del }}"
+            title="Eliminar"
+            style="
+              background: none;
+              border: 0;
+              color: var(--gp-muted-2);
+              cursor: pointer;
+              padding: 4px;
+              display: flex;
+            "
+            style-hover="color:#f97b7b"
+          >
+            <svg width="15" height="15">
+              <use href="#ic-x"></use>
+            </svg>
+          </button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+  <sc-if
+    value="{{ isDev }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <button
+      onClick="{{ addDoc }}"
+      style="
+        min-height: 170px;
+        cursor: pointer;
+        background: none;
+        border: 1.5px dashed var(--gp-line-24);
+        border-radius: 14px;
+        color: var(--gp-muted-2);
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      "
+      style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+    >
+      <svg width="20" height="20">
+        <use href="#ic-plus"></use></svg
+      >Agregar documento
+    </button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"req":null,"isDev":false,"addDoc":null}'>
+class Component extends DCLogic {
+}
+</script>

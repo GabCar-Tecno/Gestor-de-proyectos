@@ -1,0 +1,272 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease; max-width: 900px">
+  <div style="margin-bottom: 18px">
+    <button
+      onClick="{{ goMaestro }}"
+      style="
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: var(--gp-surface);
+        border: 1px solid rgba(53, 192, 240, 0.38);
+        color: #35c0f0;
+        cursor: pointer;
+        padding: 10px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 600;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      "
+      style-hover="background:rgba(53,192,240,.12);border-color:rgba(53,192,240,.65)"
+    >
+      <svg width="15" height="15" style="transform: scaleX(-1)">
+        <use href="#ic-chevron"></use></svg
+      >Volver al tablero maestro
+    </button>
+  </div>
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    "
+  >
+    <div style="flex: 1; min-width: 240px">
+      <div
+        style="
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+          font-size: 11px;
+          color: var(--gp-muted-2);
+          margin-bottom: 5px;
+        "
+      >
+        {{ req.code }}
+      </div>
+      <h1
+        style="
+          margin: 0;
+          font-size: clamp(21px, 2.7vw, 27px);
+          font-weight: 700;
+          letter-spacing: -0.4px;
+          line-height: 1.2;
+        "
+      >
+        {{ req.titulo }}
+      </h1>
+    </div>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+      <span
+        style="font-size:12.5px;font-weight:600;color:{{ req.estColor }};background:{{ req.estBg }};padding:6px 13px;border-radius:20px"
+        >{{ req.estLabel }}</span
+      >
+      <sc-if
+        value="{{ isDev }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <dc-import name="ReqAcciones"
+          promoteReq="{{ promoteReq }}" promoteReqDisabled="{{ promoteReqDisabled }}"
+          promoteReqTitle="{{ promoteReqTitle }}" promoteReqBg="{{ promoteReqBg }}"
+          promoteReqBorder="{{ promoteReqBorder }}" promoteReqColor="{{ promoteReqColor }}"
+          promoteReqLabel="{{ promoteReqLabel }}" markReqBlocked="{{ markReqBlocked }}"
+          blockReqDisabled="{{ blockReqDisabled }}" blockReqTitle="{{ blockReqTitle }}"
+          blockReqBorder="{{ blockReqBorder }}" blockReqColor="{{ blockReqColor }}"
+          editReq="{{ editReq }}" deleteReq="{{ deleteReq }}"
+        />
+      </sc-if>
+    </div>
+  </div>
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--gp-muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    "
+  >
+    <span
+      style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--gp-surface-3);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--gp-text-2);
+        font-weight: 600;
+      "
+      >{{ req.iniciales }}</span
+    >Responsables:
+    <span style="color: var(--gp-text-2)">{{ req.responsable }}</span
+    ><sc-if
+      value="{{ req.hasStatusDate }}"
+      hint-placeholder-val="{{ false }}"
+      ><span style="color: var(--gp-faint)">·</span>Estado actualizado:
+      <span style="color: var(--gp-text-2)"
+        >{{ req.statusDate }}</span
+      ></sc-if
+    >
+  </div>
+
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 22px;
+    "
+  >
+    <div
+      style="
+        grid-column: 1/-1;
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-14);
+        border-radius: 11px;
+        padding: 13px 15px;
+      "
+    >
+      <div
+        style="
+          font-size: 10px;
+          color: var(--gp-muted-2);
+          text-transform: uppercase;
+          letter-spacing: 0.45px;
+          margin-bottom: 5px;
+        "
+      >
+        Descripción de cambios
+      </div>
+      <div
+        style="font-size: 13px; line-height: 1.6; color: var(--gp-text-2)"
+      >
+        {{ req.descripcionCambios }}
+      </div>
+    </div>
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-14);
+        border-radius: 11px;
+        padding: 13px 15px;
+      "
+    >
+      <div
+        style="
+          font-size: 10px;
+          color: var(--gp-muted-2);
+          text-transform: uppercase;
+          letter-spacing: 0.45px;
+          margin-bottom: 5px;
+        "
+      >
+        Observaciones
+      </div>
+      <div
+        style="font-size: 12px; line-height: 1.55; color: var(--gp-text-2)"
+      >
+        {{ req.observaciones }}
+      </div>
+    </div>
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-14);
+        border-radius: 11px;
+        padding: 13px 15px;
+      "
+    >
+      <div
+        style="
+          font-size: 10px;
+          color: var(--gp-muted-2);
+          text-transform: uppercase;
+          letter-spacing: 0.45px;
+          margin-bottom: 5px;
+        "
+      >
+        Fecha entrega usuario
+      </div>
+      <div style="font-size: 12px; color: var(--gp-text-2)">
+        {{ req.fechaEntregaUsuario }}
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="tabs-scroll"
+    style="
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--gp-line-18);
+      margin-bottom: 22px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    "
+  >
+    <sc-for
+      list="{{ reqTabs }}"
+      as="t"
+      hint-placeholder-count="3"
+    >
+      <button
+        onClick="{{ t.set }}"
+        style="background:none;border:0;border-bottom:2px solid {{ t.border }};color:{{ t.color }};padding:11px 14px;font-size:13.5px;font-weight:{{ t.weight }};cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;flex:none;white-space:nowrap"
+      >
+        {{ t.label }}<span
+          style="background:{{ t.badgeBg }};color:{{ t.badgeColor }};border-radius:11px;padding:1px 7px;font-size:11px;min-width:16px"
+          >{{ t.count }}</span
+        >
+      </button>
+    </sc-for>
+  </div>
+
+  <sc-if
+    value="{{ tabDocumentos }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <dc-import name="ReqDocumentos"
+      req="{{ req }}" isDev="{{ isDev }}"
+      addDoc="{{ addDoc }}"
+    />
+  </sc-if>
+
+  <sc-if
+    value="{{ tabDespliegues }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <dc-import name="ReqDespliegues"
+      req="{{ req }}" isDev="{{ isDev }}"
+      addDespliegue="{{ addDespliegue }}"
+    />
+  </sc-if>
+
+  <sc-if
+    value="{{ tabBloqueantes }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <dc-import name="ReqBloqueantes"
+      req="{{ req }}" isDev="{{ isDev }}"
+      bloqEmpty="{{ bloqEmpty }}" addBloqueante="{{ addBloqueante }}"
+    />
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"goMaestro":null,"req":null,"isDev":false,"promoteReq":null,"promoteReqDisabled":null,"promoteReqTitle":null,"promoteReqBg":null,"promoteReqBorder":null,"promoteReqColor":null,"promoteReqLabel":null,"markReqBlocked":null,"blockReqDisabled":null,"blockReqTitle":null,"blockReqBorder":null,"blockReqColor":null,"editReq":null,"deleteReq":null,"reqTabs":null,"tabDocumentos":false,"addDoc":null,"tabDespliegues":false,"addDespliegue":null,"tabBloqueantes":false,"bloqEmpty":false,"addBloqueante":null}'>
+class Component extends DCLogic {
+}
+</script>

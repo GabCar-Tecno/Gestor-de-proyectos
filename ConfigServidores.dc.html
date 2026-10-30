@@ -1,0 +1,155 @@
+<x-dc>
+<div style="margin-top: 32px">
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    "
+  >
+    <h2
+      style="
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gp-text);
+      "
+    >
+      Servidores
+    </h2>
+    <span style="font-size: 12px; color: var(--gp-muted-2)"
+      >Origen de los despliegues</span
+    >
+    <button
+      onClick="{{ addServidor }}"
+      style="
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: none;
+        border: 1px solid rgba(53, 192, 240, 0.4);
+        color: #35c0f0;
+        cursor: pointer;
+        padding: 7px 13px;
+        border-radius: 9px;
+        font-size: 12.5px;
+        font-weight: 600;
+      "
+      style-hover="background:rgba(53,192,240,.1)"
+    >
+      <svg width="13" height="13">
+        <use href="#ic-plus"></use></svg
+      >Nuevo servidor
+    </button>
+  </div>
+  <sc-if
+    value="{{ servidoresEmpty }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px dashed var(--gp-line-22);
+        border-radius: 14px;
+        padding: 20px;
+        color: var(--gp-muted-2);
+        font-size: 13px;
+      "
+    >
+      Esta empresa aún no tiene servidores. Crea al menos uno
+      para poder armar correos de despliegue.
+    </div>
+  </sc-if>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(240px, 1fr)
+      );
+      gap: 12px;
+    "
+  >
+    <sc-for
+      list="{{ servidoresList }}"
+      as="s"
+      hint-placeholder-count="3"
+    >
+      <div
+        style="
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-16);
+          border-radius: 14px;
+          padding: 15px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        "
+      >
+        <div
+          style="
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: #35c0f0;
+          "
+        >
+          {{ s.code }}
+        </div>
+        <div
+          style="
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+            font-size: 13px;
+            color: var(--gp-text-2);
+          "
+        >
+          {{ s.ip }}
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 2px">
+          <button
+            onClick="{{ s.edit }}"
+            style="
+              flex: 1;
+              background: none;
+              border: 1px solid var(--gp-line-22);
+              color: var(--gp-muted);
+              cursor: pointer;
+              padding: 6px;
+              border-radius: 8px;
+              font-size: 12px;
+            "
+            style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+          >
+            Editar
+          </button>
+          <button
+            onClick="{{ s.del }}"
+            style="
+              flex: none;
+              background: none;
+              border: 1px solid rgba(249, 123, 123, 0.25);
+              color: #f97b7b;
+              cursor: pointer;
+              padding: 6px 10px;
+              border-radius: 8px;
+              font-size: 12px;
+            "
+            style-hover="background:rgba(249,123,123,.08)"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"addServidor":null,"servidoresEmpty":false,"servidoresList":[]}'>
+class Component extends DCLogic {
+}
+</script>

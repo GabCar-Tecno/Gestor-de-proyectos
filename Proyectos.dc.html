@@ -1,0 +1,207 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease">
+  <div
+    style="
+      margin-bottom: 26px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    "
+  >
+    <sc-if
+      value="{{ empresa.logo }}"
+      hint-placeholder-val="{{ false }}"
+      ><div
+        style="
+          height: 64px;
+          padding: 6px 10px;
+          border-radius: 14px;
+          background: #fff;
+          border: 1px solid var(--gp-line-14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <img
+          src="{{ empresa.logo }}"
+          alt="{{ empresa.nombre }}"
+          style="
+            height: 100%;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            display: block;
+          "
+        /></div
+    ></sc-if>
+    <sc-if
+      value="{{ !empresa.logo }}"
+      hint-placeholder-val="{{ true }}"
+      ><div
+        style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;color:#fff;background:{{ empresa.color }}"
+      >
+        {{ empresa.mono }}
+      </div></sc-if
+    >
+    <div>
+      <h1
+        style="
+          margin: 0;
+          font-size: clamp(22px, 3vw, 28px);
+          font-weight: 700;
+          letter-spacing: -0.5px;
+        "
+      >
+        {{ empresa.nombre }}
+      </h1>
+      <p
+        style="margin: 2px 0 0; color: var(--gp-muted); font-size: 13.5px"
+      >
+        {{ empresa.proyectosLabel }}
+      </p>
+    </div>
+    <div
+      class="emp-actions"
+      style="
+        margin-left: auto;
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <sc-if
+        value="{{ showParam }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <button
+          onClick="{{ openCorreoDespliegue }}"
+          style="
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+            border: 0;
+            color: #fff;
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            font-weight: 600;
+            white-space: nowrap;
+          "
+          style-hover="opacity:.9"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-mail"></use></svg
+          >Enviar correo despliegue
+        </button>
+      </sc-if>
+      <button
+        onClick="{{ goMaestro }}"
+        style="
+          flex: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: var(--gp-primary);
+          border: 1px solid var(--gp-primary);
+          color: #fff;
+          cursor: pointer;
+          padding: 8px 14px;
+          border-radius: 10px;
+          font-size: 12.5px;
+          font-weight: 600;
+          white-space: nowrap;
+        "
+        style-hover="background:var(--gp-primary-hover)"
+      >
+        <svg width="14" height="14">
+          <use href="#ic-grid"></use></svg
+        >Gestión de proyectos
+      </button>
+      <sc-if
+        value="{{ showParam }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <button
+          onClick="{{ goConfiguracion }}"
+          style="
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: none;
+            border: 1px solid var(--gp-line-24);
+            color: var(--gp-text-2);
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            font-weight: 600;
+            white-space: nowrap;
+          "
+          style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+        >
+          Configuración
+        </button>
+      </sc-if>
+      <div
+        style="
+          flex: none;
+          display: inline-flex;
+          background: var(--gp-field);
+          border: 1px solid var(--gp-line-20);
+          border-radius: 10px;
+          padding: 3px;
+          gap: 2px;
+        "
+      >
+        <button
+          onClick="{{ setProjectsGrid }}"
+          title="Vista de tarjetas"
+          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvGridBg }};color:{{ pvGridColor }}"
+        >
+          <svg width="16" height="16">
+            <use href="#ic-grid"></use>
+          </svg>
+        </button>
+        <button
+          onClick="{{ setProjectsListView }}"
+          title="Vista de lista"
+          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;border-radius:7px;cursor:pointer;background:{{ pvListBg }};color:{{ pvListColor }}"
+        >
+          <svg width="16" height="16">
+            <use href="#ic-list"></use>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <sc-if
+    value="{{ projectsGrid }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <dc-import name="ProyectosGrid"
+      proyectosList="{{ proyectosList }}"
+    />
+  </sc-if>
+
+  <sc-if
+    value="{{ projectsListView }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <dc-import name="ProyectosLista"
+      proyectosList="{{ proyectosList }}"
+    />
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"empresa":null,"showParam":false,"openCorreoDespliegue":null,"goMaestro":null,"goConfiguracion":null,"setProjectsGrid":null,"pvGridBg":null,"pvGridColor":null,"setProjectsListView":null,"pvListBg":null,"pvListColor":null,"projectsGrid":null,"proyectosList":[],"projectsListView":null}'>
+class Component extends DCLogic {
+}
+</script>

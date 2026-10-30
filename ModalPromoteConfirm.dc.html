@@ -1,0 +1,129 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 16px"
+>
+  <p
+    style="
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--gp-text-2);
+      line-height: 1.55;
+    "
+  >
+    El requerimiento avanzará a
+    <strong style="color: var(--gp-text)"
+      >{{ promote.estLabel }}</strong
+    >. El ambiente
+    <strong
+      style="
+        color: #35c0f0;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+      "
+      >{{ promote.targetEnv }}</strong
+    >
+    pertenece al proyecto
+    <strong style="color: var(--gp-text)"
+      >{{ promote.projectName }}</strong
+    >.
+  </p>
+  <p
+    style="
+      margin: 0;
+      font-size: 12px;
+      color: var(--gp-muted);
+      line-height: 1.5;
+    "
+  >
+    Puedes cambiar solo el estado o también actualizar la
+    URL y la versión registradas para ese ambiente. Esto no
+    ejecuta un despliegue automático.
+  </p>
+  <label
+    style="display: flex; flex-direction: column; gap: 7px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--gp-muted);
+      "
+      >URL</span
+    >
+    <input
+      value="{{ form.url }}"
+      onInput="{{ f_url }}"
+      placeholder="https://..."
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--gp-text);
+        font-size: 13px;
+        outline: none;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+      "
+      style-focus="border-color:#35c0f0"
+    />
+    <span style="font-size: 11px; color: var(--gp-muted-2)"
+      >Guardada en el proyecto: {{ promote.projectUrl
+      }}</span
+    ><span style="font-size: 11px; color: var(--gp-muted-2)"
+      >Valor precargado desde: {{ promote.valueSource
+      }}</span
+    >
+  </label>
+  <label
+    style="display: flex; flex-direction: column; gap: 7px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--gp-muted);
+      "
+      >Versión</span
+    >
+    <input
+      value="{{ form.version }}"
+      onInput="{{ f_version }}"
+      placeholder="Ej: v2.4.1"
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--gp-text);
+        font-size: 13px;
+        outline: none;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+      "
+      style-focus="border-color:#35c0f0"
+    />
+    <span style="font-size: 11px; color: var(--gp-muted-2)"
+      >Guardada en el proyecto: {{ promote.projectVersion
+      }}</span
+    ><span style="font-size: 11px; color: var(--gp-muted-2)"
+      >Valor precargado desde: {{ promote.valueSource
+      }}</span
+    >
+  </label>
+  <sc-if
+    value="{{ modalErrShow }}"
+    hint-placeholder-val="{{ false }}"
+    ><div
+      style="
+        color: #f97b7b;
+        font-size: 12.5px;
+        line-height: 1.5;
+      "
+    >
+      {{ modalErr }}
+    </div></sc-if
+  >
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"promote":null,"form":null,"f_url":null,"f_version":null,"modalErrShow":false,"modalErr":null}'>
+class Component extends DCLogic {
+}
+</script>

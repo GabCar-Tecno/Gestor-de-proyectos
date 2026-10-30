@@ -1,0 +1,60 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 14px"
+>
+  <p
+    style="
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--gp-text-2);
+      line-height: 1.55;
+    "
+  >
+    {{ batch.text }}
+  </p>
+  <sc-if
+    value="{{ batch.skippedShow }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <div
+      style="
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        background: rgba(245, 181, 68, 0.1);
+        border: 1px solid rgba(245, 181, 68, 0.25);
+        border-radius: 10px;
+        padding: 11px 13px;
+        color: #f5b544;
+        font-size: 12.5px;
+        line-height: 1.5;
+      "
+    >
+      <svg
+        width="15"
+        height="15"
+        style="flex: none; margin-top: 1px"
+      >
+        <use href="#ic-alert"></use></svg
+      ><span>{{ batch.skippedText }}</span>
+    </div>
+  </sc-if>
+  <sc-if
+    value="{{ modalErrShow }}"
+    hint-placeholder-val="{{ false }}"
+    ><div
+      style="
+        color: #f97b7b;
+        font-size: 12.5px;
+        line-height: 1.5;
+      "
+    >
+      {{ modalErr }}
+    </div></sc-if
+  >
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"batch":null,"modalErrShow":false,"modalErr":null}'>
+class Component extends DCLogic {
+}
+</script>

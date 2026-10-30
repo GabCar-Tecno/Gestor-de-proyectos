@@ -1,0 +1,294 @@
+<x-dc>
+<div
+  class="proj-grid"
+  style="
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  "
+>
+  <div
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 150px;
+    "
+  >
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 9px">
+        <svg width="17" height="17" style="color: #35c0f0">
+          <use href="#ic-deploy"></use></svg
+        ><span style="font-weight: 600; font-size: 15px"
+          >Despliegues</span
+        >
+      </div>
+      <sc-if
+        value="{{ isDev }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <button
+          onClick="{{ editDesplieguesProy }}"
+          style="
+            background: none;
+            border: 0;
+            color: var(--gp-muted-2);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 6px;
+            border-radius: 6px;
+          "
+          style-hover="color:#35c0f0"
+        >
+          Editar
+        </button>
+      </sc-if>
+    </div>
+    <div
+      style="display: flex; flex-direction: column; gap: 8px"
+    >
+      <sc-for
+        list="{{ proyecto.despliegues }}"
+        as="d"
+        hint-placeholder-count="3"
+      >
+        <div
+          onClick="{{ d.openDetail }}"
+          title="Ver detalle del despliegue"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            overflow: hidden;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-14);
+            border-radius: 10px;
+            padding: 9px 11px;
+            cursor: pointer;
+          "
+          style-hover="border-color:rgba(53,192,240,.4)"
+        >
+          <span
+            style="
+              flex: none;
+              font-family:
+                &quot;JetBrains Mono&quot;, monospace;
+              font-size: 12.5px;
+              color: var(--gp-text-2);
+            "
+            >{{ d.env }}</span
+          >
+          <span
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              min-width: 0;
+            "
+          >
+            <span
+              title="{{ d.version }}"
+              style="
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+                font-size: 11px;
+                color: #39d39b;
+                background: rgba(57, 211, 155, 0.12);
+                padding: 2px 7px;
+                border-radius: 6px;
+              "
+              >{{ d.version }}</span
+            >
+            <button
+              onClick="{{ d.copy }}"
+              title="{{ d.copyTitle }}"
+              style="flex:none;width:26px;height:26px;border-radius:7px;background:{{ d.copyBg }};border:1px solid {{ d.copyBorder }};color:{{ d.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
+              style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+            >
+              <svg width="13" height="13">
+                <use href="{{ d.copyIconHref }}"></use>
+              </svg>
+            </button>
+            <svg
+              width="13"
+              height="13"
+              style="flex: none; color: var(--gp-muted-2)"
+            >
+              <use href="#ic-chevron"></use>
+            </svg>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-height: 150px;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <span style="font-size: 14.5px; font-weight: 600"
+          >Componentes desplegables</span
+        >
+        <button
+          onClick="{{ openComponentesProy }}"
+          style="
+            background: none;
+            border: 0;
+            color: var(--gp-muted-2);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 6px;
+            border-radius: 6px;
+          "
+          style-hover="color:#35c0f0"
+        >
+          Editar
+        </button>
+      </div>
+      <sc-if
+        value="{{ componentesProyEmpty }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <span
+          style="
+            font-size: 12.5px;
+            color: var(--gp-muted-2);
+            line-height: 1.5;
+          "
+          >Sin componentes. Enlaza las APIs, apps y gateways que
+          se despliegan con este proyecto.</span
+        >
+      </sc-if>
+      <div
+        style="display: flex; flex-direction: column; gap: 7px"
+      >
+        <sc-for
+          list="{{ componentesProy }}"
+          as="c"
+          hint-placeholder-count="3"
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 9px;
+              flex-wrap: wrap;
+            "
+          >
+            <span
+              style="flex:none;font-size:10.5px;font-weight:600;color:{{ c.kindColor }};background:{{ c.kindBg }};padding:2px 7px;border-radius:20px"
+              >{{ c.kindLabel }}</span
+            >
+            <span
+              style="
+                flex: 1;
+                min-width: 120px;
+                font-size: 12.5px;
+                color: var(--gp-text-2);
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+              "
+              >{{ c.titulo }}</span
+            >
+            <span
+              style="
+                flex: none;
+                font-size: 11.5px;
+                color: var(--gp-muted-2);
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+              "
+              >{{ c.servidor }}</span
+            >
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+  <sc-for
+    list="{{ proyecto.recursoCards }}"
+    as="r"
+    hint-placeholder-count="3"
+  >
+    <button
+      onClick="{{ r.open }}"
+      class="recurso-card"
+      style="
+        text-align: left;
+        cursor: pointer;
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-height: 150px;
+        transition: border-color 0.18s;
+      "
+      style-hover="border-color:rgba(53,192,240,.4)"
+    >
+      <div style="display: flex; align-items: center; gap: 9px">
+        <svg width="17" height="17" style="color: #35c0f0">
+          <use href="{{ r.iconHref }}"></use></svg
+        ><span style="font-weight: 600; font-size: 15px"
+          >{{ r.label }}</span
+        >
+      </div>
+      <div style="flex: 1"></div>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <span
+          style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:{{ r.statusColor }}"
+          ><span
+            style="width:7px;height:7px;border-radius:50%;background:{{ r.statusColor }}"
+          ></span
+          >{{ r.status }}</span
+        >
+        <span style="font-size: 12px; color: var(--gp-muted-2)"
+          >Ver →</span
+        >
+      </div>
+    </button>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isDev":null,"editDesplieguesProy":null,"proyecto":null,"openComponentesProy":null,"componentesProyEmpty":false,"componentesProy":null}'>
+class Component extends DCLogic {
+}
+</script>

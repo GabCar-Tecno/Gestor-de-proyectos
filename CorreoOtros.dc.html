@@ -1,0 +1,91 @@
+<x-dc>
+<div
+  style="
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  "
+>
+  <button
+    onClick="{{ toggleCorreoOtros }}"
+    style="width:100%;text-align:left;cursor:pointer;background:var(--gp-field);border:1px solid {{ correoOtrosBorder }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px"
+    style-hover="border-color:rgba(53,192,240,.45)"
+  >
+    <span
+      style="flex:1;min-width:0;font-size:12.5px;color:{{ correoOtrosResumenColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+      >{{ correoOtrosResumen }}</span
+    >
+    <span
+      style="
+        flex: none;
+        font-size: 11px;
+        color: var(--gp-muted-2);
+        font-family:
+          &quot;JetBrains Mono&quot;, monospace;
+      "
+      >{{ correoOtrosConteo }}</span
+    >
+    <svg
+      width="13"
+      height="13"
+      style="flex:none;color:var(--gp-muted-2);transform:{{ correoOtrosChevron }}"
+    >
+      <use href="#ic-chevron"></use>
+    </svg>
+  </button>
+  <sc-if
+    value="{{ correoOtrosOpen }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      "
+    >
+      <sc-for
+        list="{{ correoOtros }}"
+        as="d"
+        hint-placeholder-count="3"
+      >
+        <button
+          onClick="{{ d.toggle }}"
+          style="text-align:left;cursor:pointer;background:{{ d.rowBg }};border:0;border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:9px"
+          style-hover="background:var(--gp-hover-bg)"
+        >
+          <span
+            style="flex:none;width:15px;height:15px;border-radius:5px;border:1px solid {{ d.boxBorder }};background:{{ d.boxBg }};display:flex;align-items:center;justify-content:center;color:#172033"
+            ><svg width="10" height="10">
+              <use href="{{ d.iconHref }}"></use></svg
+          ></span>
+          <span
+            style="flex:1;min-width:0;font-size:12.5px;color:{{ d.color }};font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            >{{ d.titulo }}</span
+          >
+          <span
+            style="
+              flex: none;
+              font-size: 11.5px;
+              color: var(--gp-muted-2);
+              font-family:
+                &quot;JetBrains Mono&quot;, monospace;
+            "
+            >{{ d.servidor }}</span
+          >
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"toggleCorreoOtros":null,"correoOtrosBorder":null,"correoOtrosResumenColor":null,"correoOtrosResumen":null,"correoOtrosConteo":null,"correoOtrosChevron":null,"correoOtrosOpen":false,"correoOtros":null}'>
+class Component extends DCLogic {
+}
+</script>

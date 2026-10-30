@@ -1,0 +1,42 @@
+<x-dc>
+<button
+  onClick="{{ closeModal }}"
+  style="
+    background: none;
+    border: 1px solid var(--gp-line-24);
+    color: var(--gp-text-2);
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  "
+>
+  {{ modalSecondaryLabel }}
+</button>
+<sc-if
+  value="{{ modalShowSave }}"
+  hint-placeholder-val="{{ true }}"
+>
+  <button
+    onClick="{{ saveModal }}"
+    style="
+      background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+      border: 0;
+      color: #fff;
+      cursor: pointer;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 6px 18px -6px rgba(43, 59, 214, 0.7);
+    "
+  >
+    {{ saveLabel }}
+  </button>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"closeModal":null,"modalSecondaryLabel":null,"modalShowSave":null,"saveModal":null,"saveLabel":null}'>
+class Component extends DCLogic {
+}
+</script>

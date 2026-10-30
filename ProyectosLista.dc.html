@@ -1,0 +1,71 @@
+<x-dc>
+<div style="display: flex; flex-direction: column; gap: 8px">
+  <sc-for
+    list="{{ proyectosList }}"
+    as="p"
+    hint-placeholder-count="3"
+  >
+    <button
+      class="project-card"
+      onClick="{{ p.open }}"
+      style="
+        text-align: left;
+        cursor: pointer;
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-card-line);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        transition: border-color 0.16s;
+      "
+      style-hover="border-color:var(--gp-card-line-hover)"
+    >
+      <span
+        style="
+          flex: 1;
+          min-width: 200px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        "
+      >
+        <span style="font-size: 15px; font-weight: 600"
+          >{{ p.nombre }}</span
+        >
+        <span
+          style="
+            font-size: 12.5px;
+            color: var(--gp-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          "
+          >{{ p.descripcion }}</span
+        >
+      </span>
+      <span
+        style="flex:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:{{ p.bloqColor }}"
+        ><span
+          style="width:8px;height:8px;border-radius:50%;background:{{ p.bloqColor }}"
+        ></span
+        ><strong style="font-weight: 600"
+          >{{ p.bloqCount }}</strong
+        >
+        bloqueantes</span
+      >
+      <span
+        style="flex: none; font-size: 12px; color: var(--gp-muted)"
+        >Último despliegue · {{ p.ultimoDespliegue }}</span
+      >
+    </button>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"proyectosList":[]}'>
+class Component extends DCLogic {
+}
+</script>

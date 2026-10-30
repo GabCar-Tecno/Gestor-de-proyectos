@@ -1,0 +1,251 @@
+<x-dc>
+<dc-import name="CorreoSeleccion"
+  correoAmbientes="{{ correoAmbientes }}" correoCarpetaFalta="{{ correoCarpetaFalta }}"
+  correoProyectos="{{ correoProyectos }}"
+/>
+  </div>
+
+  <div
+    style="display: flex; flex-direction: column; gap: 9px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gp-muted);
+      "
+      >3 · Otros desplegables de la empresa</span
+    >
+    <span
+      style="
+        font-size: 11.5px;
+        color: var(--gp-muted-2);
+        line-height: 1.5;
+      "
+      >Gateways compartidos y componentes sin
+      proyecto.</span
+    >
+    <sc-if
+      value="{{ correoOtrosEmpty }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <span style="font-size: 12px; color: var(--gp-muted-2)"
+        >Todos los desplegables están enlazados a algún
+        proyecto.</span
+      >
+    </sc-if>
+    <sc-if
+      value="{{ correoOtrosHay }}"
+      hint-placeholder-val="{{ true }}"
+    >
+      <dc-import name="CorreoOtros"
+        toggleCorreoOtros="{{ toggleCorreoOtros }}" correoOtrosBorder="{{ correoOtrosBorder }}"
+        correoOtrosResumenColor="{{ correoOtrosResumenColor }}" correoOtrosResumen="{{ correoOtrosResumen }}"
+        correoOtrosConteo="{{ correoOtrosConteo }}" correoOtrosChevron="{{ correoOtrosChevron }}"
+        correoOtrosOpen="{{ correoOtrosOpen }}" correoOtros="{{ correoOtros }}"
+      />
+    </sc-if>
+  </div>
+
+  <div
+    style="display: flex; flex-direction: column; gap: 9px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gp-muted);
+      "
+      >4 · Destinatarios</span
+    >
+    <sc-if
+      value="{{ correoContactosEmpty }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <div
+        style="
+          background: var(--gp-field);
+          border: 1px dashed var(--gp-line-22);
+          border-radius: 12px;
+          padding: 16px;
+          color: #f5b544;
+          font-size: 12.5px;
+        "
+      >
+        Esta empresa no tiene contactos. Agrégalos en la
+        sección Contactos.
+      </div>
+    </sc-if>
+    <sc-if
+      value="{{ correoContactosHay }}"
+      hint-placeholder-val="{{ true }}"
+    >
+      <dc-import name="CorreoCuerpo"
+        toggleCorreoTo="{{ toggleCorreoTo }}" correoToBorder="{{ correoToBorder }}"
+        correoToResumenColor="{{ correoToResumenColor }}" correoToResumen="{{ correoToResumen }}"
+        correoToChevron="{{ correoToChevron }}" correoToOpen="{{ correoToOpen }}"
+        correoContactosTo="{{ correoContactosTo }}" toggleCorreoCc="{{ toggleCorreoCc }}"
+        correoCcBorder="{{ correoCcBorder }}" correoCcResumenColor="{{ correoCcResumenColor }}"
+        correoCcResumen="{{ correoCcResumen }}" correoCcChevron="{{ correoCcChevron }}"
+        correoCcOpen="{{ correoCcOpen }}" correoContactosCc="{{ correoContactosCc }}"
+      />
+    </sc-if>
+  </div>
+
+  <div
+    style="display: flex; flex-direction: column; gap: 7px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gp-muted);
+      "
+      >5 · Nota adicional</span
+    >
+    <textarea
+      value="{{ form.nota }}"
+      onInput="{{ setCorreoNota }}"
+      placeholder="Los adjuntos, el orden de los scripts SQL, permisos por crear..."
+      rows="3"
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--gp-text);
+        font-size: 13px;
+        outline: none;
+        resize: vertical;
+        font-family: inherit;
+      "
+      style-focus="border-color:#35c0f0"
+    ></textarea>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      padding-top: 18px;
+      border-top: 1px solid var(--gp-line-16);
+    "
+  >
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+      <span
+        style="
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--gp-muted);
+        "
+        >6 · Vista previa</span
+      >
+      <span
+        style="margin-left:auto;font-size:11.5px;color:{{ correoCharsColor }};font-family:'JetBrains Mono',monospace"
+        >{{ correoChars }}</span
+      >
+    </div>
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-20);
+        border-radius: 10px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      "
+    >
+      <span style="font-size: 11.5px; color: var(--gp-muted-2)"
+        >Asunto</span
+      >
+      <span style="font-size: 12.5px; color: var(--gp-text-2)"
+        >{{ correoAsunto }}</span
+      >
+    </div>
+    <textarea
+      value="{{ correoCuerpo }}"
+      onInput="{{ setCorreoCuerpo }}"
+      rows="14"
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--gp-text);
+        font-size: 12.5px;
+        outline: none;
+        resize: vertical;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+        line-height: 1.55;
+      "
+      style-focus="border-color:#35c0f0"
+    ></textarea>
+    <sc-if
+      value="{{ correoLargo }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <span
+        style="
+          font-size: 12px;
+          color: #f5b544;
+          line-height: 1.5;
+        "
+        >El correo quedó muy largo y Outlook lo puede
+        cortar. Usa "Copiar cuerpo" y pégalo en un correo
+        nuevo.</span
+      >
+    </sc-if>
+    <sc-if
+      value="{{ correoBloqueoShow }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <span
+        style="
+          font-size: 12px;
+          color: #f97b7b;
+          line-height: 1.5;
+        "
+        >{{ correoBloqueo }}</span
+      >
+    </sc-if>
+    <div
+      style="
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+        margin-top: 2px;
+      "
+    >
+      <button
+        onClick="{{ abrirCorreo }}"
+        disabled="{{ correoNoPuede }}"
+        style="display:inline-flex;align-items:center;gap:8px;background:{{ correoBtnBg }};border:0;color:{{ correoBtnColor }};cursor:{{ correoBtnCursor }};padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600"
+      >
+        Abrir en correo
+      </button>
+      <button
+        onClick="{{ copiarCorreoCuerpo }}"
+        style="display:inline-flex;align-items:center;gap:8px;background:var(--gp-surface-2);border:1px solid var(--gp-line-20);color:{{ correoCopyColor }};cursor:pointer;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500"
+        style-hover="border-color:rgba(53,192,240,.4)"
+      >
+        <svg width="14" height="14">
+          <use href="{{ correoCopyIcon }}"></use></svg
+        >{{ correoCopyLabel }}
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"correoAmbientes":null,"correoCarpetaFalta":null,"correoProyectos":null,"correoOtrosEmpty":false,"correoOtrosHay":null,"toggleCorreoOtros":null,"correoOtrosBorder":null,"correoOtrosResumenColor":null,"correoOtrosResumen":null,"correoOtrosConteo":null,"correoOtrosChevron":null,"correoOtrosOpen":false,"correoOtros":null,"correoContactosEmpty":false,"correoContactosHay":null,"toggleCorreoTo":null,"correoToBorder":null,"correoToResumenColor":null,"correoToResumen":null,"correoToChevron":null,"correoToOpen":false,"correoContactosTo":null,"toggleCorreoCc":null,"correoCcBorder":null,"correoCcResumenColor":null,"correoCcResumen":null,"correoCcChevron":null,"correoCcOpen":false,"correoContactosCc":null,"form":null,"setCorreoNota":null,"correoCharsColor":null,"correoChars":null,"correoAsunto":null,"correoCuerpo":null,"setCorreoCuerpo":null,"correoLargo":null,"correoBloqueoShow":false,"correoBloqueo":null,"abrirCorreo":null,"correoNoPuede":null,"correoBtnBg":null,"correoBtnColor":null,"correoBtnCursor":null,"copiarCorreoCuerpo":null,"correoCopyColor":null,"correoCopyIcon":null,"correoCopyLabel":null}'>
+class Component extends DCLogic {
+}
+</script>

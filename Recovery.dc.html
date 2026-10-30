@@ -1,0 +1,159 @@
+<x-dc>
+<div
+  style="
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  "
+>
+  <form
+    onSubmit="{{ doSetNewPassword }}"
+    style="
+      width: 100%;
+      max-width: 360px;
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-18);
+      border-radius: 18px;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    "
+  >
+    <div>
+      <div
+        style="font-weight: 700; font-size: 16px; margin-bottom: 4px"
+      >
+        Nueva contraseña
+      </div>
+      <div style="font-size: 12.5px; color: var(--gp-muted)">
+        Escribe tu nueva contraseña para esta cuenta.
+      </div>
+    </div>
+    <label style="display: flex; flex-direction: column; gap: 7px">
+      <span style="font-size: 12px; font-weight: 500; color: var(--gp-muted)"
+        >Nueva contraseña</span
+      >
+      <div style="position: relative">
+        <input
+          type="{{ recoveryPass1Type }}"
+          value="{{ recoveryPass1 }}"
+          onInput="{{ onRecoveryPass1 }}"
+          placeholder="mínimo 6 caracteres"
+          style="
+            width: 100%;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 10px;
+            padding: 11px 38px 11px 12px;
+            color: var(--gp-text);
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <button
+          type="button"
+          onClick="{{ toggleRecoveryPass1 }}"
+          tabindex="-1"
+          style="
+            position: absolute;
+            right: 9px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: 0;
+            color: var(--gp-muted);
+            cursor: pointer;
+            display: flex;
+            padding: 2px;
+          "
+          style-hover="color:#35c0f0"
+        >
+          <svg width="16" height="16">
+            <use href="{{ recoveryPass1EyeHref }}"></use>
+          </svg>
+        </button>
+      </div>
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 7px">
+      <span style="font-size: 12px; font-weight: 500; color: var(--gp-muted)"
+        >Confirmar contraseña</span
+      >
+      <div style="position: relative">
+        <input
+          type="{{ recoveryPass2Type }}"
+          value="{{ recoveryPass2 }}"
+          onInput="{{ onRecoveryPass2 }}"
+          placeholder="repite la contraseña"
+          style="
+            width: 100%;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 10px;
+            padding: 11px 38px 11px 12px;
+            color: var(--gp-text);
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <button
+          type="button"
+          onClick="{{ toggleRecoveryPass2 }}"
+          tabindex="-1"
+          style="
+            position: absolute;
+            right: 9px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: 0;
+            color: var(--gp-muted);
+            cursor: pointer;
+            display: flex;
+            padding: 2px;
+          "
+          style-hover="color:#35c0f0"
+        >
+          <svg width="16" height="16">
+            <use href="{{ recoveryPass2EyeHref }}"></use>
+          </svg>
+        </button>
+      </div>
+    </label>
+    <sc-if
+      value="{{ recoveryErrShow }}"
+      hint-placeholder-val="{{ false }}"
+      ><div style="color: #f97b7b; font-size: 12.5px; line-height: 1.5">
+        {{ recoveryError }}
+      </div></sc-if
+    >
+    <button
+      type="submit"
+      disabled="{{ recoveryLoading }}"
+      style="
+        background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+        border: 0;
+        color: #fff;
+        cursor: pointer;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        margin-top: 4px;
+      "
+    >
+      {{ recoveryBtnLabel }}
+    </button>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"doSetNewPassword":null,"recoveryPass1Type":null,"recoveryPass1":null,"onRecoveryPass1":null,"toggleRecoveryPass1":null,"recoveryPass1EyeHref":null,"recoveryPass2Type":null,"recoveryPass2":null,"onRecoveryPass2":null,"toggleRecoveryPass2":null,"recoveryPass2EyeHref":null,"recoveryErrShow":false,"recoveryError":null,"recoveryLoading":false,"recoveryBtnLabel":null}'>
+class Component extends DCLogic {
+}
+</script>

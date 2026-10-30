@@ -1,0 +1,63 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 9px"
+>
+  <sc-if
+    value="{{ componentesOpcionesEmpty }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px dashed var(--gp-line-22);
+        border-radius: 12px;
+        padding: 18px;
+        color: var(--gp-muted-2);
+        font-size: 12.5px;
+      "
+    >
+      Esta empresa no tiene desplegables. Créalos primero en
+      la vista de la empresa.
+    </div>
+  </sc-if>
+  <sc-for
+    list="{{ componentesOpciones }}"
+    as="o"
+    hint-placeholder-count="5"
+  >
+    <button
+      onClick="{{ o.toggle }}"
+      style="text-align:left;cursor:pointer;background:{{ o.bg }};border:1px solid {{ o.border }};border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"
+      style-hover="border-color:rgba(53,192,240,.45)"
+    >
+      <span
+        style="flex:none;width:16px;height:16px;border-radius:5px;border:1px solid {{ o.boxBorder }};background:{{ o.boxBg }};display:flex;align-items:center;justify-content:center;color:#172033"
+        ><svg width="11" height="11">
+          <use href="{{ o.iconHref }}"></use></svg
+      ></span>
+      <span
+        style="flex:none;font-size:10.5px;font-weight:600;color:{{ o.kindColor }};background:{{ o.kindBg }};padding:2px 7px;border-radius:20px"
+        >{{ o.kindLabel }}</span
+      >
+      <span
+        style="flex:1;min-width:120px;font-size:12.5px;color:{{ o.color }};font-family:'JetBrains Mono',monospace"
+        >{{ o.titulo }}</span
+      >
+      <span
+        style="
+          flex: none;
+          font-size: 11.5px;
+          color: var(--gp-muted-2);
+          font-family:
+            &quot;JetBrains Mono&quot;, monospace;
+        "
+        >{{ o.servidor }}</span
+      >
+    </button>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"componentesOpcionesEmpty":false,"componentesOpciones":null}'>
+class Component extends DCLogic {
+}
+</script>

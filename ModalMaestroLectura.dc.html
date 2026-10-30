@@ -1,0 +1,230 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 15px; text-align: left"
+>
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 17px 18px;
+    "
+  >
+    <div
+      style="
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gp-muted);
+        margin-bottom: 8px;
+      "
+    >
+      Estado actual
+    </div>
+    <div
+      style="
+        font-size: 16px;
+        line-height: 1.4;
+        font-weight: 650;
+        color: #35c0f0;
+      "
+    >
+      {{ masterDetail.status }}
+    </div>
+    <div
+      style="
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--gp-muted-2);
+        margin-top: 5px;
+      "
+    >
+      {{ masterDetail.statusHelp }}
+    </div>
+  </section>
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 17px 18px;
+    "
+  >
+    <div style="font-size: 11px; font-weight: 600; color: var(--gp-muted); margin-bottom: 8px">
+      Aplicación
+    </div>
+    <div style="font-size: 15px; line-height: 1.4; font-weight: 600; color: var(--gp-text)">
+      {{ masterDetail.project }}
+    </div>
+    <sc-if value="{{ masterDetail.hasEnv }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--gp-muted-2)">
+        <span>Ambiente actual:</span>
+        <span style="font-weight: 600; color: var(--gp-ink); background: var(--gp-ink-bg); border-radius: 12px; padding: 2px 9px">{{ masterDetail.envLabel }}</span>
+        <sc-if value="{{ masterDetail.hasEnvVersion }}" hint-placeholder-val="{{ false }}"><span>{{ masterDetail.envVersion }}</span></sc-if>
+      </div>
+    </sc-if>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px">
+      <sc-if value="{{ masterDetail.hasEnvUrl }}" hint-placeholder-val="{{ false }}">
+        <button
+          onClick="{{ masterOpenEnv }}"
+          style="display: inline-flex; align-items: center; gap: 7px; background: var(--gp-primary); border: 1px solid var(--gp-primary); color: #fff; cursor: pointer; padding: 8px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600"
+          style-hover="background:var(--gp-primary-hover)"
+        >
+          {{ masterDetail.openEnvLabel }}<svg width="13" height="13"><use href="#ic-ext"></use></svg>
+        </button>
+      </sc-if>
+      <button
+        onClick="{{ masterGoProject }}"
+        style="display: inline-flex; align-items: center; gap: 7px; background: var(--gp-btn-bg); border: 1px solid var(--gp-line-24); color: var(--gp-text-2); cursor: pointer; padding: 8px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600"
+        style-hover="color:var(--gp-ink);border-color:var(--gp-hover-line)"
+      >
+        Ver proyecto<svg width="13" height="13"><use href="#ic-chevron"></use></svg>
+      </button>
+    </div>
+  </section>
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 17px 18px;
+    "
+  >
+    <div
+      style="
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gp-muted);
+        margin-bottom: 8px;
+      "
+    >
+      Fecha de entrega al usuario
+    </div>
+    <div
+      style="
+        font-size: 15px;
+        line-height: 1.4;
+        font-weight: 600;
+        color: var(--gp-text);
+      "
+    >
+      {{ masterDetail.delivery }}
+    </div>
+  </section>
+  <section style="background:var(--gp-surface);border:1px solid var(--gp-line-16);border-radius:13px;padding:17px 18px;text-align:left">
+    <div style="font-size:11px;font-weight:600;color:var(--gp-muted);margin-bottom:8px">Fecha paso a producción</div>
+    <div style="font-size:15px;line-height:1.4;font-weight:600;color:var(--gp-text)">{{ masterDetail.productionDate }}</div>
+  </section>
+  <section style="background:var(--gp-surface);border:1px solid var(--gp-line-16);border-radius:13px;padding:17px 18px;text-align:left">
+    <div style="font-size:11px;font-weight:600;color:var(--gp-muted);margin-bottom:8px">Horas estimadas</div>
+    <div style="font-size:15px;line-height:1.4;font-weight:600;color:var(--gp-text)">{{ masterDetail.hours }}</div>
+  </section>
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 17px 18px;
+    "
+  >
+    <div
+      style="
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gp-muted);
+        margin-bottom: 8px;
+      "
+    >
+      Qué cambio se solicitó
+    </div>
+    <sc-if
+      value="{{ masterDetail.hasDescription }}"
+      hint-placeholder-val="{{ false }}"
+      ><div class="master-readonly-copy master-readonly-description" style="font-size:15px;line-height:1.65;color:var(--gp-text-2);text-align:left !important;text-justify:auto !important;word-spacing:normal !important;overflow-wrap:anywhere">
+        <sc-for list="{{ masterDetail.descriptionBlocks }}" as="block" hint-placeholder-count="1">
+          <sc-if value="{{ block.isParagraph }}" hint-placeholder-val="{{ false }}"><p>{{ block.text }}</p></sc-if>
+          <sc-if value="{{ block.isOrdered }}" hint-placeholder-val="{{ false }}"><ol start="{{ block.start }}"><sc-for list="{{ block.items }}" as="item" hint-placeholder-count="2"><li>{{ item }}</li></sc-for></ol></sc-if>
+          <sc-if value="{{ block.isBulleted }}" hint-placeholder-val="{{ false }}"><ul><sc-for list="{{ block.items }}" as="item" hint-placeholder-count="2"><li>{{ item }}</li></sc-for></ul></sc-if>
+        </sc-for>
+      </div></sc-if
+    >
+    <sc-if
+      value="{{ masterDetail.descriptionMissing }}"
+      hint-placeholder-val="{{ false }}"
+      ><div
+        style="
+          font-size: 13px;
+          line-height: 1.65;
+          color: var(--gp-muted-4);
+          text-align: left !important;
+          text-justify: auto !important;
+          word-spacing: normal !important;
+        "
+        class="master-readonly-copy"
+      >
+        No se agregaron mas detalles del cambio solicitado.
+      </div></sc-if
+    >
+  </section>
+  <section
+    style="
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 17px 18px;
+    "
+  >
+    <div
+      style="
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gp-muted);
+        margin-bottom: 8px;
+      "
+    >
+      Notas y observaciones
+    </div>
+    <div
+      style="
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--gp-text-2);
+        text-align: left !important;
+        text-justify: auto !important;
+        word-spacing: normal !important;
+        overflow-wrap: anywhere;
+      "
+      class="master-readonly-copy"
+    >
+      {{ masterDetail.observations }}
+    </div>
+  </section>
+  <section
+    style="
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      background: var(--gp-surface);
+      border: 1px solid var(--gp-line-16);
+      border-radius: 13px;
+      padding: 14px 17px;
+    "
+  >
+    <div style="width:100%;min-width:0">
+      <div style="font-size:11px;color:var(--gp-muted);margin-bottom:8px">Personas responsables</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ masterDetail.ownerTags }}" as="owner" hint-placeholder-count="1">
+          <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 5px;border:1px solid var(--gp-tag-line);border-radius:999px;background:var(--gp-tint);color:var(--gp-tag-text);font-size:12px;font-weight:500">
+            <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:25px;height:25px;border-radius:50%;background:var(--gp-tag-avatar-bg);color:var(--gp-tag-avatar-text);font-size:10px;font-weight:700">{{ owner.initials }}</span>
+            {{ owner.name }}
+          </span>
+        </sc-for>
+        <sc-if value="{{ masterDetail.noOwners }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--gp-muted-2)">Sin asignar</span></sc-if>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"masterDetail":null,"masterOpenEnv":null,"masterGoProject":null}'>
+class Component extends DCLogic {
+}
+</script>
