@@ -1,0 +1,196 @@
+<x-dc>
+<div style="{{ modalFormStyle }}">
+  <sc-for
+    list="{{ formFields }}"
+    as="f"
+    hint-placeholder-count="2"
+  >
+    <div
+      style="display:flex;flex-direction:column;gap:8px;grid-column:{{ f.gridColumn }};padding:12px;background:{{ f.fieldBg }};border:1px solid {{ f.fieldBorder }};border-radius:11px;min-width:0"
+    >
+      <label
+        for="{{ f.fieldId }}"
+        id="{{ f.fieldId }}"
+        style="
+          font-size: 11.5px;
+          font-weight: 600;
+          color: var(--gp-muted);
+        "
+        >{{ f.label }}</label
+      >
+      <sc-if
+        value="{{ f.help }}"
+        hint-placeholder-val="{{ false }}"
+        ><span
+          style="
+            font-size: 11px;
+            line-height: 1.45;
+            color: #f5b544;
+          "
+          >{{ f.help }}</span
+        ></sc-if
+      >
+      <sc-if
+        value="{{ f.isSelect }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <select
+          id="{{ f.fieldId }}"
+          value="{{ f.value }}"
+          onChange="{{ f.onChange }}"
+          style="
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 10px;
+            padding: 11px 12px;
+            color: var(--gp-text);
+            font-size: 14px;
+          "
+        >
+          <sc-for
+            list="{{ f.options }}"
+            as="o"
+            hint-placeholder-count="4"
+            ><option value="{{ o.value }}">
+              {{ o.label }}
+            </option></sc-for
+          >
+        </select>
+      </sc-if>
+      <sc-if
+        value="{{ f.isChecklist }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <div class="assignee-picker" role="group" aria-labelledby="{{ f.fieldId }}">
+          <div class="assignee-picker-summary">
+            <span style="font-size:12px;color:var(--gp-muted-2)">Elige quiénes trabajarán en este requerimiento.</span>
+            <span class="assignee-picker-count">{{ f.selectedCountLabel }}</span>
+          </div>
+          <sc-if value="{{ f.hasSelectedOwners }}" hint-placeholder-val="{{ false }}">
+            <div class="assignee-picker-tags">
+              <sc-for list="{{ f.selectedOwnerTags }}" as="tag" hint-placeholder-count="2">
+                <span class="assignee-picker-tag"><span class="assignee-picker-tag-avatar">{{ tag.initials }}</span>{{ tag.label }}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <details id="{{ f.fieldId }}-picker" class="assignee-dropdown">
+            <summary class="assignee-dropdown-trigger">
+              <span>Seleccionar o quitar responsables</span>
+              <span style="margin-left:auto;color:var(--gp-muted-2);font-size:11px;font-weight:500">{{ f.optionCountLabel }}</span>
+            </summary>
+          <div class="assignee-options">
+          <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3">
+            <button
+              type="button"
+              onClick="{{ o.toggle }}"
+              class="assignee-option {{ o.selectedClass }}"
+            >
+              <span class="assignee-option-avatar">{{ o.initials }}</span>
+              <span class="assignee-option-name">{{ o.label }}</span>
+              <span class="assignee-checkbox {{ o.checkboxClass }}">
+                <sc-if value="{{ o.selected }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg></sc-if>
+              </span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ f.noOptions }}" hint-placeholder-val="{{ false }}"><span style="padding:8px;color:var(--gp-muted-2);font-size:12px">No hay desarrolladores disponibles.</span></sc-if>
+          </div>
+          </details>
+        </div>
+      </sc-if>
+      <sc-if
+        value="{{ f.isText }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <div style="position: relative">
+          <input
+            id="{{ f.fieldId }}"
+            type="{{ f.inputType }}"
+            value="{{ f.value }}"
+            onInput="{{ f.onChange }}"
+            placeholder="{{ f.placeholder }}"
+            min="{{ f.min }}"
+            step="{{ f.step }}"
+            style="width:100%;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px {{ f.padRight }} 11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box"
+            style-focus="border-color:#35c0f0"
+          />
+          <sc-if
+            value="{{ f.isPassword }}"
+            hint-placeholder-val="{{ false }}"
+          >
+            <button
+              type="button"
+              onClick="{{ f.toggleShow }}"
+              tabindex="-1"
+              style="
+                position: absolute;
+                right: 9px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: 0;
+                color: var(--gp-muted);
+                cursor: pointer;
+                display: flex;
+                padding: 2px;
+              "
+              style-hover="color:#35c0f0"
+            >
+              <svg width="16" height="16">
+                <use href="{{ f.eyeHref }}"></use>
+              </svg>
+            </button>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if
+        value="{{ f.isArea }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <textarea
+          id="{{ f.fieldId }}"
+          value="{{ f.value }}"
+          onInput="{{ f.onChange }}"
+          placeholder="{{ f.placeholder }}"
+          rows="{{ f.rows }}"
+          style="
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 10px;
+            padding: 11px 12px;
+            color: var(--gp-text);
+            font-size: 14px;
+            outline: none;
+            resize: vertical;
+            max-height: {{ f.maxAreaHeight }};
+            overflow-y: auto;
+            font-family: inherit;
+          "
+          style-focus="border-color:#35c0f0"
+        ></textarea>
+      </sc-if>
+    </div>
+  </sc-for>
+  <sc-if
+    value="{{ modalErrShow }}"
+    hint-placeholder-val="{{ false }}"
+    ><div
+      style="
+        grid-column: 1/-1;
+        color: #f97b7b;
+        font-size: 12.5px;
+        line-height: 1.5;
+      "
+    >
+      {{ modalErr }}
+    </div></sc-if
+  >
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modalFormStyle":null,"formFields":null,"modalErrShow":false,"modalErr":null}'>
+class Component extends DCLogic {
+}
+</script>

@@ -1,0 +1,243 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 12px"
+>
+  <sc-for
+    list="{{ form.credRows }}"
+    as="c"
+    hint-placeholder-count="2"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-18);
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+        "
+      >
+        <input
+          value="{{ c.label }}"
+          onInput="{{ c.onLabel }}"
+          placeholder="Nombre del acceso (ej: Servidor prod)"
+          style="
+            flex: 1;
+            min-width: 0;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 10px 11px;
+            color: var(--gp-text);
+            font-size: 13px;
+            outline: none;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <sc-if
+          value="{{ c.canRemove }}"
+          hint-placeholder-val="{{ true }}"
+        >
+          <button
+            onClick="{{ c.remove }}"
+            title="Quitar acceso"
+            style="
+              flex: none;
+              width: 36px;
+              height: 36px;
+              border-radius: 9px;
+              background: none;
+              border: 1px solid var(--gp-line-20);
+              color: var(--gp-muted);
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"
+          >
+            <svg width="14" height="14">
+              <use href="#ic-x"></use>
+            </svg>
+          </button>
+        </sc-if>
+      </div>
+      <select
+        value="{{ c.environmentId }}"
+        onChange="{{ c.onEnv }}"
+        style="
+          background: var(--gp-field);
+          border: 1px solid var(--gp-line-22);
+          border-radius: 9px;
+          padding: 10px 11px;
+          color: var(--gp-text);
+          font-size: 13px;
+        "
+      >
+        <sc-for
+          list="{{ c.envOptions }}"
+          as="o"
+          hint-placeholder-count="4"
+          ><option value="{{ o.value }}">
+            {{ o.label }}
+          </option></sc-for
+        >
+      </select>
+      <div
+        style="display: flex; gap: 10px; flex-wrap: wrap"
+      >
+        <input
+          value="{{ c.username }}"
+          onInput="{{ c.onUsername }}"
+          placeholder="Usuario (opcional)"
+          style="
+            flex: 1;
+            min-width: 130px;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 10px 11px;
+            color: var(--gp-text);
+            font-size: 13px;
+            outline: none;
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <div
+          style="
+            position: relative;
+            flex: 1;
+            min-width: 130px;
+          "
+        >
+          <input
+            type="{{ c.secretType }}"
+            value="{{ c.secret }}"
+            onInput="{{ c.onSecret }}"
+            placeholder="Contraseña"
+            style="
+              width: 100%;
+              background: var(--gp-field);
+              border: 1px solid var(--gp-line-22);
+              border-radius: 9px;
+              padding: 10px 38px 10px 11px;
+              color: var(--gp-text);
+              font-size: 13px;
+              outline: none;
+              box-sizing: border-box;
+              font-family:
+                &quot;JetBrains Mono&quot;, monospace;
+            "
+            style-focus="border-color:#35c0f0"
+          />
+          <button
+            type="button"
+            onClick="{{ c.toggleSecret }}"
+            tabindex="-1"
+            style="
+              position: absolute;
+              right: 9px;
+              top: 50%;
+              transform: translateY(-50%);
+              background: none;
+              border: 0;
+              color: var(--gp-muted);
+              cursor: pointer;
+              display: flex;
+              padding: 2px;
+            "
+            style-hover="color:#35c0f0"
+          >
+            <svg width="16" height="16">
+              <use href="{{ c.eyeHref }}"></use>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <input
+        value="{{ c.url }}"
+        onInput="{{ c.onUrl }}"
+        placeholder="Enlace del sistema (opcional)"
+        style="
+          background: var(--gp-field);
+          border: 1px solid var(--gp-line-22);
+          border-radius: 9px;
+          padding: 10px 11px;
+          color: var(--gp-text);
+          font-size: 13px;
+          outline: none;
+          font-family:
+            &quot;JetBrains Mono&quot;, monospace;
+        "
+        style-focus="border-color:#35c0f0"
+      />
+      <textarea
+        value="{{ c.notes }}"
+        onInput="{{ c.onNotes }}"
+        placeholder="Notas (opcional)"
+        rows="2"
+        style="
+          background: var(--gp-field);
+          border: 1px solid var(--gp-line-22);
+          border-radius: 9px;
+          padding: 10px 11px;
+          color: var(--gp-text);
+          font-size: 13px;
+          outline: none;
+          resize: vertical;
+          font-family: inherit;
+        "
+        style-focus="border-color:#35c0f0"
+      ></textarea>
+    </div>
+  </sc-for>
+  <button
+    onClick="{{ addCredRow }}"
+    style="
+      align-self: flex-start;
+      cursor: pointer;
+      background: none;
+      border: 1.5px dashed var(--gp-line-24);
+      border-radius: 10px;
+      color: var(--gp-muted-2);
+      font-size: 12.5px;
+      padding: 9px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    "
+    style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+  >
+    <svg width="14" height="14">
+      <use href="#ic-plus"></use></svg
+    >Agregar acceso
+  </button>
+  <sc-if
+    value="{{ modalErrShow }}"
+    hint-placeholder-val="{{ false }}"
+    ><div
+      style="
+        color: #f97b7b;
+        font-size: 12.5px;
+        line-height: 1.5;
+      "
+    >
+      {{ modalErr }}
+    </div></sc-if
+  >
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"form":null,"addCredRow":null,"modalErrShow":false,"modalErr":null}'>
+class Component extends DCLogic {
+}
+</script>

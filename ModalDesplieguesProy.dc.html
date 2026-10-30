@@ -1,0 +1,78 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 18px"
+>
+  <sc-for
+    list="{{ form.envRows }}"
+    as="r"
+    hint-placeholder-count="3"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-18);
+        border-radius: 12px;
+        padding: 14px;
+      "
+    >
+      <div
+        style="
+          font-family:
+            &quot;JetBrains Mono&quot;, monospace;
+          font-size: 13px;
+          font-weight: 600;
+          color: #35c0f0;
+          margin-bottom: 10px;
+        "
+      >
+        {{ r.env }}
+      </div>
+      <div
+        style="display: flex; gap: 10px; flex-wrap: wrap"
+      >
+        <input
+          value="{{ r.url }}"
+          onInput="{{ r.onUrl }}"
+          placeholder="URL del ambiente"
+          style="
+            flex: 1;
+            min-width: 180px;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 9px 11px;
+            color: var(--gp-text);
+            font-size: 12.5px;
+            outline: none;
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <input
+          value="{{ r.version }}"
+          onInput="{{ r.onVersion }}"
+          placeholder="versión"
+          style="
+            width: 110px;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 9px 11px;
+            color: var(--gp-text);
+            font-size: 12.5px;
+            outline: none;
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"form":null}'>
+class Component extends DCLogic {
+}
+</script>

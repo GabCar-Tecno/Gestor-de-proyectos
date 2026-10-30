@@ -1,0 +1,275 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease">
+  <div style="margin-bottom: 20px">
+    <h1
+      style="
+        margin: 0 0 3px;
+        font-size: clamp(22px, 3vw, 28px);
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      "
+    >
+      Requerimientos
+    </h1>
+    <p style="margin: 0; color: var(--gp-muted); font-size: 13.5px">
+      {{ proyecto.nombre }}
+    </p>
+  </div>
+  <div
+    style="
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    "
+  >
+    <div
+      class="req-filter-chips"
+      style="
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        flex: 1;
+        min-width: 0;
+      "
+    >
+      <sc-for
+        list="{{ filterChips }}"
+        as="f"
+        hint-placeholder-count="5"
+      >
+        <button
+          onClick="{{ f.set }}"
+          style="cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px"
+        >
+          {{ f.label }}<span
+            style="
+              background: var(--gp-line-20);
+              border-radius: 12px;
+              padding: 0 7px;
+              font-size: 11px;
+              min-width: 18px;
+              text-align: center;
+            "
+            >{{ f.count }}</span
+          >
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+      <button
+        onClick="{{ reqSelToggle }}"
+        class="req-sel-btn"
+        style="
+          flex: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          cursor: pointer;
+          border: 1px solid var(--gp-line-24);
+          background: none;
+          color: var(--gp-muted);
+          padding: 7px 13px;
+          border-radius: 20px;
+          font-size: 12.5px;
+          font-weight: 500;
+        "
+        style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+      >
+        <svg width="14" height="14">
+          <use href="#ic-check"></use></svg
+        >{{ reqSelToggleLabel }}
+      </button>
+    </sc-if>
+  </div>
+  <sc-if
+    value="{{ reqSelBarShow }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: linear-gradient(
+          120deg,
+          rgba(43, 59, 214, 0.2),
+          rgba(35, 169, 224, 0.12)
+        );
+        border: 1px solid rgba(53, 192, 240, 0.3);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+      "
+    >
+      <span
+        style="font-size: 13px; font-weight: 600; color: var(--gp-text)"
+        >{{ reqSelBarLabel }}</span
+      >
+      <button
+        onClick="{{ clearReqSelection }}"
+        style="
+          background: none;
+          border: 0;
+          color: var(--gp-muted);
+          cursor: pointer;
+          font-size: 12.5px;
+          padding: 4px 6px;
+        "
+        style-hover="color:#35c0f0"
+      >
+        Limpiar
+      </button>
+      <button
+        onClick="{{ openBatchPromote }}"
+        style="
+          margin-left: auto;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+          border: 0;
+          color: #fff;
+          cursor: pointer;
+          padding: 9px 16px;
+          border-radius: 9px;
+          font-size: 13px;
+          font-weight: 600;
+          box-shadow: 0 6px 18px -6px rgba(43, 59, 214, 0.7);
+        "
+      >
+        <svg width="14" height="14">
+          <use href="#ic-deploy"></use></svg
+        >Avanzar seleccionados
+      </button>
+    </div>
+  </sc-if>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <sc-for
+      list="{{ reqList }}"
+      as="r"
+      hint-placeholder-count="4"
+    >
+      <button
+        onClick="{{ r.open }}"
+        style="
+          text-align: left;
+          cursor: pointer;
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-16);
+          border-radius: 14px;
+          padding: 16px 18px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          transition: border-color 0.16s;
+        "
+        style-hover="border-color:rgba(53,192,240,.4)"
+      >
+        <sc-if
+          value="{{ r.selectMode }}"
+          hint-placeholder-val="{{ false }}"
+        >
+          <span
+            style="flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ r.checkBorder }};background:{{ r.checkBg }};display:inline-flex;align-items:center;justify-content:center;color:#fff"
+            ><sc-if
+              value="{{ r.selected }}"
+              hint-placeholder-val="{{ false }}"
+              ><svg width="13" height="13">
+                <use href="#ic-check"></use></svg></sc-if
+          ></span>
+        </sc-if>
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11px;
+            color: var(--gp-muted-2);
+            flex: none;
+          "
+          >{{ r.code }}</span
+        >
+        <span
+          class="req-item-title"
+          style="
+            flex: 1;
+            min-width: 180px;
+            font-size: 15px;
+            font-weight: 500;
+          "
+          >{{ r.titulo }}</span
+        >
+        <span
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            flex: none;
+            color: var(--gp-muted);
+            font-size: 12.5px;
+          "
+          ><span
+            style="
+              width: 22px;
+              height: 22px;
+              border-radius: 50%;
+              background: var(--gp-surface-3);
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 9.5px;
+              color: var(--gp-text-2);
+              font-weight: 600;
+            "
+            >{{ r.iniciales }}</span
+          >{{ r.responsable }}</span
+        >
+        <sc-if
+          value="{{ r.tieneBloq }}"
+          hint-placeholder-val="{{ true }}"
+          ><span
+            style="
+              flex: none;
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+              font-size: 12px;
+              color: #f97b7b;
+              background: rgba(249, 123, 123, 0.12);
+              padding: 3px 9px;
+              border-radius: 8px;
+            "
+            ><svg width="13" height="13">
+              <use href="#ic-alert"></use></svg
+            >{{ r.bloqCount }}</span
+          ></sc-if
+        >
+        <span
+          style="flex:none;font-size:12px;font-weight:600;color:{{ r.estColor }};background:{{ r.estBg }};padding:5px 11px;border-radius:20px"
+          >{{ r.estLabel }}</span
+        >
+      </button>
+    </sc-for>
+    <sc-if
+      value="{{ reqEmpty }}"
+      hint-placeholder-val="{{ false }}"
+      ><div
+        style="
+          text-align: center;
+          padding: 50px;
+          color: var(--gp-muted-2);
+          font-size: 14px;
+        "
+      >
+        No hay requerimientos con este filtro.
+      </div></sc-if
+    >
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"proyecto":null,"filterChips":null,"isDev":false,"reqSelToggle":null,"reqSelToggleLabel":null,"reqSelBarShow":false,"reqSelBarLabel":null,"clearReqSelection":null,"openBatchPromote":null,"reqList":[],"reqEmpty":false}'>
+class Component extends DCLogic {
+}
+</script>

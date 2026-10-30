@@ -1,0 +1,161 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 12px"
+>
+  <sc-for
+    list="{{ form.links }}"
+    as="l"
+    hint-placeholder-count="2"
+  >
+    <div
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-18);
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          flex: 1;
+          min-width: 0;
+        "
+      >
+        <input
+          value="{{ l.label }}"
+          onInput="{{ l.onLabel }}"
+          placeholder="Ej: Backend"
+          style="
+            width: 140px;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 10px 11px;
+            color: var(--gp-text);
+            font-size: 13px;
+            outline: none;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+        <input
+          value="{{ l.url }}"
+          onInput="{{ l.onUrl }}"
+          placeholder="https://github.com/tu-org/tu-repo"
+          style="
+            flex: 1;
+            min-width: 220px;
+            background: var(--gp-field);
+            border: 1px solid var(--gp-line-22);
+            border-radius: 9px;
+            padding: 10px 11px;
+            color: var(--gp-text);
+            font-size: 13px;
+            outline: none;
+            font-family:
+              &quot;JetBrains Mono&quot;, monospace;
+          "
+          style-focus="border-color:#35c0f0"
+        />
+      </div>
+      <div style="display: flex; gap: 6px; flex: none">
+        <sc-if
+          value="{{ l.hasUrl }}"
+          hint-placeholder-val="{{ true }}"
+        >
+          <button
+            onClick="{{ l.copy }}"
+            title="{{ l.copyTitle }}"
+            style="flex:none;width:34px;height:34px;border-radius:9px;background:none;border:1px solid var(--gp-line-20);color:{{ l.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center"
+            style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+          >
+            <svg width="14" height="14">
+              <use href="{{ l.copyIconHref }}"></use>
+            </svg>
+          </button>
+          <button
+            onClick="{{ l.open }}"
+            title="Abrir en GitHub"
+            style="
+              flex: none;
+              width: 34px;
+              height: 34px;
+              border-radius: 9px;
+              background: none;
+              border: 1px solid var(--gp-line-20);
+              color: var(--gp-muted);
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+          >
+            <svg width="14" height="14">
+              <use href="#ic-ext"></use>
+            </svg>
+          </button>
+        </sc-if>
+        <sc-if
+          value="{{ l.canRemove }}"
+          hint-placeholder-val="{{ true }}"
+        >
+          <button
+            onClick="{{ l.remove }}"
+            title="Quitar"
+            style="
+              flex: none;
+              width: 34px;
+              height: 34px;
+              border-radius: 9px;
+              background: none;
+              border: 1px solid var(--gp-line-20);
+              color: var(--gp-muted);
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"
+          >
+            <svg width="14" height="14">
+              <use href="#ic-x"></use>
+            </svg>
+          </button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+  <button
+    onClick="{{ addGithubLinkRow }}"
+    style="
+      align-self: flex-start;
+      cursor: pointer;
+      background: none;
+      border: 1.5px dashed var(--gp-line-24);
+      border-radius: 10px;
+      color: var(--gp-muted-2);
+      font-size: 12.5px;
+      padding: 9px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    "
+    style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+  >
+    <svg width="14" height="14">
+      <use href="#ic-plus"></use></svg
+    >Agregar repositorio
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"form":null,"addGithubLinkRow":null}'>
+class Component extends DCLogic {
+}
+</script>

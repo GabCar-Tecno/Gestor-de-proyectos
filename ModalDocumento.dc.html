@@ -1,0 +1,43 @@
+<x-dc>
+<label
+  style="
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 16px;
+  "
+>
+  <span
+    style="
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gp-muted);
+    "
+    >Adjuntar archivo a Supabase Storage</span
+  >
+  <input
+    type="file"
+    onChange="{{ onDocumentFile }}"
+    style="
+      background: var(--gp-field);
+      border: 1px solid var(--gp-line-22);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--gp-text-2);
+      font-size: 12px;
+    "
+  />
+  <span style="font-size: 11px; color: var(--gp-muted-2)"
+    >{{ documentFileName }}</span
+  >
+  <span style="font-size: 11px; color: var(--gp-muted-2)"
+    >Puedes adjuntar un archivo o usar el enlace existente.
+    El almacenamiento privado requiere aplicar la migración
+    incluida en supabase/migrations.</span
+  >
+</label>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"onDocumentFile":null,"documentFileName":null}'>
+class Component extends DCLogic {
+}
+</script>

@@ -1,0 +1,239 @@
+<x-dc>
+<div
+  style="
+    background: var(--gp-surface);
+    border: 1px solid var(--gp-line-16);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 16px;
+  "
+>
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 9px">
+      <svg width="17" height="17" style="color: #35c0f0">
+        <use href="#ic-key"></use></svg
+      ><span style="font-weight: 600; font-size: 15px"
+        >Accesos</span
+      >
+    </div>
+    <sc-if
+      value="{{ isDev }}"
+      hint-placeholder-val="{{ true }}"
+    >
+      <button
+        onClick="{{ editCredenciales }}"
+        style="
+          background: none;
+          border: 0;
+          color: var(--gp-muted-2);
+          cursor: pointer;
+          font-size: 12px;
+          padding: 4px 6px;
+          border-radius: 6px;
+        "
+        style-hover="color:#35c0f0"
+      >
+        Editar
+      </button>
+    </sc-if>
+  </div>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(250px, 1fr)
+      );
+      gap: 10px;
+    "
+  >
+    <sc-for
+      list="{{ proyecto.credenciales }}"
+      as="c"
+      hint-placeholder-count="3"
+    >
+      <div
+        style="
+          background: var(--gp-field);
+          border: 1px solid var(--gp-line-14);
+          border-radius: 10px;
+          padding: 11px 13px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+          "
+        >
+          <span
+            style="
+              flex: 1;
+              min-width: 0;
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--gp-text);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+            >{{ c.label }}</span
+          >
+          <sc-if
+            value="{{ c.hasEnv }}"
+            hint-placeholder-val="{{ true }}"
+            ><span
+              style="
+                flex: none;
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+                font-size: 10.5px;
+                color: #35c0f0;
+                background: rgba(53, 192, 240, 0.12);
+                padding: 2px 7px;
+                border-radius: 6px;
+              "
+              >{{ c.envLabel }}</span
+            ></sc-if
+          >
+        </div>
+        <sc-if
+          value="{{ c.hasUsername }}"
+          hint-placeholder-val="{{ true }}"
+          ><div
+            style="
+              font-size: 11.5px;
+              color: var(--gp-muted);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            Usuario:
+            <span
+              style="
+                color: var(--gp-text-2);
+                font-family:
+                  &quot;JetBrains Mono&quot;, monospace;
+              "
+              >{{ c.username }}</span
+            >
+          </div></sc-if
+        >
+        <div
+          style="display: flex; align-items: center; gap: 6px"
+        >
+          <span
+            style="
+              flex: 1;
+              min-width: 0;
+              font-family:
+                &quot;JetBrains Mono&quot;, monospace;
+              font-size: 12.5px;
+              color: var(--gp-text-2);
+              letter-spacing: 0.5px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+            >{{ c.secretText }}</span
+          >
+          <button
+            onClick="{{ c.toggle }}"
+            title="{{ c.toggleTitle }}"
+            style="
+              flex: none;
+              width: 26px;
+              height: 26px;
+              border-radius: 7px;
+              background: none;
+              border: 1px solid var(--gp-line-18);
+              color: var(--gp-muted);
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+          >
+            <svg width="13" height="13">
+              <use href="{{ c.eyeHref }}"></use>
+            </svg>
+          </button>
+          <button
+            onClick="{{ c.copy }}"
+            title="{{ c.copyTitle }}"
+            style="flex:none;width:26px;height:26px;border-radius:7px;background:{{ c.copyBg }};border:1px solid {{ c.copyBorder }};color:{{ c.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
+            style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+          >
+            <svg width="13" height="13">
+              <use href="{{ c.copyIconHref }}"></use>
+            </svg>
+          </button>
+          <sc-if
+            value="{{ c.hasUrl }}"
+            hint-placeholder-val="{{ false }}"
+          >
+            <button
+              onClick="{{ c.open }}"
+              title="Abrir enlace"
+              style="
+                flex: none;
+                width: 26px;
+                height: 26px;
+                border-radius: 7px;
+                background: none;
+                border: 1px solid var(--gp-line-18);
+                color: var(--gp-muted);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+              style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+            >
+              <svg width="12" height="12">
+                <use href="#ic-ext"></use>
+              </svg>
+            </button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+    <sc-if
+      value="{{ credsEmpty }}"
+      hint-placeholder-val="{{ false }}"
+      ><div
+        style="
+          grid-column: 1/-1;
+          text-align: center;
+          padding: 22px;
+          color: var(--gp-muted-2);
+          font-size: 13px;
+        "
+      >
+        Este proyecto aún no tiene accesos registrados.
+      </div></sc-if
+    >
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isDev":null,"editCredenciales":null,"proyecto":null,"credsEmpty":false}'>
+class Component extends DCLogic {
+}
+</script>

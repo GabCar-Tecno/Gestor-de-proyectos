@@ -1,0 +1,47 @@
+<x-dc>
+<button
+  type="button"
+  class="master-dropdown-backdrop"
+  aria-label="Cerrar aplicaciones"
+  onClick="{{ closeMaestroProjectMenu }}"
+></button>
+<div
+  class="master-dropdown-menu"
+  role="listbox"
+  aria-label="Aplicaciones disponibles"
+>
+  <sc-for
+    list="{{ maestroProjectOptions }}"
+    as="app"
+    hint-placeholder-count="4"
+    ><button
+      type="button"
+      class="master-dropdown-option"
+      role="option"
+      aria-selected="{{ app.selected }}"
+      style="background:{{ app.bg }};color:{{ app.color }};font-weight:{{ app.weight }}"
+      style-hover="background:var(--gp-tint);color:var(--gp-ink)"
+      onClick="{{ app.choose }}"
+    >
+      <span>{{ app.label }}</span
+      ><sc-if
+        value="{{ app.selected }}"
+        hint-placeholder-val="{{ false }}"
+        ><svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m5 12 4 4L19 6" /></svg
+      ></sc-if></button
+  ></sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"closeMaestroProjectMenu":null,"maestroProjectOptions":null}'>
+class Component extends DCLogic {
+}
+</script>

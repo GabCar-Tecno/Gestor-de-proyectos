@@ -1,0 +1,117 @@
+<x-dc>
+<div style="display: flex; flex-direction: column; gap: 10px">
+  <sc-for
+    list="{{ req.bloqueantes }}"
+    as="b"
+    hint-placeholder-count="1"
+  >
+    <div
+      style="background:var(--gp-surface);border:1px solid {{ b.border }};border-left:3px solid {{ b.accent }};border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:13px"
+    >
+      <button
+        onClick="{{ b.toggle }}"
+        disabled="{{ b.locked }}"
+        title="Marcar"
+        style="flex:none;margin-top:1px;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ b.accent }};background:{{ b.checkBg }};cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center"
+      >
+        <sc-if
+          value="{{ b.resuelto }}"
+          hint-placeholder-val="{{ false }}"
+          ><svg width="13" height="13">
+            <use href="#ic-check"></use></svg
+        ></sc-if>
+      </button>
+      <div style="flex: 1">
+        <div
+          style="font-size:14px;color:{{ b.textColor }};text-decoration:{{ b.strike }}"
+        >
+          {{ b.texto }}
+        </div>
+        <div
+          style="
+            font-size: 11px;
+            color: var(--gp-muted-2);
+            margin-top: 3px;
+          "
+        >
+          {{ b.meta }}
+        </div>
+      </div>
+      <sc-if
+        value="{{ isDev }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <button
+          onClick="{{ b.del }}"
+          style="
+            flex: none;
+            background: none;
+            border: 0;
+            color: var(--gp-muted-2);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+          "
+          style-hover="color:#f97b7b"
+        >
+          <svg width="15" height="15">
+            <use href="#ic-x"></use>
+          </svg>
+        </button>
+      </sc-if>
+    </div>
+  </sc-for>
+  <sc-if
+    value="{{ bloqEmpty }}"
+    hint-placeholder-val="{{ false }}"
+    ><div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 34px;
+        color: #39d39b;
+        font-size: 13.5px;
+        background: rgba(57, 211, 155, 0.06);
+        border: 1px solid rgba(57, 211, 155, 0.16);
+        border-radius: 12px;
+      "
+    >
+      <svg width="15" height="15">
+        <use href="#ic-check"></use></svg
+      >Sin bloqueantes activos.
+    </div></sc-if
+  >
+  <sc-if
+    value="{{ isDev }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <button
+      onClick="{{ addBloqueante }}"
+      style="
+        cursor: pointer;
+        background: none;
+        border: 1.5px dashed var(--gp-line-24);
+        border-radius: 12px;
+        color: var(--gp-muted-2);
+        font-size: 13px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      "
+      style-hover="border-color:rgba(249,123,123,.5);color:#f97b7b"
+    >
+      <svg width="15" height="15">
+        <use href="#ic-plus"></use></svg
+      >Agregar bloqueante
+    </button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"req":null,"isDev":false,"bloqEmpty":false,"addBloqueante":null}'>
+class Component extends DCLogic {
+}
+</script>

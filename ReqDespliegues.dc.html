@@ -1,0 +1,168 @@
+<x-dc>
+<div style="display: flex; flex-direction: column; gap: 12px">
+  <sc-for
+    list="{{ req.despliegues }}"
+    as="d"
+    hint-placeholder-count="3"
+  >
+    <div
+      style="
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-line-16);
+        border-radius: 14px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      "
+    >
+      <span
+        style="
+          width: 66px;
+          flex: none;
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+          font-size: 14px;
+          font-weight: 600;
+          color: #35c0f0;
+        "
+        >{{ d.env }}</span
+      >
+      <span
+        style="
+          flex: 1;
+          min-width: 180px;
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+          font-size: 12.5px;
+          color: var(--gp-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        "
+        >{{ d.url }}</span
+      >
+      <span
+        style="
+          flex: none;
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+          font-size: 11px;
+          color: #39d39b;
+          background: rgba(57, 211, 155, 0.12);
+          padding: 3px 9px;
+          border-radius: 7px;
+        "
+        >{{ d.version }}</span
+      >
+      <span
+        style="flex: none; font-size: 10.5px; color: var(--gp-muted-2)"
+        >{{ d.updatedLabel }}</span
+      >
+      <button
+        onClick="{{ d.copy }}"
+        title="{{ d.copyTitle }}"
+        style="flex:none;width:32px;height:32px;border-radius:8px;background:{{ d.copyBg }};border:1px solid {{ d.copyBorder }};color:{{ d.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
+        style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+      >
+        <svg width="14" height="14">
+          <use href="{{ d.copyIconHref }}"></use>
+        </svg>
+      </button>
+      <button
+        onClick="{{ d.open }}"
+        style="
+          flex: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--gp-surface-2);
+          border: 1px solid var(--gp-line-20);
+          color: var(--gp-text-2);
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 12px;
+        "
+        style-hover="border-color:rgba(53,192,240,.4)"
+      >
+        Abrir<svg width="13" height="13">
+          <use href="#ic-ext"></use>
+        </svg>
+      </button>
+      <sc-if
+        value="{{ isDev }}"
+        hint-placeholder-val="{{ true }}"
+      >
+        <button
+          onClick="{{ d.sendDiscord }}"
+          title="Enviar a Discord"
+          style="
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-muted);
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+          "
+          style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+        >
+          <svg width="13" height="13">
+            <use href="#ic-send"></use></svg
+          >Discord
+        </button>
+        <button
+          onClick="{{ d.del }}"
+          style="
+            flex: none;
+            background: none;
+            border: 0;
+            color: var(--gp-muted-2);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+          "
+          style-hover="color:#f97b7b"
+        >
+          <svg width="15" height="15">
+            <use href="#ic-x"></use>
+          </svg>
+        </button>
+      </sc-if>
+    </div>
+  </sc-for>
+  <sc-if
+    value="{{ isDev }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <button
+      onClick="{{ addDespliegue }}"
+      style="
+        cursor: pointer;
+        background: none;
+        border: 1.5px dashed var(--gp-line-24);
+        border-radius: 14px;
+        color: var(--gp-muted-2);
+        font-size: 13px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      "
+      style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+    >
+      <svg width="15" height="15">
+        <use href="#ic-plus"></use></svg
+      >Agregar despliegue por ambiente
+    </button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"req":null,"isDev":false,"addDespliegue":null}'>
+class Component extends DCLogic {
+}
+</script>

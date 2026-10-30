@@ -1,0 +1,103 @@
+<x-dc>
+<div
+  style="display: flex; flex-direction: column; gap: 16px"
+>
+  <div
+    style="
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--gp-line-18);
+    "
+  >
+    <div
+      style="
+        background: linear-gradient(
+          180deg,
+          var(--gp-surface),
+          var(--gp-field)
+        );
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        position: relative;
+      "
+    >
+      <span
+        style="
+          position: absolute;
+          top: 10px;
+          left: 12px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          color: var(--gp-muted-2);
+        "
+        >{{ recursoPreviewLabel }}</span
+      >
+      <svg width="46" height="46" style="color: var(--gp-muted)">
+        <use href="{{ recursoIconHref }}"></use>
+      </svg>
+      <span style="font-size: 13px; color: var(--gp-muted)"
+        >{{ recursoLabel }}</span
+      >
+    </div>
+  </div>
+  <label
+    style="display: flex; flex-direction: column; gap: 7px"
+  >
+    <span
+      style="
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--gp-muted);
+      "
+      >{{ recursoFieldLabel }}</span
+    >
+    <input
+      value="{{ form.url }}"
+      onInput="{{ f_url }}"
+      placeholder="{{ recursoUrlPlaceholder }}"
+      style="
+        background: var(--gp-field);
+        border: 1px solid var(--gp-line-22);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--gp-text);
+        font-size: 13px;
+        outline: none;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+      "
+      style-focus="border-color:#35c0f0"
+    />
+  </label>
+  <button
+    onClick="{{ openRecursoLink }}"
+    style="
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--gp-surface-2);
+      border: 1px solid var(--gp-line-20);
+      color: var(--gp-text-2);
+      cursor: pointer;
+      padding: 9px 15px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+    "
+    style-hover="border-color:rgba(53,192,240,.4)"
+  >
+    {{ recursoOpenLabel }}<svg width="14" height="14">
+      <use href="#ic-ext"></use>
+    </svg>
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"recursoPreviewLabel":null,"recursoIconHref":null,"recursoLabel":null,"recursoFieldLabel":null,"form":null,"f_url":null,"recursoUrlPlaceholder":null,"openRecursoLink":null,"recursoOpenLabel":null}'>
+class Component extends DCLogic {
+}
+</script>
