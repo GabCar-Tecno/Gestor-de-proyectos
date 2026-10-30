@@ -291,7 +291,7 @@
           }
           .master-metrics {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 12px;
             margin-bottom: 19px;
           }
@@ -964,6 +964,56 @@
             .recurso-card > div:last-child {
               flex: none;
               gap: 12px;
+            }
+          }
+          /* Editor de estimaciones: tabla de líneas + resumen lateral fijo */
+          .est-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 18px;
+            align-items: start;
+          }
+          .est-summary {
+            position: sticky;
+            top: 84px;
+          }
+          .est-id-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+          }
+          .est-span-2 {
+            grid-column: span 2;
+          }
+          .est-row {
+            display: grid;
+            grid-template-columns: 160px minmax(220px, 1fr) 84px 58px 58px 58px 80px 10px 108px;
+            gap: 7px;
+            align-items: center;
+          }
+          .est-mobilebar {
+            display: none;
+          }
+          @media (max-width: 1000px) {
+            .est-layout {
+              grid-template-columns: minmax(0, 1fr);
+            }
+            .est-summary {
+              position: static;
+            }
+            .est-id-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .est-mobilebar {
+              display: flex;
+            }
+          }
+          @media (max-width: 640px) {
+            .est-id-grid {
+              grid-template-columns: minmax(0, 1fr);
+            }
+            .est-span-2 {
+              grid-column: auto;
             }
           }
           /* ===== Modo oscuro: clases con colores propios del tema claro ===== */
@@ -2028,6 +2078,20 @@
                 redocRef="{{ redocRef }}" redocDisplay="{{ redocDisplay }}"
               />
             </sc-if>
+
+            <!-- ===================== ESTIMACIONES (por proyecto, solo dev) ===================== -->
+            <sc-if value="{{ viewEstimaciones }}" hint-placeholder-val="{{ false }}">
+              <dc-import name="Estimaciones"
+                proyecto="{{ proyecto }}" isDev="{{ isDev }}"
+                estimaciones="{{ estimaciones }}"
+              />
+            </sc-if>
+
+            <sc-if value="{{ viewEstimacion }}" hint-placeholder-val="{{ false }}">
+              <dc-import name="Estimacion"
+                isDev="{{ isDev }}" est="{{ est }}"
+              />
+            </sc-if>
           </main>
 
           <!-- ===================== MODAL ===================== -->
@@ -2508,11 +2572,59 @@
       </sc-if>
     </x-dc>
     <script type="text/x-dc" data-dc-script>
+      // ---------- ESTIMACIONES: misma matemática que la vista estimation_line_metrics ----------
+      // ROUNDUP del Excel. snapped evita que 2.2 * 10 = 22.000000000000004 suba a 2.3.
+      function roundUp(value, decimals) {
+        const factor = 10 ** decimals;
+        const scaled = value * factor;
+        const snapped = Math.round(scaled * 1e8) / 1e8;
+        return Math.ceil(snapped - 1e-9) / factor;
+      }
+
+      function lineMetrics(hours, complexity, decimals, alertRatio) {
+        if (hours === "" || hours == null || Number.isNaN(Number(hours))) return null;
+        const h = Number(hours);
+        const optimistic = h === 0 ? 0 : h - 1;
+        const mostProbable = h;
+        const pessimistic = h + 1;
+        const weight = Number(complexity.optimistic_weight) + Number(complexity.most_probable_weight) + Number(complexity.pessimistic_weight);
+        const weighted = (Number(complexity.optimistic_weight) * optimistic + Number(complexity.most_probable_weight) * mostProbable + Number(complexity.pessimistic_weight) * pessimistic) / weight;
+        const statistical = roundUp(weighted, decimals) + 1;
+        const stddev = (pessimistic - optimistic) / 12;
+        const needsReview = mostProbable > 0 && ((pessimistic - mostProbable) / mostProbable) > Number(alertRatio);
+        return { optimistic, mostProbable, pessimistic, statistical, stddev, needsReview };
+      }
+
+      // Totales de una estimación, como estimation_summaries. lines: [{kind, typeId, hours}].
+      // Las secciones y las actividades sin horas no suman (en el Excel las filas vacías sumaban 1.2 h).
+      function estimationTotals(lines, complexity, params) {
+        const byType = {};
+        let developer = 0, statistical = 0, review = 0;
+        const metrics = lines.map((line) => {
+          const m = line.kind === "activity" && complexity ? lineMetrics(line.hours, complexity, params.decimals, params.alertRatio) : null;
+          if (m) {
+            developer += m.mostProbable;
+            statistical += m.statistical;
+            if (m.needsReview) review++;
+            byType[line.typeId] = (byType[line.typeId] || 0) + m.mostProbable;
+          }
+          return m;
+        });
+        const dedicated = Number(params.dailyHours) * Number(params.dedication);
+        const canDeliver = dedicated > 0;
+        return {
+          metrics, developer, statistical, review, byType, dedicated,
+          developerDays: canDeliver ? developer / dedicated : null,
+          statisticalDays: canDeliver ? statistical / dedicated : null,
+        };
+      }
+
       class Component extends DCLogic {
         constructor(props){
           super(props);
           this.state = {
-            view:'empresas', empresaId:null, proyectoId:null, reqId:null,
+            view:'empresas', empresaId:null, proyectoId:null, reqId:null, estimacionId:null, estDraft:null,
+            estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, estCounter:{lineId:null,count:'1'},
             reqTab:'documentos', filter:'todos', modal:null, form:{},
             projectsView:'grid', reqSelectMode:false, reqSelected:{},
             maestroSearch:'', maestroStatus:'todos', maestroProject:'todos', maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
@@ -2543,7 +2655,7 @@
             const had=this.state.session;
             this.setState({session, authChecked:true});
             if(session && !had && !this.state.recoveryMode){ this.afterLogin(); }
-            else if(!session){ this.setState({data:[], dataLoaded:false, profileRole:null, devProfiles:[], view:'empresas', empresaId:null, proyectoId:null, reqId:null}); }
+            else if(!session){ this.setState({data:[], dataLoaded:false, profileRole:null, devProfiles:[], view:'empresas', empresaId:null, proyectoId:null, reqId:null, estimacionId:null, estDraft:null}); }
           });
           this._onResize=()=>{
             const n=window.innerWidth<=760;
@@ -2552,12 +2664,16 @@
           window.addEventListener('resize', this._onResize);
           this._onFsChange=()=>{ const fs=!!document.fullscreenElement; if(fs!==this.state.apiFullscreen) this.setState({apiFullscreen:fs}); };
           document.addEventListener('fullscreenchange', this._onFsChange);
+          // Una estimación sin guardar no se pierde al cerrar o recargar la pestaña sin aviso.
+          this._onBeforeUnload=(e)=>{ if(this.estDirty()){ e.preventDefault(); e.returnValue=''; } };
+          window.addEventListener('beforeunload', this._onBeforeUnload);
           window.__app=this;
         }
         componentWillUnmount(){
           if(this._authSub && this._authSub.data) this._authSub.data.subscription.unsubscribe();
           window.removeEventListener('resize', this._onResize);
           document.removeEventListener('fullscreenchange', this._onFsChange);
+          window.removeEventListener('beforeunload', this._onBeforeUnload);
         }
 
         async afterLogin(){
@@ -2566,15 +2682,18 @@
           const { data:profiles, error:profilesError } = await this._sb.from('profiles').select('*');
           const profileRows=(profiles||[]).slice();
           if(prof&&!profileRows.some(x=>x.id===prof.id)) profileRows.push(prof);
-          const devProfiles=profileRows.filter(x=>String(x.role_id||x.role||'').trim().toLowerCase()==='dev').map(x=>{
+          const labelOf=x=>{
             const first=x.first_name||x.firstname||x.nombres||'';
             const last=x.last_name||x.lastname||x.apellidos||'';
-            const label=x.display_name||x.full_name||x.nombre_completo||x.name||x.nombre||x.user_name||x.username||([first,last].filter(Boolean).join(' '))||x.email||'';
-            return {id:x.id,label:String(label).trim()};
-          }).filter(x=>x.id&&x.label).filter((x,i,a)=>a.findIndex(y=>y.label.toLowerCase()===x.label.toLowerCase())===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
+            return String(x.display_name||x.full_name||x.nombre_completo||x.name||x.nombre||x.user_name||x.username||([first,last].filter(Boolean).join(' '))||x.email||'').trim();
+          };
+          const devProfiles=profileRows.filter(x=>String(x.role_id||x.role||'').trim().toLowerCase()==='dev').map(x=>({id:x.id,label:labelOf(x)}))
+            .filter(x=>x.id&&x.label).filter((x,i,a)=>a.findIndex(y=>y.label.toLowerCase()===x.label.toLowerCase())===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
           if(profilesError) console.warn('No se pudieron cargar los perfiles de desarrollo:',profilesError.message);
           const profileRole=prof ? (prof.role_id || prof.role) : 'client';
-          this.setState({profileRole, devProfiles});
+          // devProfiles deja fuera al PM: el nombre del usuario actual se toma de su propio perfil.
+          const currentUserName=(prof&&labelOf(prof))||this.state.session.user.email||'';
+          this.setState({profileRole, devProfiles, currentUserName});
           this.applyRoleTheme(profileRole);
           await this.loadData();
         }
@@ -2586,7 +2705,7 @@
         async loadData(){
           this.setState({loadError:''});
           const sb=this._sb;
-          const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto] = await Promise.all([
+          const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,rcodes] = await Promise.all([
             sb.from('companies').select('*'),
             sb.from('projects').select('*'),
             sb.from('project_deployments').select('*'),
@@ -2604,16 +2723,27 @@
             sb.from('deployment_instructions').select('*'),
             sb.from('deployable_instructions').select('*'),
             sb.from('company_contacts').select('*'),
+            // Estimaciones: RLS solo devuelve filas a dev/pm; un cliente recibe listas vacías.
+            sb.from('estimation_complexities').select('*'),
+            sb.from('estimation_activity_types').select('*'),
+            sb.from('estimations').select('*'),
+            this.selectAll('estimation_lines'),
+            this.selectAll('requirement_codes'),
           ]);
-          const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto].find(r=>r.error);
+          const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,rcodes].find(r=>r.error);
           if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
           // catalogos parametricos
           const statuses=(st.data||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+          const estComplexities=(ecx.data||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+          const estActivityTypes=(eat.data||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
           const envById={}; (env.data||[]).forEach(e=>{ envById[e.id]=e; });
           const envCode=d=>{ const e=envById[d.environment_id]; return (e&&e.code) || d.env || ''; };
 
           const byOrder=(a,b)=>(a.sort_order||0)-(b.sort_order||0);
+          const codesByReq={};
+          (rcodes.data||[]).forEach(c=>{ (codesByReq[c.requirement_id]||(codesByReq[c.requirement_id]=[])).push(c); });
+          Object.keys(codesByReq).forEach(id=>codesByReq[id].sort(byOrder));
           const data = (co.data||[]).map(c=>{
             const ambientes=(env.data||[]).filter(e=>e.company_id===c.id)
               .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
@@ -2632,13 +2762,16 @@
             proyectos:(pr.data||[]).filter(p=>p.company_id===c.id).map(p=>{
               const deploys=(pd.data||[]).filter(d=>d.project_id===p.id);
               const byAmb=a=>deploys.find(d=>d.environment_id&&d.environment_id===a.id)||deploys.find(d=>String(d.env||'').trim().toLocaleLowerCase('es-CO')===String(a.code||'').trim().toLocaleLowerCase('es-CO'))||{};
-              const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>({
-                id:r.id, codigo:r.code||'', titulo:r.title, responsable:this.parseOwners(r.owner).join(', ')||'Sin asignar', responsables:this.parseOwners(r.owner), estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
+              const reqs=(rq.data||[]).filter(r=>r.project_id===p.id).map(r=>{
+                const codigos=(codesByReq[r.id]||[]).slice().sort((a,b)=>(b.is_principal?1:0)-(a.is_principal?1:0)||byOrder(a,b)).map(c=>c.code).filter(Boolean);
+                return {
+                id:r.id, codigos, codigo:codigos[0]||r.code||'', titulo:r.title, responsable:this.parseOwners(r.owner).join(', ')||'Sin asignar', responsables:this.parseOwners(r.owner), estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
                 descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'',
                 documentos:(rdoc.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
                 despliegues:(rdep.data||[]).filter(d=>d.requirement_id===r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
                 bloqueantes:(rblk.data||[]).filter(b=>b.requirement_id===r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
-              }));
+              };
+              });
               return {
                 id:p.id, nombre:p.name, descripcion:p.description||'',
                 desplegableIds:(pdep.data||[]).filter(l=>l.project_id===p.id).map(l=>l.deployable_id),
@@ -2652,11 +2785,20 @@
                   apiSpec: p.api_spec_source ? {source:p.api_spec_source, url:p.api_spec_url||'', json:p.api_spec_json?JSON.stringify(p.api_spec_json):''} : {},
                 },
                 requerimientos:reqs,
+                estimaciones:(est.data||[]).filter(e=>e.project_id===p.id).map(e=>({
+                  id:e.id, requirementId:e.requirement_id||'', codigo:e.code||'', fecha:e.estimated_on||'', cliente:e.client_name||'', iniciativa:e.initiative_name||'',
+                  solicitante:e.requester_name||'', pm:e.pm_name||'', version:e.version_label||'', complexityId:e.complexity_id, formatVersion:e.format_version||'4.0',
+                  decimales:Number(e.rounding_decimals), umbral:Number(e.deviation_alert_ratio), horasDia:Number(e.daily_hours), dedicacion:Number(e.dedication),
+                  estado:e.status||'creada',
+                  createdAt:e.created_at||null, updatedAt:e.updated_at||null,
+                  lineas:(eln.data||[]).filter(l=>l.estimation_id===e.id).sort(byOrder)
+                    .map(l=>({id:l.id, kind:l.line_kind, typeId:l.activity_type_id||'', concepto:l.concept||'', horas:l.developer_hours==null?null:Number(l.developer_hours)})),
+                })),
               };
             }),
           };});
           this.setState(s=>{
-            const next={data, statuses, dataLoaded:true};
+            const next={data, statuses, estComplexities, estActivityTypes, dataLoaded:true};
             if(s.empresaId && !data.find(e=>e.id===s.empresaId)) Object.assign(next,{empresaId:null, view:'empresas'});
             return next;
           });
@@ -2823,6 +2965,7 @@
         goConfiguracion(){ if(!this.isDev()) return; this.setState({view:'configuracion',proyectoId:null,reqId:null}); }
         goProyecto(){ this.setState({view:'proyecto',reqId:null}); }
         goRequerimientos(){ if(!this.isDev()) return; this.setState({view:'requerimientos'}); }
+        goEstimaciones(){ if(!this.isDev()) return; this.setState({view:'estimaciones',estimacionId:null,estDraft:null}); }
         goMaestro(){ this.setState({view:'maestro',proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
         setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
         toggleMaestroProjectMenu(){ this.setState(s=>({maestroProjectMenuOpen:!s.maestroProjectMenuOpen,maestroStatusMenuOpen:false})); }
@@ -2841,16 +2984,16 @@
         addReqGlobal(){
           if(!this.isDev()) return;
           const first=this.statusOrder().flow[0]||'desarrollo';
-          this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}});
+          this.openModal({type:'requerimiento',mode:'crear',global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}});
         }
         openReqFromMaster(companyId, projectId, reqId){
           const company=(this.state.data||[]).find(c=>c.id===companyId);
           const project=company&&(company.proyectos||[]).find(p=>p.id===projectId);
           const req=project&&(project.requerimientos||[]).find(r=>r.id===reqId);
           if(!company||!project||!req) return;
-          const code=req.codigo||'Sin codigo', title=(req.titulo||'').trim()||code;
+          const code=this.reqCodeLabel(req)||'Sin codigo', title=(req.titulo||'').trim()||code;
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
-          const form={codigo:req.codigo||'',titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
+          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:'maestro'};
           const env=this.reqCurrentEnv(company,project,req);
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
@@ -2888,11 +3031,11 @@
             const day=v=>{ const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||''); return p?serial(+p[1],+p[2],+p[3]):null; };
             const stamp=v=>{ const d=v?new Date(v):null; return d&&!isNaN(d)?serial(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes()):null; };
             const cols=[
-              ['Aplicación',26],['#Req',9],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
+              ['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
               ['Horas estimadas',10],['Entrega usuario',13,'dd/mm/yyyy'],['Paso a producción',13,'dd/mm/yyyy'],['Último cambio de estado',17,'dd/mm/yyyy hh:mm'],
             ];
             const rows=items.map(({project,req})=>{
-              const code=(req.codigo||'').trim(), horas=req.horas===''||req.horas==null?null:Number(req.horas);
+              const codes=this.reqCodesOf(req), code=codes.length>1?codes.join(', '):(codes[0]||''), horas=req.horas===''||req.horas==null?null:Number(req.horas);
               return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
                 (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
                 day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt)];
@@ -2945,6 +3088,40 @@
         overlayDown(e){ this._ovDown = e.target===e.currentTarget; }
         overlayClick(e){ const onBackdrop = this._ovDown && e.target===e.currentTarget; this._ovDown=false; if(onBackdrop) this.closeModal(); }
         setForm(k,v){ this.setState(s=>({form:{...s.form,[k]:v}})); }
+        setReqCode(i,value){ this.setState(s=>{ const codigos=(s.form.codigos||['']).slice(); codigos[i]=value; return {form:{...s.form,codigos}}; }); }
+        addReqCode(){ this.setState(s=>({form:{...s.form,codigos:[...(s.form.codigos||['']),'']}})); }
+        removeReqCode(i){ this.setState(s=>{ const codigos=(s.form.codigos||[]).filter((_,j)=>j!==i); return {form:{...s.form,codigos:codigos.length?codigos:['']}}; }); }
+        cleanReqCodes(list){
+          const codes=[], seen=new Set();
+          let duplicate=false;
+          (list||[]).forEach(raw=>{
+            const code=String(raw==null?'':raw).trim();
+            if(!code) return;
+            const key=code.toLocaleLowerCase('es-CO');
+            if(seen.has(key)){ duplicate=true; return; }
+            seen.add(key);
+            codes.push(code);
+          });
+          return {codes, duplicate};
+        }
+        reqCodesOf(req){
+          const list=req&&req.codigos&&req.codigos.length?req.codigos:((req&&String(req.codigo||'').trim())?[String(req.codigo).trim()]:[]);
+          return list;
+        }
+        reqCodeLabel(req){ return this.reqCodesOf(req).join(' · '); }
+        reqFormCodes(req){ const list=this.reqCodesOf(req); return list.length?list.slice():['']; }
+        async persistRequirementCodes(sb, requirementId, codes){
+          const { error:delError } = await sb.from('requirement_codes').delete().eq('requirement_id', requirementId);
+          if(delError) throw delError;
+          if(!codes.length) return;
+          const { error } = await sb.from('requirement_codes').insert(codes.map((code,i)=>({ id:this.gid('rc'), requirement_id:requirementId, code, is_principal:i===0, sort_order:i+1 })));
+          if(error) throw error;
+        }
+        async linkApprovedEstimacion(sb, estimationId, requirementId){
+          const { data, error } = await sb.from('estimations').update({ status:'aprobada', requirement_id:requirementId, updated_at:new Date().toISOString() }).eq('id', estimationId).select('id');
+          if(error) throw error;
+          if(!data||!data.length) throw new Error('No se pudo aprobar la estimación.');
+        }
         setEnvRow(i,k,v){ this.setState(s=>{ const rows=s.form.envRows.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,envRows:rows}}; }); }
         setGithubLinkRow(i,k,v){ this.setState(s=>{ const rows=s.form.links.map((r,j)=>j===i?{...r,[k]:v}:r); return {form:{...s.form,links:rows}}; }); }
         addGithubLinkRow(){ this.setState(s=>({form:{...s.form,links:[...s.form.links,{label:'',url:''}]}})); }
@@ -2991,8 +3168,8 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:'empresa',mode:'crear',title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:'proyecto',mode:'crear',title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigo:'',titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigo:r.codigo||'',titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||'desarrollo'; this.openModal({type:'requerimiento',mode:'crear',title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:'requerimiento',mode:'editar',id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:'documento',mode:'crear',title:'Agregar documento',form:{nombre:'',tipo:'Documento',url:''}}); this.setState({documentFileName:''}); }
         setDocumentFile(e){
           this._documentFile=e.target.files&&e.target.files[0]||null;
@@ -3282,6 +3459,7 @@
           if(t!=='password' && !this.isDev()){ this.closeModal(); return; }
           if(this._busy) return; this._busy=true;
           this.setState({saveStatus:'saving', modalErr:''});
+          let approvedEstimacion=null;
           try{
             if(t==='password'){
               if(!f.newPassword || f.newPassword.length<6){ this.setState({saveStatus:'idle', modalErr:'Mínimo 6 caracteres.'}); return; }
@@ -3310,6 +3488,9 @@
               if(!f.titulo) return;
               const targetProjectId=m.global?f.proyectoId:this.state.proyectoId;
               if(m.global&&!targetProjectId){ this.setState({saveStatus:'idle',modalErr:'Selecciona el proyecto del requerimiento.'}); return; }
+              const cleaned=this.cleanReqCodes(f.codigos);
+              if(!cleaned.codes.length){ this.setState({saveStatus:'idle', modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
+              if(cleaned.duplicate){ this.setState({saveStatus:'idle', modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
               const prevEstado = m.mode==='editar' ? ((this.req()||{}).estado) : null;
               const statusChanged = m.mode==='crear' ? true : (prevEstado !== f.estado);
               const targetAmb = ((this.empresa()||{}).ambientes||[]).find(a=>a.stage===f.estado);
@@ -3321,14 +3502,27 @@
               const hoursValue=f.horas===''||f.horas==null?null:Number(f.horas);
               if(hoursValue!==null&&(!Number.isFinite(hoursValue)||hoursValue<0)){ this.setState({saveStatus:'idle',modalErr:'Las horas deben ser un número igual o mayor que cero.'}); return; }
               const ownerNames=(f.responsables||[]).filter(Boolean);
-              const payload={ title:f.titulo, owner:ownerNames.join(', ')||'Sin asignar', status:f.estado, status_id:f.estado, code:(f.codigo||'').trim(), change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue };
+              const payload={ title:f.titulo, owner:ownerNames.join(', ')||'Sin asignar', status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue };
               if(statusChanged) payload.status_updated_at=new Date().toISOString();
-              if(m.mode==='crear'){
-                const { error } = await sb.from('requirements').insert({ id:this.gid('r'), project_id:targetProjectId, ...payload });
+              let reqId=m.id;
+              const creating=m.mode==='crear';
+              if(creating){
+                reqId=this.gid('r');
+                const { error } = await sb.from('requirements').insert({ id:reqId, project_id:targetProjectId, ...payload });
                 if(error) throw error;
               } else {
-                const { error } = await sb.from('requirements').update(payload).eq('id', m.id);
+                const { error } = await sb.from('requirements').update(payload).eq('id', reqId);
                 if(error) throw error;
+              }
+              try{
+                await this.persistRequirementCodes(sb, reqId, cleaned.codes);
+                if(m.fromEstimacionId){
+                  await this.linkApprovedEstimacion(sb, m.fromEstimacionId, reqId);
+                  approvedEstimacion={id:m.fromEstimacionId, requirementId:reqId};
+                }
+              }catch(err){
+                if(creating) await sb.from('requirements').delete().eq('id', reqId);
+                throw err;
               }
             } else if(t==='documento'){
               if(!f.nombre) return;
@@ -3470,11 +3664,15 @@
               const rows=(f.desplegableIds||[]).map(id=>({ project_id:this.state.proyectoId, deployable_id:id }));
               if(rows.length){ ({ error } = await sb.from('project_deployables').insert(rows)); if(error) throw error; }
             }
-            this.setState({saveStatus:'saved'});
+            this.setState(s=>{
+              const next={saveStatus:'saved'};
+              if(approvedEstimacion && s.estDraft && s.estDraft.id===approvedEstimacion.id) next.estDraft={...s.estDraft, estStatus:'aprobada', requirementId:approvedEstimacion.requirementId, updateReqHours:true};
+              return next;
+            });
             this.closeModal();
             await this.loadData();
           }catch(e){
-            this.setState({saveStatus:'error', modalErr: t==='password' ? (e.message||'No se pudo cambiar la contraseña.') : ''});
+            this.setState({saveStatus:'error', modalErr: t==='password' ? (e.message||'No se pudo cambiar la contraseña.') : (t==='requerimiento' ? (e.message||'No se pudo guardar el requerimiento.') : '')});
             console.error(e);
           } finally {
             this._busy=false;
@@ -3495,12 +3693,12 @@
           this.setState({
             modal:{ type:'promoteConfirm', title:'Avanzar requerimiento',
               targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
-              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigo:f.codigo, estado:f.estado,
+              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigos:f.codigos||(req?this.reqFormCodes(req):['']), codigo:f.codigo, estado:f.estado,
                 descripcionCambios:f.descripcionCambios!==undefined?f.descripcionCambios:(req&&req.descripcionCambios)||'',
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
                 fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'',
                 fechaPasoProduccion:f.fechaPasoProduccion!==undefined?f.fechaPasoProduccion:(req&&req.fechaPasoProduccion)||'',
-                horas:f.horas!==undefined?f.horas:(req&&req.horas) },
+                horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null },
               projectUrl:envRow.url||'Sin URL registrada', projectVersion:envRow.version||'Sin version registrada', valueSource:source },
             form:{url,version}, modalErr:'',
           });
@@ -3510,16 +3708,34 @@
           if(this._busy) return; this._busy=true;
           this.setState({saveStatus:'saving', modalErr:''});
           const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
+          let approvedEstimacion=null;
           try{
-            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||'Sin asignar', status:rp.estado, status_id:rp.estado, code:(rp.codigo||'').trim(), change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
+            const cleaned=this.cleanReqCodes(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[]));
+            if(!cleaned.codes.length){ this.setState({saveStatus:'idle', modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
+            if(cleaned.duplicate){ this.setState({saveStatus:'idle', modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
+            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||'Sin asignar', status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
             let reqId=rp.id;
-            if(rp.mode==='crear'){
+            const creating=rp.mode==='crear';
+            if(creating){
               reqId=this.gid('r');
               const { error } = await sb.from('requirements').insert({ id:reqId, project_id:this.state.proyectoId, ...payload });
               if(error) throw error;
             } else {
               const { error } = await sb.from('requirements').update(payload).eq('id', reqId);
               if(error) throw error;
+            }
+            try{
+              await this.persistRequirementCodes(sb, reqId, cleaned.codes);
+              if(rp.fromEstimacionId){
+                await this.linkApprovedEstimacion(sb, rp.fromEstimacionId, reqId);
+                approvedEstimacion={id:rp.fromEstimacionId, requirementId:reqId};
+              }
+            }catch(err){
+              if(creating) await sb.from('requirements').delete().eq('id', reqId);
+              throw err;
+            }
+            if(approvedEstimacion){
+              this.setState(s=>s.estDraft&&s.estDraft.id===approvedEstimacion.id?{estDraft:{...s.estDraft, estStatus:'aprobada', requirementId:approvedEstimacion.requirementId, updateReqHours:true}}:null);
             }
             let ctxUrl='', ctxVersion='';
             if(updateProject){
@@ -3652,7 +3868,7 @@
           const next=flow[i+1];
           const targetAmb=((this.empresa()||{}).ambientes||[]).find(a=>a.stage===next);
           if(targetAmb){
-            this.openPromoteConfirm({mode:'editar', id:req.id}, {titulo:req.titulo, responsables:req.responsables||this.parseOwners(req.responsable), codigo:req.codigo, estado:next}, targetAmb);
+            this.openPromoteConfirm({mode:'editar', id:req.id}, {titulo:req.titulo, responsables:req.responsables||this.parseOwners(req.responsable), codigos:this.reqFormCodes(req), estado:next}, targetAmb);
           } else {
             this.saveReqStatus(req.id, next); // el siguiente estado no tiene ambiente: solo se avanza el estado
           }
@@ -3798,6 +4014,424 @@
           } finally { this._busy=false; }
         }
 
+        // ---------- ESTIMACIONES ----------
+        // PostgREST corta cada consulta en 1000 filas; con ~12 líneas por estimación ese tope llega pronto.
+        async selectAll(table){
+          const page=1000, rows=[];
+          for(let from=0;;from+=page){
+            const { data, error } = await this._sb.from(table).select('*').order('id').range(from,from+page-1);
+            if(error) return {data:null,error};
+            rows.push(...(data||[]));
+            if(!data||data.length<page) return {data:rows,error:null};
+          }
+        }
+        todayIso(){ const t=new Date(), pad=n=>String(n).padStart(2,'0'); return t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate()); }
+        fmtNum(n,dec=4){ return n==null||!Number.isFinite(n) ? '—' : String(parseFloat(n.toFixed(dec))); }
+        // Acepta coma o punto decimal. '' es vacío; NaN es inválido.
+        parseEstNumber(v){ const t=String(v??'').trim().replace(',','.'); if(t==='') return ''; return /^(\d+\.?\d*|\.\d+)$/.test(t)?Number(t):NaN; }
+        nextVersionLabel(v){ const t=String(v||'').trim(); if(!t) return 'V2'; const m=t.match(/^(.*?)(\d+)(\D*)$/); return m ? m[1]+(Number(m[2])+1)+m[3] : t+' 2'; }
+        estDefaultTypeId(){ const types=this.state.estActivityTypes||[]; return (types.find(t=>t.id==='desarrollo')||types[0]||{}).id||'desarrollo'; }
+        estimationStatusId(){
+          const list=this.state.statuses||[];
+          const byId=list.find(st=>String(st.id||'').toLowerCase()==='estimacion');
+          if(byId) return byId.id;
+          const byLabel=list.find(st=>String(st.label||'').toLocaleLowerCase('es-CO').includes('estimaci'));
+          return byLabel?byLabel.id:'Estimacion';
+        }
+        estPhaseMeta(status){
+          if(status==='enviada') return {label:'Enviada', color:'#f5b544', bg:'rgba(245,181,68,.14)'};
+          if(status==='aprobada') return {label:'Aprobada', color:'#39d39b', bg:'rgba(57,211,155,.14)'};
+          return {label:'Creada', color:'#35c0f0', bg:'rgba(53,192,240,.14)'};
+        }
+        estDirty(){ const s=this.state; return s.view==='estimacion'&&!!(s.estDraft&&s.estDraft.dirty); }
+        leaveEstimacion(go){ if(this.estDirty()&&!window.confirm('Hay cambios sin guardar en esta estimación. ¿Salir sin guardar?')) return; go(); }
+
+        newEstimacion(){
+          if(!this.isDev()) return;
+          const emp=this.empresa(), p=this.proyecto(); if(!p) return;
+          const cx=this.state.estComplexities||[];
+          const line=(kind,typeId,concept,hours='')=>({id:this.gid('eln'),kind,typeId,concept,hours,autoNext:kind==='activity'&&!concept});
+          const lines=[
+            line('section','','Análisis'),
+            line('activity','analisis','Conceptualización y diseño de la aplicación.','1'),
+            line('activity','analisis','Estimación del esfuerzo del desarrollo de la aplicación.','1'),
+            line('section','',''),
+            line('activity','desarrollo',''),
+            line('activity','arquitectura','Arquitectura del requerimiento.'),
+            line('activity','qa','Pruebas, documento y evidencias de la funcionalidad.'),
+            line('section','','Despliegue del proyecto'),
+            line('activity','desarrollo','Despliegue de la aplicación en ambiente de pruebas y producción','3'),
+            line('activity','manuales','Documentación del API','2'),
+            line('activity','manuales','Manual de usuario','2'),
+            line('activity','gestion','Gestión de proyecto, sesiones con cliente, seguimiento.'),
+          ];
+          const estDraft={ id:this.gid('est'), isNew:true, dirty:false, rev:0, savedLineIds:[],
+            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:p.nombre||'', requesterName:'', pmName:this.state.currentUserName||'',
+            versionLabel:'V1', complexityId:(cx.find(c=>c.id==='baja')||cx[0]||{}).id||'baja', estStatus:'creada', requirementId:'', updateReqHours:false,
+            roundingDecimals:'1', alertRatio:'0.3', dailyHours:'8', dedicationPct:'62.5', lines };
+          this.setState(s=>({view:'estimacion',estimacionId:estDraft.id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
+        }
+        openEstimacion(id){
+          if(!this.isDev()) return;
+          const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
+          const num=v=>this.fmtNum(Number(v));
+          const estDraft={ id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
+            code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, requesterName:e.solicitante, pmName:e.pm,
+            versionLabel:e.version, complexityId:e.complexityId, estStatus:e.estado||'creada', requirementId:e.requirementId, updateReqHours:!!e.requirementId,
+            roundingDecimals:String(e.decimales), alertRatio:num(e.umbral), dailyHours:num(e.horasDia), dedicationPct:num(e.dedicacion*100),
+            lines:e.lineas.map(l=>({id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concepto,hours:l.horas==null?'':String(l.horas),autoNext:l.kind==='activity'&&!l.concepto})) };
+          this.setState(s=>({view:'estimacion',estimacionId:id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
+        }
+        editEstDraft(fn,done){ this.setState(s=>{ const d=s.estDraft; if(!d) return null; const next=fn(d); return next?{estDraft:{...next,dirty:true,rev:(d.rev||0)+1}}:null; },done); }
+        setEstField(key,value){ this.editEstDraft(d=>({...d,[key]:value})); }
+        // Código e iniciativa siguen al requerimiento mientras la persona no los haya cambiado a mano.
+        setEstRequirement(id){
+          const p=this.proyecto(), reqs=(p&&p.requerimientos)||[];
+          this.editEstDraft(d=>{
+            const prev=reqs.find(r=>r.id===d.requirementId), next=reqs.find(r=>r.id===id);
+            const prevCode=prev?(prev.codigo||'').trim():'', prevName=prev?(prev.titulo||'').trim():((p&&p.nombre)||'');
+            const nextCode=next?(next.codigo||'').trim():'', nextName=next?(next.titulo||'').trim():((p&&p.nombre)||'');
+            const untouched=(cur,old)=>{ const c=(cur||'').trim(); return !c||c===old; };
+            return {...d, requirementId:next?next.id:'', updateReqHours:!!next,
+              code:untouched(d.code,prevCode)?nextCode:d.code,
+              initiativeName:untouched(d.initiativeName,prevName)?nextName:d.initiativeName};
+          });
+        }
+        // autoNext: la fila nació sin concepto (la está llenando la persona). Al completar concepto y horas
+        // aparece una vacía debajo, una sola vez por fila y solo si la de abajo no está ya vacía.
+        setEstLine(i,key,value){
+          this.editEstDraft(d=>{
+            const lines=d.lines.slice(); let l={...lines[i],[key]:value};
+            const h=this.parseEstNumber(l.hours);
+            if(l.autoNext&&(key==='concept'||key==='hours')&&String(l.concept||'').trim()&&typeof h==='number'&&!Number.isNaN(h)){
+              l={...l,autoNext:false};
+              const next=lines[i+1], nextEmpty=next&&next.kind==='activity'&&!String(next.concept||'').trim()&&!String(next.hours||'').trim();
+              if(!nextEmpty) lines.splice(i+1,0,{id:this.gid('eln'),kind:'activity',typeId:l.typeId,concept:'',hours:'',autoNext:true});
+            }
+            lines[i]=l;
+            return {...d,lines};
+          });
+        }
+        // Enter en las horas pasa al concepto de la actividad siguiente.
+        focusNextEstConcept(i){
+          const k=(this.state.estDraft.lines||[]).slice(0,i+1).filter(l=>l.kind==='activity').length;
+          const el=document.querySelectorAll('.est-row textarea[aria-label="Concepto"]')[k]; if(el) el.focus();
+        }
+        addEstLine(kind,at){
+          this.editEstDraft(d=>{
+            const lines=d.lines.slice(), i=at==null?lines.length:at, prev=lines[i-1];
+            const typeId=kind==='activity'?((prev&&prev.kind==='activity'&&prev.typeId)||this.estDefaultTypeId()):'';
+            lines.splice(i,0,{id:this.gid('eln'),kind,typeId,concept:'',hours:'',autoNext:kind==='activity'});
+            return {...d,lines};
+          });
+        }
+        // El + de una sección abre un contador para agregar varias actividades de desarrollo a esa sección.
+        openEstCounter(lineId){ this.setState(s=>({estCounter:{...s.estCounter,lineId}})); }
+        closeEstCounter(){ this.setState(s=>({estCounter:{...s.estCounter,lineId:null}})); }
+        estCounterValue(){ const n=Number(this.state.estCounter.count); return Number.isInteger(n)&&n>=1&&n<=50?n:0; }
+        // Quedan debajo de las de desarrollo que ya tiene la sección (antes de arquitectura y QA en la plantilla);
+        // si no tiene ninguna, al final de la sección.
+        addEstActivitiesToSection(){
+          const n=this.estCounterValue(), lineId=this.state.estCounter.lineId, typeId=this.estDefaultTypeId(); if(!n||!lineId) return;
+          let activitiesBefore=0;
+          this.editEstDraft(d=>{
+            const s=d.lines.findIndex(l=>l.id===lineId); if(s<0) return null;
+            let end=d.lines.findIndex((l,i)=>i>s&&l.kind==='section'); if(end<0) end=d.lines.length;
+            let at=end; for(let i=end-1;i>s;i--) if(d.lines[i].kind==='activity'&&d.lines[i].typeId===typeId){ at=i+1; break; }
+            activitiesBefore=d.lines.slice(0,at).filter(l=>l.kind==='activity').length;
+            const lines=d.lines.slice();
+            lines.splice(at,0,...Array.from({length:n},()=>({id:this.gid('eln'),kind:'activity',typeId,concept:'',hours:'',autoNext:true})));
+            return {...d,lines};
+          },()=>{ const el=document.querySelectorAll('.est-row textarea[aria-label="Concepto"]')[activitiesBefore]; if(el) el.focus(); });
+          this.closeEstCounter();
+        }
+        moveEstLine(i,dir){ this.editEstDraft(d=>{ const j=i+dir; if(j<0||j>=d.lines.length) return null; const lines=d.lines.slice(); [lines[i],lines[j]]=[lines[j],lines[i]]; return {...d,lines}; }); }
+        removeEstLine(i){ this.editEstDraft(d=>({...d,lines:d.lines.filter((_,k)=>k!==i)})); }
+
+        // Valores del borrador ya convertidos, totales y errores. Lo usan la pantalla, el guardado y la exportación.
+        estDraftCalc(d){
+          const complexity=(this.state.estComplexities||[]).find(c=>c.id===d.complexityId)||null;
+          // Redondeados a la escala de cada columna, para calcular con lo mismo que queda guardado.
+          const toNum=(v,dec)=>{ const x=this.parseEstNumber(v); return x===''?NaN:Math.round(x*10**dec)/10**dec; };
+          const params={ decimals:Number(d.roundingDecimals), alertRatio:toNum(d.alertRatio,4), dailyHours:toNum(d.dailyHours,2), dedication:Math.round(toNum(d.dedicationPct,2)/100*1e4)/1e4 };
+          const hoursBad=l=>{ if(l.kind!=='activity') return false; const h=this.parseEstNumber(l.hours); return h!==''&&(Number.isNaN(h)||h>999999.99||/[.,]\d{3,}\s*$/.test(String(l.hours))); };
+          const lines=d.lines.map(l=>{ const bad=hoursBad(l), h=this.parseEstNumber(l.hours); return {id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concept,hours:l.kind==='activity'&&!bad&&h!==''?h:'',bad}; });
+          const totals=estimationTotals(lines,complexity,params);
+          const errors=[];
+          if(!complexity) errors.push('Elige la complejidad.');
+          if(!d.estimatedOn) errors.push('La fecha es obligatoria.');
+          if(!(params.alertRatio>=0)) errors.push('El umbral de alerta debe ser un número igual o mayor que cero.');
+          if(!(params.dailyHours>0&&params.dailyHours<100)) errors.push('Las horas diarias deben ser mayores que cero y menores que 100.');
+          if(!(params.dedication>0&&params.dedication<=1)) errors.push('La dedicación debe ser mayor que 0 % y como máximo 100 %.');
+          const badCount=lines.filter(l=>l.bad).length;
+          if(badCount) errors.push('Revisa las horas de '+badCount+' actividad'+(badCount===1?'':'es')+': deben ser un número igual o mayor que cero, con máximo dos decimales.');
+          if(lines.some(l=>l.kind==='activity'&&!l.typeId)) errors.push('Cada actividad necesita un tipo.');
+          return {complexity,params,lines,totals,errors};
+        }
+
+        async saveEstimacion(){
+          if(!this.isDev()||this._busy) return;
+          const d=this.state.estDraft, p=this.proyecto(); if(!d||!p) return;
+          const c=this.estDraftCalc(d);
+          if(c.errors.length){ this.setState({modal:{type:'aviso',title:'Revisa la estimación',mensaje:c.errors.join(' ')},form:{}}); return; }
+          this._busy=true;
+          this.setState({saveStatus:'saving'});
+          const patchDraft=patch=>this.setState(s=>s.estDraft&&s.estDraft.id===d.id?{estDraft:{...s.estDraft,...patch}}:null);
+          try{
+            const sb=this._sb;
+            const requirementId=d.requirementId||'';
+            const header={ project_id:p.id, requirement_id:requirementId||null, code:(d.code||'').trim(), estimated_on:d.estimatedOn,
+              client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
+              version_label:(d.versionLabel||'').trim(), complexity_id:d.complexityId, rounding_decimals:c.params.decimals,
+              deviation_alert_ratio:c.params.alertRatio, daily_hours:c.params.dailyHours, dedication:c.params.dedication, updated_at:new Date().toISOString() };
+            if(d.isNew){
+              const { error } = await sb.from('estimations').insert({ id:d.id, created_by:this.state.session.user.id, status:'creada', ...header });
+              if(error) throw error;
+              patchDraft({isNew:false, estStatus:'creada'});
+            } else {
+              const { error } = await sb.from('estimations').update(header).eq('id',d.id);
+              if(error) throw error;
+            }
+            // Si algo falla a mitad, las líneas que este editor alcanzó a escribir siguen contando como suyas.
+            const knownIds=[...new Set([...d.savedLineIds,...d.lines.map(l=>l.id)])];
+            patchDraft({savedLineIds:knownIds});
+            await this.saveEstimationLines(d.id,c.lines,d.savedLineIds);
+            if(requirementId&&d.updateReqHours){
+              const { error } = await sb.from('requirements').update({estimated_hours:Math.round(c.totals.developer*100)/100}).eq('id',requirementId);
+              if(error) throw error;
+            }
+            this.setState(s=>{
+              const cur=s.estDraft;
+              if(!cur||cur.id!==d.id) return {saveStatus:'saved'};
+              return {saveStatus:'saved', estDraft:{...cur, isNew:false, estStatus:cur.estStatus||'creada', savedLineIds:d.lines.map(l=>l.id), dirty:cur.rev!==d.rev}};
+            });
+            await this.loadData();
+          }catch(e){ console.error(e); this.setState({saveStatus:'error',modal:{type:'aviso',title:'No se pudo guardar la estimación',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this._busy=false; }
+        }
+        // Conserva el id de cada línea y borra solo las que este editor conocía y ya no están.
+        // sort_order es único por estimación y Postgres lo valida fila por fila: si un orden nuevo choca
+        // con el de otra línea (subir, bajar, insertar en medio), primero se pasan todas a valores negativos.
+        async saveEstimationLines(estimationId,lines,knownIds){
+          const sb=this._sb;
+          const { data:dbRows, error:readError } = await sb.from('estimation_lines').select('id,sort_order').eq('estimation_id',estimationId);
+          if(readError) throw readError;
+          const currentIds=new Set(lines.map(l=>l.id));
+          const removed=(dbRows||[]).filter(r=>knownIds.includes(r.id)&&!currentIds.has(r.id)).map(r=>r.id);
+          if(removed.length){ const { error } = await sb.from('estimation_lines').delete().in('id',removed); if(error) throw error; }
+          if(!lines.length) return;
+          const rows=lines.map((l,i)=>({ id:l.id, estimation_id:estimationId, sort_order:i+1, line_kind:l.kind,
+            activity_type_id:l.kind==='activity'?l.typeId:null, concept:(l.concept||'').trim(), developer_hours:l.kind==='activity'&&l.hours!==''?l.hours:null }));
+          const kept=(dbRows||[]).filter(r=>!removed.includes(r.id)), holder={};
+          kept.forEach(r=>{ holder[r.sort_order]=r.id; });
+          if(rows.some(r=>holder[r.sort_order]&&holder[r.sort_order]!==r.id)){
+            const base=kept.reduce((m,r)=>Math.max(m,Math.abs(r.sort_order)),rows.length)+1;
+            const { error } = await sb.from('estimation_lines').upsert(rows.map((r,i)=>({...r,sort_order:-(base+i)})));
+            if(error) throw error;
+          }
+          const { error } = await sb.from('estimation_lines').upsert(rows);
+          if(error) throw error;
+        }
+        // Creada al guardar. Enviada es el paso siguiente. Aprobar abre el requerimiento para poner sus PBI.
+        openRequirementFromEstimation(){
+          const d=this.state.estDraft; if(!d||d.requirementId) return;
+          const c=this.estDraftCalc(d);
+          const hours=Math.round(c.totals.developer*100)/100;
+          const title=(d.initiativeName||'').trim()||'Requerimiento';
+          const pm=(d.pmName||'').trim();
+          this.openModal({
+            type:'requerimiento', mode:'crear', title:'Crear requerimiento', fromEstimacionId:d.id,
+            form:{
+              codigos:[''],
+              titulo:title, descripcionCambios:title, observaciones:'',
+              fechaEntregaUsuario:'', fechaPasoProduccion:'',
+              horas:Number.isFinite(hours)?hours:'',
+              responsables:pm?[pm]:[],
+              estado:this.estimationStatusId(),
+            },
+          });
+        }
+        async advanceEstimacion(next){
+          if(!this.isDev()||this._busy) return;
+          const d=this.state.estDraft, p=this.proyecto(); if(!d||!p||d.isNew||d.dirty) return;
+          const order=['creada','enviada','aprobada'];
+          if(order.indexOf(next)!==order.indexOf(d.estStatus)+1) return;
+          if(next==='aprobada' && !d.requirementId){ this.openRequirementFromEstimation(); return; }
+          this._busy=true;
+          this.setState({saveStatus:'saving'});
+          try{
+            const patch={ status:next, updated_at:new Date().toISOString() };
+            const { error } = await this._sb.from('estimations').update(patch).eq('id', d.id);
+            if(error) throw error;
+            this.setState(s=>{
+              const cur=s.estDraft;
+              if(!cur||cur.id!==d.id) return {saveStatus:'saved'};
+              return {saveStatus:'saved', estDraft:{...cur, estStatus:next}};
+            });
+            await this.loadData();
+          }catch(e){ console.error(e); this.setState({saveStatus:'error', modal:{type:'aviso', title:'No se pudo cambiar el estado', mensaje:e.message||'Intenta de nuevo.'}, form:{}}); }
+          finally{ this._busy=false; }
+        }
+        // Copia cabecera y líneas con ids nuevos. La copia nace en Creada, sin requerimiento, hasta que se apruebe.
+        async dupEstimacion(id){
+          if(!this.isDev()||this._busy) return;
+          const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
+          this._busy=true;
+          this.setState({saveStatus:'saving'});
+          try{
+            const sb=this._sb, newId=this.gid('est');
+            const family=x=>(x.codigo||x.iniciativa||'').trim().toLowerCase();
+            const used=new Set(p.estimaciones.filter(x=>family(x)===family(e)).map(x=>(x.version||'').trim().toLowerCase()));
+            let version=this.nextVersionLabel(e.version);
+            while(used.has(version.toLowerCase())) version=this.nextVersionLabel(version);
+            const { error } = await sb.from('estimations').insert({ id:newId, project_id:p.id, requirement_id:null, status:'creada', code:e.codigo, format_version:e.formatVersion,
+              estimated_on:e.fecha||this.todayIso(), client_name:e.cliente, initiative_name:e.iniciativa, requester_name:e.solicitante, pm_name:e.pm,
+              version_label:version, complexity_id:e.complexityId, rounding_decimals:e.decimales, deviation_alert_ratio:e.umbral, daily_hours:e.horasDia,
+              dedication:e.dedicacion, created_by:this.state.session.user.id, updated_at:new Date().toISOString() });
+            if(error) throw error;
+            if(e.lineas.length){
+              const { error:linesError } = await sb.from('estimation_lines').insert(e.lineas.map((l,i)=>({ id:this.gid('eln'), estimation_id:newId, sort_order:i+1,
+                line_kind:l.kind, activity_type_id:l.kind==='activity'?l.typeId:null, concept:l.concepto, developer_hours:l.kind==='activity'?l.horas:null })));
+              if(linesError){ await sb.from('estimations').delete().eq('id',newId); throw linesError; }
+            }
+            this.setState({saveStatus:'saved'});
+            await this.loadData();
+            this.openEstimacion(newId);
+          }catch(err){ console.error(err); this.setState({saveStatus:'error',modal:{type:'aviso',title:'No se pudo duplicar la estimación',mensaje:err.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this._busy=false; }
+        }
+        async delEstimacion(id){
+          if(!this.isDev()||this._busy) return;
+          if(!window.confirm('¿Eliminar esta estimación y todas sus actividades? Esta acción no se puede deshacer.')) return;
+          this._busy=true;
+          this.setState({saveStatus:'saving'});
+          try{
+            const { error } = await this._sb.from('estimations').delete().eq('id',id);
+            if(error) throw error;
+            this.setState({saveStatus:'saved'});
+            await this.loadData();
+          }catch(e){ console.error(e); this.setState({saveStatus:'error',modal:{type:'aviso',title:'No se pudo eliminar la estimación',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this._busy=false; }
+        }
+        // Lo que se exporta a Excel y PDF: lo que está en pantalla, aunque no se haya guardado,
+        // sin las actividades vacías (sin concepto ni horas).
+        estExportData(d){
+          const c=this.estDraftCalc(d), types=this.state.estActivityTypes||[];
+          const rows=c.lines.map((l,i)=>({...l,concept:(l.concept||'').trim(),typeLabel:(types.find(x=>x.id===l.typeId)||{}).label||l.typeId||'',m:c.totals.metrics[i]}))
+            .filter(l=>l.kind==='section'||l.concept||l.hours!=='');
+          const clean=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'-');
+          return {c,t:c.totals,types,rows,fileName:'estimacion-'+(clean(d.code)||clean(d.initiativeName)||'sin-nombre')+'-'+(clean(d.versionLabel)||'V1')};
+        }
+        async exportEstimacion(){
+          if(!this.isDev()||this.state.exportingEstimacion) return;
+          const d=this.state.estDraft; if(!d) return;
+          this.setState({exportingEstimacion:true});
+          try{
+            const XLSX=await this.loadXlsx();
+            const {c,t,types,rows,fileName}=this.estExportData(d);
+            const n=v=>v==null||!Number.isFinite(v)?null:parseFloat(v.toFixed(4));
+            const day=/^(\d{4})-(\d{2})-(\d{2})/.exec(d.estimatedOn||'');
+            const dateCell=day?(Date.UTC(+day[1],+day[2]-1,+day[3])-Date.UTC(1899,11,30))/864e5:'';
+            const aoa=[
+              ['Estimación de esfuerzo'],[],
+              ['Código',(d.code||'').trim()],['Fecha',dateCell],['Cliente',(d.clientName||'').trim()],['Iniciativa',(d.initiativeName||'').trim()],
+              ['Solicitante',(d.requesterName||'').trim()],['PM',(d.pmName||'').trim()],['Versión',(d.versionLabel||'').trim()],['Complejidad',c.complexity?c.complexity.label:''],
+              ['Decimales de redondeo',c.params.decimals],['Umbral de alerta',n(c.params.alertRatio)],['Horas diarias',n(c.params.dailyHours)],['Dedicación',n(c.params.dedication)],
+              [],
+            ];
+            const fmts=[[3,1,'dd/mm/yyyy'],[13,1,'0.0%']];
+            const merges=[];
+            aoa.push(['Tipo','Concepto','Horas desarrollador','Optimista','Más probable','Pesimista','Estimación estadística']);
+            rows.forEach(l=>{
+              if(l.kind==='section'){ merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:6}}); aoa.push([l.concept]); return; }
+              const m=l.m;
+              aoa.push([l.typeLabel,l.concept,l.hours===''?null:l.hours,m?n(m.optimistic):null,m?n(m.mostProbable):null,m?n(m.pessimistic):null,m?n(m.statistical):null]);
+            });
+            aoa.push(['','Subtotal',n(t.developer),null,null,null,n(t.statistical)]);
+            aoa.push([],['Totales']);
+            aoa.push(['Subtotal horas desarrollador',n(t.developer)],['Subtotal estimación estadística',n(t.statistical)],['Horas dedicadas por día',n(t.dedicated)]);
+            aoa.push(['Entrega estimada (días)',t.statisticalDays==null?null:parseFloat(t.statisticalDays.toFixed(2))]);
+            aoa.push(['Días según horas de desarrollador',t.developerDays==null?null:parseFloat(t.developerDays.toFixed(2))]);
+            aoa.push(['Actividades en alerta',t.review],[]);
+            aoa.push(['Horas por tipo','Horas','% del subtotal desarrollador']);
+            types.forEach(x=>{ const h=t.byType[x.id]||0; fmts.push([aoa.length,2,'0.0%']); aoa.push([x.label,n(h),t.developer>0?h/t.developer:0]); });
+            const ws=XLSX.utils.aoa_to_sheet(aoa);
+            fmts.forEach(([r,col,z])=>{ const cell=ws[XLSX.utils.encode_cell({r,c:col})]; if(cell&&cell.t==='n') cell.z=z; });
+            ws['!merges']=merges;
+            ws['!cols']=[{wch:32},{wch:62},{wch:20},{wch:11},{wch:13},{wch:11},{wch:22}];
+            const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Estimación');
+            XLSX.writeFile(wb,fileName+'.xlsx');
+          }catch(e){ console.error(e); this.setState({modal:{type:'aviso',title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this.setState({exportingEstimacion:false}); }
+        }
+        // PDF sin librerías: una vista imprimible en otra ventana y el diálogo de impresión, donde se elige "Guardar como PDF".
+        // El título de esa ventana es el nombre que el navegador propone para el archivo.
+        exportEstimacionPdf(){
+          if(!this.isDev()) return;
+          const d=this.state.estDraft; if(!d) return;
+          const w=window.open('','_blank');
+          if(!w){ this.setState({modal:{type:'aviso',title:'No se pudo abrir la vista para PDF',mensaje:'El navegador bloqueó la ventana. Permite ventanas emergentes para este sitio e intenta de nuevo.'},form:{}}); return; }
+          w.document.open(); w.document.write(this.estimacionPrintHtml(d)); w.document.close();
+          w.focus();
+          setTimeout(()=>{ try{ w.print(); }catch(e){} },300);
+        }
+        estimacionPrintHtml(d){
+          const {c,t,types,rows,fileName}=this.estExportData(d), p=c.params, f=(x,dec)=>this.fmtNum(x,dec);
+          const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+          const days=x=>x==null?'—':f(x,2)+(f(x,2)==='1'?' día':' días');
+          const date=d.estimatedOn?new Date(d.estimatedOn+'T00:00:00').toLocaleDateString('es-CO'):'';
+          const info=[['Código',d.code],['Fecha',date],['Versión',d.versionLabel],['Complejidad',c.complexity?c.complexity.label:''],
+            ['Cliente',d.clientName],['Solicitante',d.requesterName],['PM',d.pmName],['Iniciativa',d.initiativeName]]
+            .map(([k,v])=>'<div><span>'+k+'</span>'+(esc(String(v||'').trim())||'—')+'</div>').join('');
+          const body=rows.map(l=>l.kind==='section'
+            ? '<tr class="sec"><td colspan="7">'+(esc(l.concept)||'&nbsp;')+'</td></tr>'
+            : '<tr><td>'+esc(l.typeLabel)+'</td><td class="concept">'+esc(l.concept)+'</td><td class="n">'+(l.hours===''?'':f(l.hours))+'</td>'
+              +'<td class="n">'+(l.m?f(l.m.optimistic):'')+'</td><td class="n">'+(l.m?f(l.m.mostProbable):'')+'</td><td class="n">'+(l.m?f(l.m.pessimistic):'')+'</td>'
+              +'<td class="n est">'+(l.m?f(l.m.statistical):'')+(l.m&&l.m.needsReview?' <b class="dot" title="En alerta">●</b>':'')+'</td></tr>').join('');
+          const byType=types.map(x=>{ const h=t.byType[x.id]||0; return '<tr><td>'+esc(x.label)+'</td><td class="n">'+f(h)+' h</td><td class="n">'+(t.developer>0?f(h/t.developer*100,1):'0')+' %</td></tr>'; }).join('');
+          return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(fileName)+'</title><style>'
+            +'@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box}'
+            +'body{margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;color:#1f2937;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+            +'.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-24px -24px 20px;padding:10px 24px;background:#eef1f5;border-bottom:1px solid #d4dbe4;font-size:12px;color:#475569}'
+            +'.bar button{font:inherit;font-weight:600;color:#fff;background:#102a70;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}'
+            +'.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.gen{font-size:9px;color:#94a3b8}'
+            +'.kicker{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#087f9f;font-weight:700}'
+            +'h1{margin:2px 0 14px;font-size:20px;color:#102a70}'
+            +'.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px;margin-bottom:10px}'
+            +'.meta span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#64748b}'
+            +'.params{font-size:10px;color:#64748b;margin-bottom:14px}'
+            +'table{width:100%;border-collapse:collapse}thead{display:table-header-group}tr{break-inside:avoid}'
+            +'th{font-size:8.5px;text-transform:uppercase;letter-spacing:.2px;color:#475569;text-align:left;background:#eef1f5;padding:6px;border-bottom:1px solid #cbd3df}'
+            +'td{padding:5px 6px;border-bottom:1px solid #e5e9f0;vertical-align:top}'
+            +'.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}th.n{white-space:normal}.concept{white-space:pre-wrap}'
+            +'table.lines{table-layout:fixed}'
+            +'tr.sec td{background:#f3f6fa;font-weight:700;color:#102a70;padding-top:8px}'
+            +'.est{color:#087f9f;font-weight:700}.dot{color:#e05252;font-size:9px}'
+            +'.lines tfoot td{font-weight:700;border-top:1.5px solid #94a3b8;border-bottom:0}'
+            +'.totals{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;margin-top:20px;break-inside:avoid}'
+            +'.sum td:first-child{color:#475569}.sum tr.hl td{background:#e8f4fb;font-weight:700;color:#102a70}'
+            +'@media print{body{padding:0}.no-print{display:none}}'
+            +'</style></head><body>'
+            +'<div class="bar no-print"><span>En el diálogo de impresión elige <b>Guardar como PDF</b>.</span><button onclick="window.print()">Imprimir o guardar PDF</button></div>'
+            +'<div class="top"><div class="kicker">Estimación de esfuerzo</div><div class="gen">Generado el '+esc(new Date().toLocaleString('es-CO'))+'</div></div><h1>'+(esc(String(d.initiativeName||'').trim())||'Estimación')+'</h1>'
+            +'<section class="meta">'+info+'</section>'
+            +'<div class="params">Parámetros: decimales de redondeo '+p.decimals+' · umbral de alerta '+f(p.alertRatio)+' · '+f(p.dailyHours,2)+' h diarias · dedicación '+f(p.dedication*100,2)+' %</div>'
+            +'<table class="lines"><colgroup><col style="width:13%"><col style="width:33%"><col style="width:15%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:10.5%"></colgroup>'
+            +'<thead><tr><th>Tipo</th><th>Concepto</th><th class="n">Horas desarrollador</th><th class="n">Optimista</th><th class="n">Más probable</th><th class="n">Pesimista</th><th class="n">Estimación estadística</th></tr></thead>'
+            +'<tbody>'+body+'</tbody>'
+            +'<tfoot><tr><td></td><td>Subtotal</td><td class="n">'+f(t.developer)+'</td><td></td><td></td><td></td><td class="n est">'+f(t.statistical)+'</td></tr></tfoot></table>'
+            +'<div class="totals"><table class="sum"><tbody>'
+            +'<tr><td>Subtotal horas desarrollador</td><td class="n">'+f(t.developer)+' h</td></tr>'
+            +'<tr><td>Subtotal estimación estadística</td><td class="n">'+f(t.statistical)+' h</td></tr>'
+            +'<tr><td>Horas dedicadas por día</td><td class="n">'+(Number.isFinite(t.dedicated)?f(t.dedicated,2)+' h':'—')+'</td></tr>'
+            +'<tr class="hl"><td>Entrega estimada (estimación estadística ÷ horas dedicadas)</td><td class="n">'+days(t.statisticalDays)+'</td></tr>'
+            +'<tr><td>Días según horas de desarrollador</td><td class="n">'+days(t.developerDays)+'</td></tr>'
+            +'<tr><td>Actividades en alerta <span class="dot">●</span></td><td class="n">'+t.review+'</td></tr>'
+            +'</tbody></table>'
+            +'<table class="types"><thead><tr><th>Horas por tipo</th><th class="n">Horas</th><th class="n">% desarrollador</th></tr></thead><tbody>'+byType+'</tbody></table></div>'
+            +'</body></html>';
+        }
+
         renderVals(){
           const s=this.state, v=s.view;
           const isDev=this.isDev(), isPM=this.isPM();
@@ -3805,9 +4439,10 @@
           const R={
             goHome:()=>this.goHome(), goProyectos:()=>this.goProyectos(), goProyecto:()=>this.goProyecto(),
             goRequerimientos:()=>this.goRequerimientos(), goConfiguracion:()=>this.goConfiguracion(),
-            goMaestro:()=>this.goMaestro(),
+            goMaestro:()=>this.goMaestro(), goEstimaciones:()=>this.goEstimaciones(),
             viewEmpresas:v==='empresas', viewProyectos:v==='proyectos', viewProyecto:v==='proyecto',
             viewRequerimientos:v==='requerimientos', viewRequerimiento:v==='requerimiento', viewApidoc:v==='apidoc',
+            viewEstimaciones:v==='estimaciones'&&isDev, viewEstimacion:v==='estimacion'&&isDev&&!!s.estDraft,
             viewConfiguracion:v==='configuracion',
             stop:(e)=>this.stop(e), closeModal:()=>this.closeModal(),
             overlayDown:(e)=>this.overlayDown(e), overlayClick:(e)=>this.overlayClick(e),
@@ -3863,11 +4498,20 @@
           const crumbs=[{label:'Empresas',go:()=>this.goHome(),color:v==='empresas'?'var(--gp-text)':'var(--gp-muted)',weight:v==='empresas'?600:400,sep:false}];
           if(emp && v!=='empresas'){ crumbs.push({label:emp.nombre,go:()=>this.goProyectos(),color:v==='proyectos'?'var(--gp-text)':'var(--gp-muted)',weight:v==='proyectos'?600:400,sep:true}); }
           if(v==='maestro'){ crumbs.push({label:'Gestión de proyectos',go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
-          if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'var(--gp-text)':'var(--gp-muted)',weight:v==='proyecto'?600:400,sep:true}); }
+          if(proy && (v==='proyecto'||v==='requerimientos'||v==='requerimiento'||v==='apidoc'||v==='estimaciones'||v==='estimacion')){ crumbs.push({label:proy.nombre,go:()=>this.goProyecto(),color:v==='proyecto'?'var(--gp-text)':'var(--gp-muted)',weight:v==='proyecto'?600:400,sep:true}); }
           if(v==='apidoc'){ crumbs.push({label:'Documentación Técnica',go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
           if(v==='configuracion'){ crumbs.push({label:'Configuración',go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
           if(v==='requerimientos'){ crumbs.push({label:'Requerimientos',go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
-          if(v==='requerimiento'&&req){ crumbs.push({label:'Requerimientos',go:()=>this.goRequerimientos(),color:'var(--gp-muted)',weight:400,sep:true}); crumbs.push({label:req.code||req.titulo,go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
+          if(v==='requerimiento'&&req){ crumbs.push({label:'Requerimientos',go:()=>this.goRequerimientos(),color:'var(--gp-muted)',weight:400,sep:true}); crumbs.push({label:this.reqCodeLabel(req)||req.titulo,go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
+          if(v==='estimaciones'){ crumbs.push({label:'Estimaciones',go:()=>{},color:'var(--gp-text)',weight:600,sep:true}); }
+          if(v==='estimacion'&&s.estDraft){
+            const d=s.estDraft;
+            crumbs.push({label:'Estimaciones',go:()=>this.goEstimaciones(),color:'var(--gp-muted)',weight:400,sep:true});
+            crumbs.push({label:(d.code||'').trim()||(d.initiativeName||'').trim()||'Nueva estimación',go:()=>{},color:'var(--gp-text)',weight:600,sep:true});
+            // Salir del editor por las migas o el logo pide confirmación si hay cambios sin guardar.
+            crumbs.slice(0,-1).forEach(c=>{ const go=c.go; c.go=()=>this.leaveEstimacion(go); });
+            const home=R.goHome; R.goHome=()=>this.leaveEstimacion(home);
+          }
           R.crumbs=crumbs;
 
           // mobile breadcrumb bar
@@ -3880,7 +4524,7 @@
           R.currentCrumbLabel = lastCrumb ? lastCrumb.label : '';
 
           // primary action
-          const wantsPrimary = v==='empresas'||v==='proyectos'||v==='requerimientos'||v==='maestro';
+          const wantsPrimary = v==='empresas'||v==='proyectos'||v==='requerimientos'||v==='maestro'||v==='estimaciones';
           R.hasPrimary = wantsPrimary && isDev;
           R.hasPrimaryLocked = wantsPrimary && !isDev;
           R.primaryPad = R.narrow ? '9px' : '9px 15px';
@@ -3888,6 +4532,7 @@
           else if(v==='proyectos'){ R.primaryLabel='Nuevo proyecto'; R.primaryAction=()=>this.addProyecto(); }
           else if(v==='requerimientos'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReq(); }
           else if(v==='maestro'){ R.primaryLabel='Nuevo requerimiento'; R.primaryAction=()=>this.addReqGlobal(); }
+          else if(v==='estimaciones'){ R.primaryLabel='Nueva estimación'; R.primaryAction=()=>this.newEstimacion(); }
 
           R.goMaestro=()=>this.goMaestro();
           R.viewMaestro=v==='maestro'; R.maestroSoloLectura=!isDev;
@@ -3897,7 +4542,7 @@
             (s.data||[]).filter(company=>!s.empresaId||company.id===s.empresaId).forEach(company=>(company.proyectos||[]).forEach(project=>(project.requerimientos||[]).forEach(req=>all.push({company,project,req}))));
             const q=(s.maestroSearch||'').trim().toLocaleLowerCase('es-CO');
             const stateText=(id)=>{const st=(s.statuses||[]).find(x=>x.id===id);return ((st&&st.label)||id||'').toLocaleLowerCase('es-CO');};
-            const stateGroup=(id)=>{const x=stateText(id);return x.includes('bloq')?'bloqueado':x.includes('prod')?'produccion':x.includes('usuario')||x.includes('prueba')||x==='qa'?'usuario':x.includes('desarroll')?'desarrollo':'otros';};
+            const stateGroup=(id)=>{const x=stateText(id);return x.includes('bloq')?'bloqueado':x.includes('estim')?'estimacion':x.includes('prod')?'produccion':x.includes('usuario')||x.includes('prueba')||x==='qa'?'usuario':x.includes('desarroll')?'desarrollo':'otros';};
             const statusOptions=[{value:'todos',label:'Todos los estados',dot:'var(--gp-dot)'},...(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id,dot:st.color||'var(--gp-dot)'}))];
             const projectOptions=all.map(({company,project})=>({value:project.id,label:project.nombre+' · '+company.nombre})).filter((p,i,a)=>a.findIndex(x=>x.value===p.value)===i).sort((a,b)=>a.label.localeCompare(b.label,'es-CO'));
             const allProjectOptions=[{value:'todos',label:'Todas las aplicaciones'},...projectOptions];
@@ -3916,10 +4561,10 @@
               if(R.maestroStatus!=='todos'&&req.estado!==R.maestroStatus) return false;
               if(R.maestroProject!=='todos'&&project.id!==R.maestroProject) return false;
               if(!q) return true;
-              return [company.nombre,project.nombre,req.codigo,req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
+              return [company.nombre,project.nombre,this.reqCodeLabel(req),req.titulo,req.descripcionCambios,req.observaciones,req.responsable].some(x=>(x||'').toLocaleLowerCase('es-CO').includes(q));
             });
-            // Orden del tablero: desarrollo/QA → pruebas usuario → estimación → (bloqueado/otros) → producción; luego por #Req (mayor primero).
-            const boardRank={desarrollo:0,qa:0,usuarios:1,estimacion:2,produccion:4};
+            // Orden del tablero: estimación → desarrollo/QA → pruebas usuario → (bloqueado/otros) → producción; luego por #Req (mayor primero).
+            const boardRank={estimacion:0,desarrollo:1,qa:1,usuarios:2,produccion:4};
             const rankOf=id=>boardRank[String(id||'').toLowerCase()]??3;
             const codeOf=req=>(req.codigo||'').trim();
             filtered.sort((a,b)=>rankOf(a.req.estado)-rankOf(b.req.estado)
@@ -3930,7 +4575,9 @@
             R.exportingExcel=!!s.exportingExcel; R.exportExcelLabel=s.exportingExcel?'Generando…':'Descargar Excel';
             R.exportMaestroExcel=()=>this.exportMaestroExcel(filtered);
             const stateCount=(group)=>all.filter(({req})=>stateGroup(req.estado)===group).length;
+            const estimacionMeta=this.estMeta(this.estimationStatusId());
             R.maestroStatusCounts=[
+              {label:'Estimación',count:stateCount('estimacion'),color:estimacionMeta[1],tint:estimacionMeta[2]},
               {label:'En desarrollo',count:stateCount('desarrollo'),color:'var(--gp-metric-dev)',tint:'var(--gp-metric-dev-tint)'},
               {label:'Pruebas usuario',count:stateCount('usuario'),color:'var(--gp-metric-qa)',tint:'var(--gp-metric-qa-tint)'},
               {label:'Producción',count:stateCount('produccion'),color:'var(--gp-success)',tint:'var(--gp-metric-prod-tint)'},
@@ -3944,7 +4591,7 @@
                 (userDelivery?new Date(userDelivery.d.updatedAt).toLocaleDateString('es-CO'):'Sin definir');
               return {
                 empresa:company.nombre, proyecto:project.nombre,
-                code:(req.codigo&&req.codigo.trim())||('REQ-'+String((project.requerimientos||[]).findIndex(x=>x.id===req.id)+1).padStart(3,'0')), titulo:req.titulo,
+                code:this.reqCodeLabel(req)||('REQ-'+String((project.requerimientos||[]).findIndex(x=>x.id===req.id)+1).padStart(3,'0')), titulo:req.titulo,
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
                 observaciones:(req.observaciones||'').trim()||'—', sinObservaciones:!(req.observaciones||'').trim(), fechaEntregaUsuario:explicitDate,
                 fechaPasoProduccion:req.fechaPasoProduccion?new Date(req.fechaPasoProduccion+'T00:00:00').toLocaleDateString('es-CO'):'Sin definir', productionDateColor:req.fechaPasoProduccion?'var(--gp-success)':'var(--gp-muted-3)',
@@ -3960,7 +4607,8 @@
           // Documentación Técnica (por proyecto)
           R.viewApidoc=v==='apidoc';
           // La doc de Redoc necesita más ancho que el resto de las vistas (menú lateral + panel de ejemplos).
-          R.mainMaxW= v==='apidoc' ? '1800px' : '1240px';
+          // El editor de estimaciones también: tabla de 7 columnas más el resumen lateral.
+          R.mainMaxW= v==='apidoc' ? '1800px' : (v==='estimacion' ? '1500px' : '1240px');
           R.apiTabUrl=s.apiTab==='url'; R.apiTabJson=s.apiTab==='json';
           R.apiTabUrlColor=s.apiTab==='url'?'#35c0f0':'var(--gp-muted)';
           R.apiTabJsonColor=s.apiTab==='json'?'#35c0f0':'var(--gp-muted)';
@@ -4059,6 +4707,8 @@
             const ghCount=(rec.github||[]).length;
             const githubCard={label:'GitHub',iconHref:'#ic-ext',status:ghCount?(ghCount+' repo'+(ghCount===1?'':'s')):'Sin repos',statusColor:ghCount?'#39d39b':'var(--gp-muted-2)',open: isDev ? ()=>this.editGithubLinks() : ()=>this.openVerGithubLinks()};
             const apiHasSpec=!!(rec.apiSpec&&rec.apiSpec.source);
+            const estCount=(proy.estimaciones||[]).length;
+            const estimacionesCard={label:'Estimaciones',iconHref:'#ic-chart',status:estCount?(estCount+(estCount===1?' estimación':' estimaciones')):'Sin estimaciones',statusColor:estCount?'#39d39b':'var(--gp-muted-2)',open:()=>this.goEstimaciones()};
             R.proyecto={
               nombre:proy.nombre, descripcion:proy.descripcion, totalReq:reqs.length, estadoChips, reqBarra,
               despliegues:rec.despliegues.map(d=>{
@@ -4072,7 +4722,7 @@
                   copyBorder: copied?'rgba(57,211,155,.4)':'var(--gp-line-18)',
                   copyTitle: copied?'Copiado':'Copiar URL' };
               }),
-              recursoCards:[ ...(isDev ? [cardOf('manualTecnico','Manual Técnico','#ic-book')] : []), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación Técnica',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'var(--gp-muted-2)',open:()=>this.openApiDoc()} ],
+              recursoCards:[ ...(isDev ? [cardOf('manualTecnico','Manual Técnico','#ic-book')] : []), cardOf('diagramas','Diagramas','#ic-diagram'), cardOf('manualUsuario','Manual de Usuario','#ic-userguide'), githubCard, {label:'Documentación Técnica',iconHref:'#ic-api',status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'#39d39b':'var(--gp-muted-2)',open:()=>this.openApiDoc()}, ...(isDev ? [estimacionesCard] : []) ],
               credenciales:(rec.credenciales||[]).map(c=>{
                 const shown=!!s.credShown[c.id]; const k='cred:'+c.id; const copied=s.copiedKey===k;
                 return { label:c.label||'(sin nombre)',
@@ -4122,7 +4772,7 @@
             R.reqSelCount=selCount; R.reqSelBarShow=selMode && selCount>0;
             R.reqSelBarLabel=selCount+' seleccionado'+(selCount===1?'':'s');
             R.openBatchPromote=()=>this.openBatchPromote(); R.clearReqSelection=()=>this.clearReqSelection();
-            R.reqList=filtered.map(r=>{ const m=this.estMeta(r.estado); const bc=this.activeBloq(r); const chk=!!selMap[r.id]; return { code:(r.codigo&&r.codigo.trim())||('REQ-'+String(idx(r.id)+1).padStart(3,'0')), titulo:r.titulo, responsable:r.responsable, iniciales:this.iniciales(r.responsable), estLabel:m[0],estColor:m[1],estBg:m[2], tieneBloq:bc>0, bloqCount:bc, selectMode:selMode, selected:chk, checkBg: chk?'#35c0f0':'transparent', checkBorder: chk?'#35c0f0':'var(--gp-line-25)', open:(selMode?()=>this.toggleReqSelected(r.id):()=>this.openReq(r.id)) }; });
+            R.reqList=filtered.map(r=>{ const m=this.estMeta(r.estado); const bc=this.activeBloq(r); const chk=!!selMap[r.id]; return { code:this.reqCodeLabel(r)||('REQ-'+String(idx(r.id)+1).padStart(3,'0')), titulo:r.titulo, responsable:r.responsable, iniciales:this.iniciales(r.responsable), estLabel:m[0],estColor:m[1],estBg:m[2], tieneBloq:bc>0, bloqCount:bc, selectMode:selMode, selected:chk, checkBg: chk?'#35c0f0':'transparent', checkBorder: chk?'#35c0f0':'var(--gp-line-25)', open:(selMode?()=>this.toggleReqSelected(r.id):()=>this.openReq(r.id)) }; });
             R.reqEmpty=filtered.length===0;
           }
 
@@ -4130,7 +4780,7 @@
             const idx=proy.requerimientos.findIndex(r=>r.id===req.id);
             const m=this.estMeta(req.estado);
             R.req={
-              code:(req.codigo&&req.codigo.trim())||('REQ-'+String(idx+1).padStart(3,'0')), titulo:req.titulo, responsable:req.responsable, iniciales:this.iniciales(req.responsable),
+              code:this.reqCodeLabel(req)||('REQ-'+String(idx+1).padStart(3,'0')), titulo:req.titulo, responsable:req.responsable, iniciales:this.iniciales(req.responsable),
               descripcionCambios:(req.descripcionCambios||'').trim()||'Sin descripción registrada', observaciones:(req.observaciones||'').trim()||'Sin observaciones',
               fechaEntregaUsuario:req.fechaEntregaUsuario?new Date(req.fechaEntregaUsuario+'T00:00:00').toLocaleDateString('es-CO'):'Sin fecha registrada',
               estLabel:m[0],estColor:m[1],estBg:m[2],hasStatusDate:!!req.estadoActualizadoAt,statusDate:req.estadoActualizadoAt?new Date(req.estadoActualizadoAt).toLocaleString('es-CO'):'',
@@ -4164,6 +4814,111 @@
             R.tabDocumentos=tab==='documentos'; R.tabDespliegues=tab==='despliegues'; R.tabBloqueantes=tab==='bloqueantes';
             const tdef=[['documentos','Documentos',req.documentos.length],['despliegues','Despliegues',req.despliegues.length],['bloqueantes','Bloqueantes',this.activeBloq(req)]];
             R.reqTabs=tdef.map(([key,label,count])=>{ const active=tab===key; return { label,count,set:()=>this.setReqTab(key), color:active?'#35c0f0':'var(--gp-muted)', weight:active?600:500, border:active?'#35c0f0':'transparent', badgeBg:active?'rgba(53,192,240,.18)':'var(--gp-line-16)', badgeColor:active?'#35c0f0':'var(--gp-muted)' }; });
+          }
+
+          // ESTIMACIONES (lista y editor, solo dev)
+          if(proy&&isDev&&(v==='estimaciones'||v==='estimacion')){
+            const cxList=s.estComplexities||[], types=s.estActivityTypes||[];
+            const cxById={}; cxList.forEach(x=>{ cxById[x.id]=x; });
+            const reqById={}; proy.requerimientos.forEach(r=>{ reqById[r.id]=r; });
+            const fmt=(x,dec)=>this.fmtNum(x,dec);
+            const daysLabel=x=>x==null?'—':fmt(x,2)+(fmt(x,2)==='1'?' día':' días');
+            if(v==='estimaciones'){
+              const list=(proy.estimaciones||[]).slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))
+                ||String(b.version).localeCompare(String(a.version),'es-CO',{numeric:true})
+                ||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+              const items=list.map(e=>{
+                const t=estimationTotals(e.lineas.map(l=>({kind:l.kind,typeId:l.typeId,hours:l.horas})),cxById[e.complexityId],{decimals:e.decimales,alertRatio:e.umbral,dailyHours:e.horasDia,dedication:e.dedicacion});
+                const r=reqById[e.requirementId];
+                const phase=this.estPhaseMeta(e.estado);
+                return { code:e.codigo||'Sin código', iniciativa:e.iniciativa||'Sin nombre', version:e.version||'—',
+                  fecha:e.fecha?new Date(e.fecha+'T00:00:00').toLocaleDateString('es-CO'):'Sin fecha', complejidad:(cxById[e.complexityId]||{}).label||e.complexityId,
+                  phaseLabel:phase.label, phaseColor:phase.color, phaseBg:phase.bg,
+                  devHoras:fmt(t.developer)+' h', estHoras:fmt(t.statistical)+' h', dias:daysLabel(t.statisticalDays),
+                  hasReq:!!r, reqLabel:r?('Req. '+(this.reqCodeLabel(r)||r.titulo)):'', hasAlertas:t.review>0, alertLabel:t.review+' en alerta',
+                  open:()=>this.openEstimacion(e.id), openBtn:ev=>{ ev.stopPropagation(); this.openEstimacion(e.id); },
+                  dup:ev=>{ ev.stopPropagation(); this.dupEstimacion(e.id); }, del:ev=>{ ev.stopPropagation(); this.delEstimacion(e.id); } };
+              });
+              R.estimaciones={ list:items, empty:!items.length, countLabel:items.length+(items.length===1?' estimación':' estimaciones'),
+                crear:()=>this.newEstimacion(), volver:()=>this.goProyecto() };
+            }
+            if(v==='estimacion'&&s.estDraft){
+              const d=s.estDraft, c=this.estDraftCalc(d), t=c.totals, p=c.params, last=d.lines.length-1;
+              const field=key=>e=>this.setEstField(key,e.target.value);
+              const border=ok=>ok?'var(--gp-line-22)':'#f97b7b';
+              const typeOptions=types.map(x=>({value:x.id,label:x.label}));
+              const codeOf=r=>this.reqCodeLabel(r);
+              const willCreateReq=!d.requirementId && d.estStatus!=='aprobada';
+              const reqOptions=[{value:'',label:willCreateReq?'Se crea al aprobar':'Sin requerimiento'}].concat(proy.requerimientos.slice()
+                .sort((a,b)=>(!codeOf(a))-(!codeOf(b))||codeOf(b).localeCompare(codeOf(a),'es-CO',{numeric:true}))
+                .map(r=>({value:r.id,label:(codeOf(r)?codeOf(r)+' — ':'')+r.titulo})));
+              const req=reqById[d.requirementId];
+              const reqHours=req&&req.horas!==''&&req.horas!=null?'Hoy tiene '+req.horas+' h.':'Hoy no tiene horas.';
+              const summary={
+                developer:fmt(t.developer)+' h', statistical:fmt(t.statistical)+' h',
+                byType:types.map(x=>{ const h=t.byType[x.id]||0, pct=t.developer>0?h/t.developer*100:0;
+                  return { label:x.label, hours:fmt(h)+' h', pct:fmt(pct,1)+' %', barW:Math.min(100,pct)+'%', color:h>0?'var(--gp-text-2)':'var(--gp-muted-2)' }; }),
+                dedicated:Number.isFinite(t.dedicated)?fmt(t.dedicated,2)+' h':'—',
+                dedicatedDetail:fmt(p.dailyHours,2)+' h × '+fmt(p.dedication*100,2)+' %',
+                statDays:daysLabel(t.statisticalDays), devDays:daysLabel(t.developerDays),
+                review:String(t.review), reviewColor:t.review?'#f97b7b':'var(--gp-muted-2)',
+              };
+              const phase=this.estPhaseMeta(d.estStatus||'creada');
+              const nextPhase=d.estStatus==='creada'?'enviada':d.estStatus==='enviada'?'aprobada':null;
+              const canAdvance=!d.isNew && !d.dirty && !!nextPhase;
+              R.est={
+                title:(d.initiativeName||'').trim()||'Nueva estimación', codeLine:(d.code||'').trim()||'Sin código', version:(d.versionLabel||'').trim()||'—',
+                clientLine:(d.clientName||'').trim(), statusShow:d.isNew||d.dirty, statusLabel:d.isNew?'Sin guardar':'Cambios sin guardar',
+                phaseLabel:phase.label, phaseColor:phase.color, phaseBg:phase.bg,
+                phaseHint:d.isNew?'Al guardar queda en Creada.':(d.dirty&&nextPhase?'Guarda los cambios antes de cambiar el estado.':(d.estStatus==='aprobada'&&d.requirementId?'Aprobada. El requerimiento ya está enlazado.':'')),
+                canAdvance, advanceLabel:nextPhase==='aprobada'?(d.requirementId?'Aprobar':'Aprobar y crear requerimiento'):'Marcar como enviada',
+                advance:()=>this.advanceEstimacion(nextPhase),
+                advanceTitle:nextPhase==='aprobada'?(d.requirementId?'Pasa la estimación a Aprobada':'Abre el requerimiento para escribir sus PBI. El número de la estimación queda aparte.'):'Pasa la estimación a Enviada',
+                save:()=>this.saveEstimacion(), saveLabel:s.saveStatus==='saving'?'Guardando…':'Guardar',
+                exportar:()=>this.exportEstimacion(), exporting:!!s.exportingEstimacion, exportLabel:s.exportingEstimacion?'Generando…':'Exportar Excel',
+                exportarPdf:()=>this.exportEstimacionPdf(),
+                volver:()=>this.leaveEstimacion(()=>this.goEstimaciones()),
+                code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, requesterName:d.requesterName,
+                pmName:d.pmName, versionLabel:d.versionLabel, complexityId:d.complexityId, complexityOptions:cxList.map(x=>({value:x.id,label:x.label})),
+                requirementId:d.requirementId, reqOptions, hasReq:!!req, willCreateReq, updateReqHours:!!d.updateReqHours,
+                reqHelp:willCreateReq
+                  ? 'Al aprobar se abre el requerimiento para escribir sus PBI. El número de la estimación no se copia. Queda en estado Estimación.'
+                  : (!req?'':(d.updateReqHours?'Al guardar, el requerimiento queda con '+summary.developer+' (subtotal de desarrollador). ':'Las horas del requerimiento no se tocan. ')+reqHours),
+                roundingDecimals:d.roundingDecimals, decimalOptions:[0,1,2,3,4].map(x=>({value:String(x),label:String(x)})),
+                alertRatio:d.alertRatio, dailyHours:d.dailyHours, dedicationPct:d.dedicationPct,
+                alertBorder:border(p.alertRatio>=0), dailyBorder:border(p.dailyHours>0&&p.dailyHours<100), dedicationBorder:border(p.dedication>0&&p.dedication<=1),
+                on:{
+                  code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'),
+                  requesterName:field('requesterName'), pmName:field('pmName'), versionLabel:field('versionLabel'), complexityId:field('complexityId'),
+                  roundingDecimals:field('roundingDecimals'), alertRatio:field('alertRatio'), dailyHours:field('dailyHours'), dedicationPct:field('dedicationPct'),
+                  requirementId:e=>this.setEstRequirement(e.target.value), updateReqHours:e=>this.setEstField('updateReqHours',e.target.checked),
+                },
+                lines:d.lines.map((l,i)=>{
+                  const m=t.metrics[i], bad=c.lines[i].bad, isSection=l.kind==='section';
+                  return { isSection, isActivity:!isSection, concept:l.concept, typeId:l.typeId, hours:l.hours, typeOptions,
+                    optimistic:m?fmt(m.optimistic):'', mostProbable:m?fmt(m.mostProbable):'', pessimistic:m?fmt(m.pessimistic):'', statistical:m?fmt(m.statistical):'',
+                    dotColor:m&&m.needsReview?'#f97b7b':'transparent', reviewTitle:m&&m.needsReview?'Revisar: (pesimista − más probable) / más probable supera '+fmt(p.alertRatio):'',
+                    hoursBorder:border(!bad), hoursTitle:bad?'Escribe un número igual o mayor que cero, con máximo dos decimales.':'',
+                    conceptPlaceholder:isSection?'Nombre de la sección, por ejemplo PROSPECTOS':'Describe la actividad',
+                    onType:e=>this.setEstLine(i,'typeId',e.target.value), onConcept:e=>this.setEstLine(i,'concept',e.target.value), onHours:e=>this.setEstLine(i,'hours',e.target.value),
+                    onHoursKey:e=>{ if(e.key==='Enter'){ e.preventDefault(); this.focusNextEstConcept(i); } },
+                    insert:()=>this.addEstLine('activity',i+1), insertTitle:isSection?'Agregar actividades al inicio de esta sección':'Agregar una actividad debajo',
+                    openCounter:()=>this.openEstCounter(l.id), counterOpen:isSection&&s.estCounter.lineId===l.id,
+                    up:()=>this.moveEstLine(i,-1), down:()=>this.moveEstLine(i,1), remove:()=>this.removeEstLine(i),
+                    upDisabled:i===0, downDisabled:i===last, upOpacity:i===0?'.3':'1', downOpacity:i===last?'.3':'1' };
+                }),
+                linesEmpty:!d.lines.length,
+                addSection:()=>this.addEstLine('section'), addActivity:()=>this.addEstLine('activity'),
+                counter:(()=>{
+                  const n=this.estCounterValue(), add=()=>this.addEstActivitiesToSection();
+                  return { count:s.estCounter.count, disabled:!n, opacity:n?'1':'.45', add, close:()=>this.closeEstCounter(),
+                    onCount:e=>{ const count=e.target.value; this.setState(st=>({estCounter:{...st.estCounter,count}})); },
+                    onFocus:e=>e.target.select(),
+                    onKey:e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } else if(e.key==='Escape') this.closeEstCounter(); } };
+                })(),
+                summary,
+              };
+            }
           }
 
           // MODAL
@@ -4303,7 +5058,7 @@
             const fields={
               empresa:[{label:'Nombre de la empresa',key:'nombre',kind:'text',placeholder:'Ej: Coltanques'}],
               proyecto:[{label:'Nombre del proyecto',key:'nombre',kind:'text',placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:'area',placeholder:'Breve descripción'}],
-              requerimiento:[...(md.global?[{label:'Empresa',key:'empresaId',kind:'select',options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:'select',options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'#Req',key:'codigo',kind:'text',placeholder:'Ej: REQ-001, HU-24...'},{label:'Título del requerimiento',key:'titulo',kind:'text',placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:'area',placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:'area',placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:'text',type:'date'},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:'text',type:'date'},{label:'Horas estimadas',key:'horas',kind:'text',type:'number',placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:'checklist',options:responsibleOptions}],
+              requerimiento:[...(md.global?[{label:'Empresa',key:'empresaId',kind:'select',options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:'select',options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:'codes',help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:'text',placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:'area',placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:'select',options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:'area',placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:'text',type:'date'},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:'text',type:'date'},{label:'Horas estimadas',key:'horas',kind:'text',type:'number',placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:'checklist',options:responsibleOptions}],
               documento:[{label:'Nombre',key:'nombre',kind:'text',placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:'text',placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:'text',placeholder:'https://...'}],
               despliegue:[{label:'Ambiente',key:'env',kind:'select',options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:'text',placeholder:'https://...'},{label:'Versión / release',key:'version',kind:'text',placeholder:'v1.0.0'}],
               bloqueante:[{label:'Descripción del bloqueante',key:'texto',kind:'area',placeholder:'¿Qué está bloqueando el avance?'}],
@@ -4317,12 +5072,16 @@
             R.formFields=(fields[md.type]||[]).map(fd=>{
               const isPassword = fd.type==='password';
               const shown = !!s.modalShowPass[fd.key];
-              const fullReqField=md.type==='requerimiento' && ['titulo','descripcionCambios','observaciones','responsables'].includes(fd.key);
+              const fullReqField=md.type==='requerimiento' && ['titulo','descripcionCambios','observaciones','responsables','codigos'].includes(fd.key);
               const isChecklist=fd.kind==='checklist';
+              const isCodes=fd.kind==='codes';
+              const codeRows=s.form.codigos||[''];
               const selectedOwners=s.form.responsables||[];
-              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist?'':(s.form[fd.key]??''), help:fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '', onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): ''), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type==='requerimiento'?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type==='requerimiento'?'var(--gp-surface)':'transparent', fieldBorder:md.type==='requerimiento'?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
-                isSelect:fd.kind==='select', isChecklist, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
+                isSelect:fd.kind==='select', isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind==='text', isArea:fd.kind==='area', options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
+                codes:isCodes?codeRows.map((value,i)=>({value, principal:i===0, onInput:e=>this.setReqCode(i,e.target.value), canRemove:codeRows.length>1, remove:()=>this.removeReqCode(i)})):[],
+                addCode:()=>this.addReqCode(),
                 inputType: isPassword ? (shown?'text':'password') : (fd.type||'text'), min:fd.min||'', step:fd.step||'1',
                 isPassword, padRight: isPassword?'38px':'12px',
                 eyeHref: shown?'#ic-eye-off':'#ic-eye',
