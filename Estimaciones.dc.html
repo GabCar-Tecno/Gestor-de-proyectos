@@ -8,8 +8,8 @@
         align-items: center;
         gap: 9px;
         background: var(--gp-surface);
-        border: 1px solid rgba(53, 192, 240, 0.38);
-        color: #35c0f0;
+        border: 1px solid var(--gp-cyan-38);
+        color: var(--gp-cyan);
         cursor: pointer;
         padding: 10px 15px;
         border-radius: 10px;
@@ -19,7 +19,7 @@
           background 0.15s,
           border-color 0.15s;
       "
-      style-hover="background:rgba(53,192,240,.12);border-color:rgba(53,192,240,.65)"
+      style-hover="background:var(--gp-cyan-12);border-color:var(--gp-cyan-65)"
     >
       <svg width="15" height="15" style="transform: scaleX(-1)">
         <use href="#ic-chevron"></use></svg
@@ -58,7 +58,7 @@
           flex-wrap: wrap;
           transition: border-color 0.16s;
         "
-        style-hover="border-color:rgba(53,192,240,.4)"
+        style-hover="border-color:var(--gp-cyan-40)"
       >
         <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 5px">
           <div style="display: flex; align-items: center; gap: 9px; flex-wrap: wrap">
@@ -75,8 +75,8 @@
                 font-family: &quot;JetBrains Mono&quot;, monospace;
                 font-size: 11px;
                 font-weight: 600;
-                color: #35c0f0;
-                background: rgba(53, 192, 240, 0.12);
+                color: var(--gp-cyan);
+                background: var(--gp-cyan-12);
                 padding: 1px 8px;
                 border-radius: 6px;
               "
@@ -131,7 +131,7 @@
                 font-family: &quot;JetBrains Mono&quot;, monospace;
                 font-size: 14px;
                 font-weight: 700;
-                color: #35c0f0;
+                color: var(--gp-cyan);
               "
               >{{ e.estHoras }}</span
             >
@@ -147,12 +147,12 @@
                 align-items: center;
                 gap: 6px;
                 font-size: 12px;
-                color: #f97b7b;
-                background: rgba(249, 123, 123, 0.12);
+                color: var(--gp-red);
+                background: var(--gp-red-12);
                 padding: 3px 9px;
                 border-radius: 8px;
               "
-              ><span style="width: 7px; height: 7px; border-radius: 50%; background: #f97b7b"></span
+              ><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--gp-red)"></span
               >{{ e.alertLabel }}</span
             >
           </sc-if>
@@ -170,7 +170,7 @@
               font-size: 12.5px;
               font-weight: 500;
             "
-            style-hover="border-color:rgba(53,192,240,.4)"
+            style-hover="border-color:var(--gp-cyan-40)"
           >
             Abrir
           </button>
@@ -187,7 +187,7 @@
               font-size: 12.5px;
               font-weight: 500;
             "
-            style-hover="border-color:rgba(53,192,240,.4)"
+            style-hover="border-color:var(--gp-cyan-40)"
           >
             Duplicar como nueva versión
           </button>
@@ -195,8 +195,8 @@
             onClick="{{ e.del }}"
             style="
               background: none;
-              border: 1px solid rgba(249, 123, 123, 0.25);
-              color: #f97b7b;
+              border: 1px solid var(--gp-red-25);
+              color: var(--gp-red);
               cursor: pointer;
               padding: 7px 10px;
               border-radius: 9px;
@@ -231,15 +231,15 @@
               display: inline-flex;
               align-items: center;
               gap: 8px;
-              background: linear-gradient(135deg, #2b3bd6, #23a9e0);
-              color: #fff;
+              background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+              color: var(--gp-white);
               border: 0;
               padding: 9px 16px;
               border-radius: 10px;
               font-size: 13px;
               font-weight: 600;
               cursor: pointer;
-              box-shadow: 0 6px 18px -6px rgba(43, 59, 214, 0.7);
+              box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
             "
           >
             <span style="font-size: 16px; line-height: 0; margin-top: -1px">+</span>Nueva estimación

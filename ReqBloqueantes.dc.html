@@ -12,13 +12,13 @@
         onClick="{{ b.toggle }}"
         disabled="{{ b.locked }}"
         title="Marcar"
-        style="flex:none;margin-top:1px;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ b.accent }};background:{{ b.checkBg }};cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center"
+        style="flex:none;margin-top:1px;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ b.accent }};background:{{ b.checkBg }};cursor:pointer;color:var(--gp-white);display:flex;align-items:center;justify-content:center"
       >
         <sc-if
           value="{{ b.resuelto }}"
           hint-placeholder-val="{{ false }}"
           ><svg width="13" height="13">
-            <use href="#ic-check"></use></svg
+            <use href="{{ icons.check }}"></use></svg
         ></sc-if>
       </button>
       <div style="flex: 1">
@@ -52,10 +52,10 @@
             padding: 4px;
             display: flex;
           "
-          style-hover="color:#f97b7b"
+          style-hover="color:var(--gp-red)"
         >
           <svg width="15" height="15">
-            <use href="#ic-x"></use>
+            <use href="{{ icons.x }}"></use>
           </svg>
         </button>
       </sc-if>
@@ -71,15 +71,15 @@
         justify-content: center;
         gap: 8px;
         padding: 34px;
-        color: #39d39b;
+        color: var(--gp-green);
         font-size: 13.5px;
-        background: rgba(57, 211, 155, 0.06);
-        border: 1px solid rgba(57, 211, 155, 0.16);
+        background: var(--gp-green-6);
+        border: 1px solid var(--gp-green-16);
         border-radius: 12px;
       "
     >
       <svg width="15" height="15">
-        <use href="#ic-check"></use></svg
+        <use href="{{ icons.check }}"></use></svg
       >Sin bloqueantes activos.
     </div></sc-if
   >
@@ -102,16 +102,16 @@
         justify-content: center;
         gap: 8px;
       "
-      style-hover="border-color:rgba(249,123,123,.5);color:#f97b7b"
+      style-hover="border-color:var(--gp-red-50);color:var(--gp-red)"
     >
       <svg width="15" height="15">
-        <use href="#ic-plus"></use></svg
+        <use href="{{ icons.plus }}"></use></svg
       >Agregar bloqueante
     </button>
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"req":null,"isDev":false,"bloqEmpty":false,"addBloqueante":null}'>
+<script type="text/x-dc" data-dc-script data-props='{"req":null,"isDev":false,"bloqEmpty":false,"addBloqueante":null,"icons":{"check":"#ic-check","plus":"#ic-plus","x":"#ic-x"}}'>
 class Component extends DCLogic {
 }
 </script>

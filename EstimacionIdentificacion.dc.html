@@ -1,0 +1,154 @@
+<x-dc>
+<section
+  style="
+    background: var(--gp-surface);
+    border: 1px solid var(--gp-line-16);
+    border-radius: 16px;
+    padding: 18px 20px 20px;
+  "
+>
+  <div style="font-weight: 600; font-size: 15px; margin-bottom: 14px">Identificación</div>
+  <div class="est-id-grid">
+    <div class="est-span-2" style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-req" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+        >Requerimiento</label
+      >
+      <select
+        id="est-req"
+        value="{{ est.requirementId }}"
+        onChange="{{ est.on.requirementId }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
+      >
+        <sc-for list="{{ est.reqOptions }}" as="o" hint-placeholder-count="3"
+          ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+        >
+      </select>
+      <sc-if value="{{ est.willCreateReq }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45">{{ est.reqHelp }}</span>
+      </sc-if>
+      <sc-if value="{{ est.hasReq }}" hint-placeholder-val="{{ false }}">
+        <label
+          style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12.5px;
+            color: var(--gp-text-2);
+          "
+        >
+          <input
+            type="checkbox"
+            checked="{{ est.updateReqHours }}"
+            onChange="{{ est.on.updateReqHours }}"
+            style="width: 15px; height: 15px; accent-color: var(--gp-cyan); margin: 0"
+          />Actualizar las horas del requerimiento
+        </label>
+        <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45">{{ est.reqHelp }}</span>
+      </sc-if>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-code" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Código</label>
+      <input
+        id="est-code"
+        value="{{ est.code }}"
+        onInput="{{ est.on.code }}"
+        placeholder="Ej: R_17300"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+      <span style="font-size: 11.5px; color: var(--gp-muted-2); line-height: 1.45"
+        >Un solo PBI. El requerimiento lleva sus propios códigos.</span
+      >
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-version" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Versión</label>
+      <input
+        id="est-version"
+        value="{{ est.versionLabel }}"
+        onInput="{{ est.on.versionLabel }}"
+        placeholder="V1"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+    </div>
+    <div class="est-span-2" style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-initiative" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+        >Nombre de la iniciativa</label
+      >
+      <input
+        id="est-initiative"
+        value="{{ est.initiativeName }}"
+        onInput="{{ est.on.initiativeName }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-date" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Fecha</label>
+      <input
+        id="est-date"
+        type="date"
+        value="{{ est.estimatedOn }}"
+        onInput="{{ est.on.estimatedOn }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:8px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-complexity" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+        >Complejidad</label
+      >
+      <select
+        id="est-complexity"
+        value="{{ est.complexityId }}"
+        onChange="{{ est.on.complexityId }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
+      >
+        <sc-for list="{{ est.complexityOptions }}" as="o" hint-placeholder-count="5"
+          ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+        >
+      </select>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-client" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Cliente</label>
+      <input
+        id="est-client"
+        value="{{ est.clientName }}"
+        onInput="{{ est.on.clientName }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-requester" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
+        >Solicitante</label
+      >
+      <input
+        id="est-requester"
+        value="{{ est.requesterName }}"
+        onInput="{{ est.on.requesterName }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px;outline:none"
+        style-focus="border-color:var(--gp-cyan)"
+      />
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
+      <label for="est-pm" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">PM</label>
+      <select
+        id="est-pm"
+        value="{{ est.pmName }}"
+        onChange="{{ est.on.pmName }}"
+        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
+      >
+        <sc-for list="{{ est.pmOptions }}" as="o" hint-placeholder-count="3"
+          ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+        >
+      </select>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"est":null}'>
+class Component extends DCLogic {
+}
+</script>

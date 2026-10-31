@@ -21,11 +21,11 @@
         display: flex;
         align-items: flex-start;
         gap: 9px;
-        background: rgba(245, 181, 68, 0.1);
-        border: 1px solid rgba(245, 181, 68, 0.25);
+        background: var(--gp-amber-10);
+        border: 1px solid var(--gp-amber-25);
         border-radius: 10px;
         padding: 11px 13px;
-        color: #f5b544;
+        color: var(--gp-amber);
         font-size: 12.5px;
         line-height: 1.5;
       "
@@ -35,7 +35,7 @@
         height="15"
         style="flex: none; margin-top: 1px"
       >
-        <use href="#ic-alert"></use></svg
+        <use href="{{ icons.alert }}"></use></svg
       ><span>{{ batch.skippedText }}</span>
     </div>
   </sc-if>
@@ -44,7 +44,7 @@
     hint-placeholder-val="{{ false }}"
     ><div
       style="
-        color: #f97b7b;
+        color: var(--gp-red);
         font-size: 12.5px;
         line-height: 1.5;
       "
@@ -54,7 +54,7 @@
   >
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"batch":null,"modalErrShow":false,"modalErr":null}'>
+<script type="text/x-dc" data-dc-script data-props='{"batch":null,"modalErrShow":false,"modalErr":null,"icons":{"alert":"#ic-alert"}}'>
 class Component extends DCLogic {
 }
 </script>

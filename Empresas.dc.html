@@ -46,7 +46,7 @@
             border-color 0.18s,
             transform 0.18s;
         "
-        style-hover="border-color:rgba(53,192,240,.45);transform:translateY(-3px)"
+        style-hover="border-color:var(--gp-cyan-45);transform:translateY(-3px)"
       >
         <div
           style="
@@ -63,7 +63,7 @@
                 height: 64px;
                 padding: 6px 10px;
                 border-radius: 14px;
-                background: #fff;
+                background: var(--gp-white);
                 border: 1px solid var(--gp-line-14);
                 display: flex;
                 align-items: center;
@@ -86,7 +86,7 @@
             value="{{ !e.logo }}"
             hint-placeholder-val="{{ true }}"
             ><div
-              style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;color:#fff;background:{{ e.color }}"
+              style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;color:var(--gp-white);background:{{ e.color }}"
             >
               {{ e.mono }}
             </div></sc-if

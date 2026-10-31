@@ -90,7 +90,7 @@
                 font-family:
                   &quot;JetBrains Mono&quot;, monospace;
               "
-              style-focus="border-color:#35c0f0"
+              style-focus="border-color:var(--gp-cyan)"
             />
           </label>
           <button
@@ -98,11 +98,11 @@
             style="
               background: linear-gradient(
                 135deg,
-                #2b3bd6,
-                #23a9e0
+                var(--gp-indigo),
+                var(--gp-sky)
               );
               border: 0;
-              color: #fff;
+              color: var(--gp-white);
               cursor: pointer;
               padding: 11px 18px;
               border-radius: 10px;
@@ -139,7 +139,7 @@
               outline: none;
               resize: vertical;
             "
-            style-focus="border-color:#35c0f0"
+            style-focus="border-color:var(--gp-cyan)"
           ></textarea>
           <button
             onClick="{{ saveApiJson }}"
@@ -147,11 +147,11 @@
               align-self: flex-start;
               background: linear-gradient(
                 135deg,
-                #2b3bd6,
-                #23a9e0
+                var(--gp-indigo),
+                var(--gp-sky)
               );
               border: 0;
-              color: #fff;
+              color: var(--gp-white);
               cursor: pointer;
               padding: 11px 18px;
               border-radius: 10px;
@@ -168,7 +168,7 @@
         hint-placeholder-val="{{ false }}"
         ><div
           style="
-            color: #f97b7b;
+            color: var(--gp-red);
             font-size: 12.5px;
             margin-top: 12px;
             line-height: 1.5;
@@ -214,7 +214,7 @@
           align-items: center;
           justify-content: center;
         "
-        style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+        style-hover="border-color:var(--gp-cyan-50);color:var(--gp-cyan)"
       >
         <svg width="15" height="15">
           <use href="{{ fullscreenIconHref }}"></use>
@@ -241,7 +241,7 @@
             padding: 24px;
           "
         >
-          <svg width="38" height="38" style="color: #3d4a70">
+          <svg width="38" height="38" style="color: var(--gp-twilight)">
             <use href="#ic-api"></use>
           </svg>
           <div

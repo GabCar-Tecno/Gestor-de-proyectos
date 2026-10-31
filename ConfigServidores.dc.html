@@ -30,15 +30,15 @@
         align-items: center;
         gap: 7px;
         background: none;
-        border: 1px solid rgba(53, 192, 240, 0.4);
-        color: #35c0f0;
+        border: 1px solid var(--gp-cyan-40);
+        color: var(--gp-cyan);
         cursor: pointer;
         padding: 7px 13px;
         border-radius: 9px;
         font-size: 12.5px;
         font-weight: 600;
       "
-      style-hover="background:rgba(53,192,240,.1)"
+      style-hover="background:var(--gp-cyan-10)"
     >
       <svg width="13" height="13">
         <use href="#ic-plus"></use></svg
@@ -95,7 +95,7 @@
               &quot;JetBrains Mono&quot;, monospace;
             font-size: 14px;
             font-weight: 600;
-            color: #35c0f0;
+            color: var(--gp-cyan);
           "
         >
           {{ s.code }}
@@ -123,7 +123,7 @@
               border-radius: 8px;
               font-size: 12px;
             "
-            style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+            style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
           >
             Editar
           </button>
@@ -132,14 +132,14 @@
             style="
               flex: none;
               background: none;
-              border: 1px solid rgba(249, 123, 123, 0.25);
-              color: #f97b7b;
+              border: 1px solid var(--gp-red-25);
+              color: var(--gp-red);
               cursor: pointer;
               padding: 6px 10px;
               border-radius: 8px;
               font-size: 12px;
             "
-            style-hover="background:rgba(249,123,123,.08)"
+            style-hover="background:var(--gp-red-8)"
           >
             Eliminar
           </button>

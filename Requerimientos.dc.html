@@ -75,7 +75,7 @@
           font-size: 12.5px;
           font-weight: 500;
         "
-        style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+        style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
       >
         <svg width="14" height="14">
           <use href="#ic-check"></use></svg
@@ -95,10 +95,10 @@
         flex-wrap: wrap;
         background: linear-gradient(
           120deg,
-          rgba(43, 59, 214, 0.2),
-          rgba(35, 169, 224, 0.12)
+          var(--gp-indigo-20),
+          var(--gp-sky-12)
         );
-        border: 1px solid rgba(53, 192, 240, 0.3);
+        border: 1px solid var(--gp-cyan-30);
         border-radius: 12px;
         padding: 12px 16px;
         margin-bottom: 14px;
@@ -118,7 +118,7 @@
           font-size: 12.5px;
           padding: 4px 6px;
         "
-        style-hover="color:#35c0f0"
+        style-hover="color:var(--gp-cyan)"
       >
         Limpiar
       </button>
@@ -129,15 +129,15 @@
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+          background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
           border: 0;
-          color: #fff;
+          color: var(--gp-white);
           cursor: pointer;
           padding: 9px 16px;
           border-radius: 9px;
           font-size: 13px;
           font-weight: 600;
-          box-shadow: 0 6px 18px -6px rgba(43, 59, 214, 0.7);
+          box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
         "
       >
         <svg width="14" height="14">
@@ -167,14 +167,14 @@
           flex-wrap: wrap;
           transition: border-color 0.16s;
         "
-        style-hover="border-color:rgba(53,192,240,.4)"
+        style-hover="border-color:var(--gp-cyan-40)"
       >
         <sc-if
           value="{{ r.selectMode }}"
           hint-placeholder-val="{{ false }}"
         >
           <span
-            style="flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ r.checkBorder }};background:{{ r.checkBg }};display:inline-flex;align-items:center;justify-content:center;color:#fff"
+            style="flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid {{ r.checkBorder }};background:{{ r.checkBg }};display:inline-flex;align-items:center;justify-content:center;color:var(--gp-white)"
             ><sc-if
               value="{{ r.selected }}"
               hint-placeholder-val="{{ false }}"
@@ -236,8 +236,8 @@
               align-items: center;
               gap: 5px;
               font-size: 12px;
-              color: #f97b7b;
-              background: rgba(249, 123, 123, 0.12);
+              color: var(--gp-red);
+              background: var(--gp-red-12);
               padding: 3px 9px;
               border-radius: 8px;
             "

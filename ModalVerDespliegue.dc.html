@@ -8,7 +8,7 @@
         font-family: &quot;JetBrains Mono&quot;, monospace;
         font-size: 15px;
         font-weight: 600;
-        color: #35c0f0;
+        color: var(--gp-cyan);
       "
     >
       {{ verDespliegue.env }}
@@ -31,7 +31,7 @@
     <div
       style="
         background: var(--gp-field);
-        border: 1px solid rgba(57, 211, 155, 0.25);
+        border: 1px solid var(--gp-green-25);
         border-radius: 10px;
         padding: 12px 13px;
         display: flex;
@@ -48,7 +48,7 @@
           font-family:
             &quot;JetBrains Mono&quot;, monospace;
           font-size: 14px;
-          color: #39d39b;
+          color: var(--gp-green);
         "
         >{{ verDespliegue.versionText }}</span
       >
@@ -56,7 +56,7 @@
         onClick="{{ verDespliegue.copyVersion }}"
         title="{{ verDespliegue.copyVersionTitle }}"
         style="flex:none;width:30px;height:30px;border-radius:8px;background:{{ verDespliegue.copyVersionBg }};border:1px solid {{ verDespliegue.copyVersionBorder }};color:{{ verDespliegue.copyVersionColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
-        style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+        style-hover="border-color:var(--gp-cyan-45);color:var(--gp-cyan)"
       >
         <svg width="14" height="14">
           <use
@@ -105,7 +105,7 @@
         onClick="{{ verDespliegue.copyUrl }}"
         title="{{ verDespliegue.copyUrlTitle }}"
         style="flex:none;width:30px;height:30px;border-radius:8px;background:{{ verDespliegue.copyUrlBg }};border:1px solid {{ verDespliegue.copyUrlBorder }};color:{{ verDespliegue.copyUrlColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
-        style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+        style-hover="border-color:var(--gp-cyan-45);color:var(--gp-cyan)"
       >
         <svg width="14" height="14">
           <use
@@ -132,7 +132,7 @@
         font-size: 13px;
         font-weight: 500;
       "
-      style-hover="border-color:rgba(53,192,240,.4)"
+      style-hover="border-color:var(--gp-cyan-40)"
     >
       Abrir ambiente<svg width="13" height="13">
         <use href="#ic-ext"></use>
@@ -158,7 +158,7 @@
           font-size: 13px;
           font-weight: 500;
         "
-        style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+        style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
       >
         <svg width="14" height="14">
           <use href="#ic-send"></use></svg
@@ -177,7 +177,7 @@
           font-size: 13px;
           font-weight: 500;
         "
-        style-hover="color:#35c0f0;border-color:rgba(53,192,240,.4)"
+        style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
       >
         Editar despliegues
       </button>

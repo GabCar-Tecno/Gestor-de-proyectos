@@ -25,10 +25,10 @@
         cursor: pointer;
         background: linear-gradient(
           120deg,
-          rgba(43, 59, 214, 0.22),
-          rgba(35, 169, 224, 0.12)
+          var(--gp-indigo-22),
+          var(--gp-sky-12)
         );
-        border: 1px solid rgba(53, 192, 240, 0.28);
+        border: 1px solid var(--gp-cyan-28);
         border-radius: 18px;
         padding: 22px 24px;
         display: flex;
@@ -38,7 +38,7 @@
         margin-bottom: 16px;
         transition: border-color 0.18s;
       "
-      style-hover="border-color:rgba(53,192,240,.55)"
+      style-hover="border-color:var(--gp-cyan-55)"
     >
       <div
         style="
@@ -72,7 +72,7 @@
               display: inline-flex;
               align-items: center;
               gap: 8px;
-              color: #35c0f0;
+              color: var(--gp-cyan);
               font-weight: 600;
               font-size: 14px;
             "
@@ -131,15 +131,17 @@
     isDev="{{ isDev }}" editDesplieguesProy="{{ editDesplieguesProy }}"
     proyecto="{{ proyecto }}" openComponentesProy="{{ openComponentesProy }}"
     componentesProyEmpty="{{ componentesProyEmpty }}" componentesProy="{{ componentesProy }}"
+    icons="{{ icons }}"
   />
 
   <dc-import name="ProyectoCredenciales"
     isDev="{{ isDev }}" editCredenciales="{{ editCredenciales }}"
     proyecto="{{ proyecto }}" credsEmpty="{{ credsEmpty }}"
+    icons="{{ icons }}"
   />
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"proyecto":null,"isDev":false,"goRequerimientos":null,"editDesplieguesProy":null,"openComponentesProy":null,"componentesProyEmpty":false,"componentesProy":null,"editCredenciales":null,"credsEmpty":false}'>
+<script type="text/x-dc" data-dc-script data-props='{"proyecto":null,"isDev":false,"goRequerimientos":null,"editDesplieguesProy":null,"openComponentesProy":null,"componentesProyEmpty":false,"componentesProy":null,"editCredenciales":null,"credsEmpty":false,"icons":{"chevron":"#ic-chevron","deploy":"#ic-deploy","external":"#ic-ext","key":"#ic-key"}}'>
 class Component extends DCLogic {
 }
 </script>

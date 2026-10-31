@@ -20,7 +20,7 @@
     "
   >
     <div style="display: flex; align-items: center; gap: 9px">
-      <svg width="17" height="17" style="color: #35c0f0">
+      <svg width="17" height="17" style="color: var(--gp-cyan)">
         <use href="#ic-key"></use></svg
       ><span style="font-weight: 600; font-size: 15px"
         >Accesos</span
@@ -41,7 +41,7 @@
           padding: 4px 6px;
           border-radius: 6px;
         "
-        style-hover="color:#35c0f0"
+        style-hover="color:var(--gp-cyan)"
       >
         Editar
       </button>
@@ -103,8 +103,8 @@
                 font-family:
                   &quot;JetBrains Mono&quot;, monospace;
                 font-size: 10.5px;
-                color: #35c0f0;
-                background: rgba(53, 192, 240, 0.12);
+                color: var(--gp-cyan);
+                background: var(--gp-cyan-12);
                 padding: 2px 7px;
                 border-radius: 6px;
               "
@@ -169,7 +169,7 @@
               align-items: center;
               justify-content: center;
             "
-            style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+            style-hover="border-color:var(--gp-cyan-45);color:var(--gp-cyan)"
           >
             <svg width="13" height="13">
               <use href="{{ c.eyeHref }}"></use>
@@ -179,7 +179,7 @@
             onClick="{{ c.copy }}"
             title="{{ c.copyTitle }}"
             style="flex:none;width:26px;height:26px;border-radius:7px;background:{{ c.copyBg }};border:1px solid {{ c.copyBorder }};color:{{ c.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s"
-            style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+            style-hover="border-color:var(--gp-cyan-45);color:var(--gp-cyan)"
           >
             <svg width="13" height="13">
               <use href="{{ c.copyIconHref }}"></use>
@@ -205,7 +205,7 @@
                 align-items: center;
                 justify-content: center;
               "
-              style-hover="border-color:rgba(53,192,240,.45);color:#35c0f0"
+              style-hover="border-color:var(--gp-cyan-45);color:var(--gp-cyan)"
             >
               <svg width="12" height="12">
                 <use href="#ic-ext"></use>

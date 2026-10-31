@@ -42,7 +42,7 @@
             font-size: 13px;
             outline: none;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
         <input
           value="{{ l.url }}"
@@ -61,7 +61,7 @@
             font-family:
               &quot;JetBrains Mono&quot;, monospace;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
       </div>
       <div style="display: flex; gap: 6px; flex: none">
@@ -73,7 +73,7 @@
             onClick="{{ l.copy }}"
             title="{{ l.copyTitle }}"
             style="flex:none;width:34px;height:34px;border-radius:9px;background:none;border:1px solid var(--gp-line-20);color:{{ l.copyColor }};cursor:pointer;display:flex;align-items:center;justify-content:center"
-            style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+            style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
           >
             <svg width="14" height="14">
               <use href="{{ l.copyIconHref }}"></use>
@@ -95,7 +95,7 @@
               align-items: center;
               justify-content: center;
             "
-            style-hover="border-color:rgba(53,192,240,.4);color:#35c0f0"
+            style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
           >
             <svg width="14" height="14">
               <use href="#ic-ext"></use>
@@ -122,7 +122,7 @@
               align-items: center;
               justify-content: center;
             "
-            style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"
+            style-hover="border-color:var(--gp-red-40);color:var(--gp-red)"
           >
             <svg width="14" height="14">
               <use href="#ic-x"></use>
@@ -147,7 +147,7 @@
       align-items: center;
       gap: 7px;
     "
-    style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+    style-hover="border-color:var(--gp-cyan-50);color:var(--gp-cyan)"
   >
     <svg width="14" height="14">
       <use href="#ic-plus"></use></svg

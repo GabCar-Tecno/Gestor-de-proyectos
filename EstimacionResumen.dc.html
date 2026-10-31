@@ -1,0 +1,87 @@
+<x-dc>
+<div
+  style="
+    background: var(--gp-surface);
+    border: 1px solid var(--gp-line-16);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  "
+>
+  <div style="display: flex; align-items: center; gap: 9px">
+    <svg width="17" height="17" style="color: var(--gp-cyan)"><use href="#ic-chart"></use></svg
+    ><span style="font-weight: 600; font-size: 15px">Resumen</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+      <span style="font-size: 12.5px; color: var(--gp-muted)">Subtotal horas desarrollador</span>
+      <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:14px;font-weight:600;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.developer }}</span>
+    </div>
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+      <span style="font-size: 12.5px; color: var(--gp-muted)">Subtotal estimación estadística</span>
+      <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:16px;font-weight:700;color:var(--gp-cyan);white-space:nowrap">{{ est.summary.statistical }}</span>
+    </div>
+  </div>
+  <div style="height: 1px; background: var(--gp-line-18)"></div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 11px; font-weight: 600; color: var(--gp-muted-2)">Horas por tipo · % del subtotal desarrollador</span>
+    <sc-for list="{{ est.summary.byType }}" as="b" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; gap: 3px">
+        <div style="display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:{{ b.color }}">
+          <span style="flex: 1; min-width: 0">{{ b.label }}</span>
+          <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:12px">{{ b.hours }}</span>
+          <span style="width:52px;text-align:right;font-family:&quot;JetBrains Mono&quot;,monospace;font-size:11.5px;color:var(--gp-muted-2)">{{ b.pct }}</span>
+        </div>
+        <div style="height: 3px; border-radius: 99px; background: var(--gp-line-14); overflow: hidden">
+          <div style="height:100%;width:{{ b.barW }};background:var(--gp-cyan);border-radius:99px"></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="height: 1px; background: var(--gp-line-18)"></div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+      <span style="font-size: 12.5px; color: var(--gp-muted)"
+        >Horas dedicadas por día<br /><span style="font-size: 11px; color: var(--gp-muted-2)">{{ est.summary.dedicatedDetail }}</span></span
+      >
+      <span style="font-family:&quot;JetBrains Mono&quot;,monospace;font-size:13px;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.dedicated }}</span>
+    </div>
+    <div
+      style="
+        background: var(--gp-cyan-10);
+        border: 1px solid var(--gp-cyan-30);
+        border-radius: 11px;
+        padding: 11px 13px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      "
+    >
+      <span style="font-size: 12.5px; color: var(--gp-text-2); font-weight: 600"
+        >Entrega estimada<br /><span style="font-size: 11px; font-weight: 400; color: var(--gp-muted)">Estimación estadística ÷ horas dedicadas</span></span
+      >
+      <span style="font-size:17px;font-weight:700;color:var(--gp-cyan);white-space:nowrap">{{ est.summary.statDays }}</span>
+    </div>
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+      <span style="font-size: 12.5px; color: var(--gp-muted)"
+        >Días según horas de desarrollador<br /><span style="font-size: 11px; color: var(--gp-muted-2)">Sin el ajuste estadístico</span></span
+      >
+      <span style="font-size:13px;color:var(--gp-text-2);white-space:nowrap">{{ est.summary.devDays }}</span>
+    </div>
+  </div>
+  <div style="height: 1px; background: var(--gp-line-18)"></div>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+    <span style="font-size: 12.5px; color: var(--gp-muted)">Actividades en alerta</span>
+    <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:{{ est.summary.reviewColor }}"
+      ><span style="width:8px;height:8px;border-radius:50%;background:{{ est.summary.reviewColor }}"></span>{{ est.summary.review }}</span
+    >
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"est":null}'>
+class Component extends DCLogic {
+}
+</script>

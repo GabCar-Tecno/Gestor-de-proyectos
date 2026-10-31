@@ -25,7 +25,7 @@
           style="
             font-size: 11px;
             line-height: 1.45;
-            color: #f5b544;
+            color: var(--gp-amber);
           "
           >{{ f.help }}</span
         ></sc-if
@@ -38,14 +38,14 @@
           <sc-for list="{{ f.codes }}" as="c" hint-placeholder-count="1">
             <div style="display: flex; gap: 8px; align-items: center">
               <sc-if value="{{ c.principal }}" hint-placeholder-val="{{ false }}">
-                <span style="flex: none; font-size: 11px; font-weight: 600; color: #35c0f0">Principal</span>
+                <span style="flex: none; font-size: 11px; font-weight: 600; color: var(--gp-cyan)">Principal</span>
               </sc-if>
               <input
                 value="{{ c.value }}"
                 onInput="{{ c.onInput }}"
                 placeholder="Ej: 17301"
                 style="flex:1;min-width:0;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box;font-family:&quot;JetBrains Mono&quot;,monospace"
-                style-focus="border-color:#35c0f0"
+                style-focus="border-color:var(--gp-cyan)"
               />
               <sc-if value="{{ c.canRemove }}" hint-placeholder-val="{{ false }}">
                 <button
@@ -61,7 +61,7 @@
           <button
             type="button"
             onClick="{{ f.addCode }}"
-            style="align-self:flex-start;background:none;border:1px dashed var(--gp-line-22);color:#35c0f0;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:12.5px;font-weight:600"
+            style="align-self:flex-start;background:none;border:1px dashed var(--gp-line-22);color:var(--gp-cyan);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:12.5px;font-weight:600"
           >
             Agregar PBI
           </button>
@@ -150,7 +150,7 @@
             min="{{ f.min }}"
             step="{{ f.step }}"
             style="width:100%;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px {{ f.padRight }} 11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box"
-            style-focus="border-color:#35c0f0"
+            style-focus="border-color:var(--gp-cyan)"
           />
           <sc-if
             value="{{ f.isPassword }}"
@@ -172,7 +172,7 @@
                 display: flex;
                 padding: 2px;
               "
-              style-hover="color:#35c0f0"
+              style-hover="color:var(--gp-cyan)"
             >
               <svg width="16" height="16">
                 <use href="{{ f.eyeHref }}"></use>
@@ -206,7 +206,7 @@
             overflow-y: auto;
             font-family: inherit;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         ></textarea>
       </sc-if>
     </div>
@@ -217,7 +217,7 @@
     ><div
       style="
         grid-column: 1/-1;
-        color: #f97b7b;
+        color: var(--gp-red);
         font-size: 12.5px;
         line-height: 1.5;
       "
