@@ -1704,7 +1704,7 @@
                   height="14"
                   style="flex: none; transform: scaleX(-1)"
                 >
-                  <use href="{{ icons.chevron }}"></use>
+                  <use href="#ic-chevron"></use>
                 </svg>
                 <span style="overflow: hidden; text-overflow: ellipsis"
                   >{{ backCrumbLabel }}</span
@@ -1943,7 +1943,7 @@
                     "
                     style-hover="color:var(--gp-text)"
                   >
-                    <svg width="17" height="17"><use href="{{ icons.x }}"></use></svg>
+                    <svg width="17" height="17"><use href="#ic-x"></use></svg>
                   </button>
                 </div>
                 <div style="padding: 24px">
@@ -2390,7 +2390,7 @@
           super(props);
           this.state = {
             view:VIEW.companies, empresaId:null, proyectoId:null, reqId:null, estimacionId:null, estDraft:null,
-            estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, estCounter:{lineId:null,count:'1'},
+            estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, exportHourScenario:'mostProbable', estCounter:{lineId:null,count:'1'},
             reqTab:REQ_TAB.documents, filter:FILTER_ALL, modal:null, form:{},
             projectsView:PROJECTS_VIEW.grid, reqSelectMode:false, reqSelected:{},
             maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
@@ -4075,6 +4075,37 @@
           finally{ this._busy=false; }
         }
         isSectionOrFilledActivity(l){ return l.kind===ESTIMATION_LINE_KIND.section||l.concept||l.hours!==''; }
+        formatDayCount(x){
+          if(x==null||!Number.isFinite(x)) return '—';
+          const n=this.fmtNum(x,2);
+          return n+(n==='1'?' día':' días');
+        }
+        exportHourScenarios(){
+          return [
+            {id:'optimistic', label:'Optimista', file:'optimista'},
+            {id:'mostProbable', label:'Realista', file:'realista'},
+            {id:'pessimistic', label:'Pesimista', file:'pesimista'},
+            {id:'statistical', label:'Estimación estadística', file:'estadistica'},
+          ];
+        }
+        selectedExportScenario(){
+          const list=this.exportHourScenarios();
+          return list.find(x=>x.id===this.state.exportHourScenario)||list[1];
+        }
+        setExportHourScenario(id){ this.setState({exportHourScenario:id}); }
+        clientExportPack(d){
+          const scenario=this.selectedExportScenario();
+          const base=this.estExportDataAsOnScreen(d), t=base.t;
+          let total=0;
+          const rows=base.rows.filter(l=>l.kind!==ESTIMATION_LINE_KIND.section||!!(l.concept||'').trim()).map(l=>{
+            if(l.kind===ESTIMATION_LINE_KIND.section) return {section:true, concept:l.concept, type:'', hours:null};
+            const hours=l.m&&Number.isFinite(l.m[scenario.id])?l.m[scenario.id]:null;
+            if(hours!=null) total+=hours;
+            return {section:false, concept:l.concept, type:l.typeLabel, hours};
+          });
+          const days=t.dedicated>0?total/t.dedicated:null;
+          return {scenario, rows, total, days, fileName:base.fileName+'-'+scenario.file};
+        }
         estExportDataAsOnScreen(d){
           const c=this.estDraftCalc(d), types=this.state.estActivityTypes||[], typeById=this.indexById(types);
           const rows=c.lines.map((l,i)=>({...l,concept:(l.concept||'').trim(),typeLabel:(typeById.get(l.typeId)||{}).label||l.typeId||'',m:c.totals.metrics[i]}))
@@ -4088,39 +4119,35 @@
           this.setState({exportingEstimacion:true});
           try{
             const XLSX=await this.loadXlsx();
-            const {c,t,types,rows,fileName}=this.estExportDataAsOnScreen(d);
+            const pack=this.clientExportPack(d);
             const n=v=>v==null||!Number.isFinite(v)?null:parseFloat(v.toFixed(4));
             const day=/^(\d{4})-(\d{2})-(\d{2})/.exec(d.estimatedOn||'');
             const dateCell=day?(Date.UTC(+day[1],+day[2]-1,+day[3])-EXCEL.epochUtc)/MS_PER_DAY:'';
             const aoa=[
               ['Estimación de esfuerzo'],[],
-              ['Código',(d.code||'').trim()],['Fecha',dateCell],['Cliente',(d.clientName||'').trim()],['Iniciativa',(d.initiativeName||'').trim()],
-              ['Solicitante',(d.requesterName||'').trim()],['PM',(d.pmName||'').trim()],['Versión',(d.versionLabel||'').trim()],['Complejidad',c.complexity?c.complexity.label:''],
-              ['Decimales de redondeo',c.params.decimals],['Umbral de alerta',n(c.params.alertRatio)],['Horas diarias',n(c.params.dailyHours)],['Dedicación',n(c.params.dedication)],
+              ['Iniciativa',(d.initiativeName||'').trim()],
+              ['Código',(d.code||'').trim()],
+              ['Cliente',(d.clientName||'').trim()],
+              ['Fecha de la estimación',dateCell],
+              ['Versión',(d.versionLabel||'').trim()],
+              ['Tipo de horas',pack.scenario.label],
               [],
             ];
-            const fmts=[[3,1,EXCEL.dateFormat],[13,1,EXCEL.percentFormat]];
+            const fmts=[[5,1,EXCEL.dateFormat]];
             const merges=[];
-            aoa.push(['Tipo','Concepto','Horas desarrollador','Optimista','Más probable','Pesimista','Estimación estadística']);
-            rows.forEach(l=>{
-              if(l.kind===ESTIMATION_LINE_KIND.section){ merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:6}}); aoa.push([l.concept]); return; }
-              const m=l.m;
-              aoa.push([l.typeLabel,l.concept,l.hours===''?null:l.hours,m?n(m.optimistic):null,m?n(m.mostProbable):null,m?n(m.pessimistic):null,m?n(m.statistical):null]);
+            aoa.push(['Concepto','Horas '+pack.scenario.label.toLowerCase()]);
+            pack.rows.forEach(l=>{
+              if(l.section){ merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:1}}); aoa.push([l.concept]); return; }
+              aoa.push([l.concept,n(l.hours)]);
             });
-            aoa.push(['','Subtotal',n(t.developer),null,null,null,n(t.statistical)]);
-            aoa.push([],['Totales']);
-            aoa.push(['Subtotal horas desarrollador',n(t.developer)],['Subtotal estimación estadística',n(t.statistical)],['Horas dedicadas por día',n(t.dedicated)]);
-            aoa.push(['Entrega estimada (días)',t.statisticalDays==null?null:parseFloat(t.statisticalDays.toFixed(2))]);
-            aoa.push(['Días según horas de desarrollador',t.developerDays==null?null:parseFloat(t.developerDays.toFixed(2))]);
-            aoa.push(['Actividades en alerta',t.review],[]);
-            aoa.push(['Horas por tipo','Horas','% del subtotal desarrollador']);
-            types.forEach(x=>{ const h=t.byType[x.id]||0; fmts.push([aoa.length,2,EXCEL.percentFormat]); aoa.push([x.label,n(h),t.developer>0?h/t.developer:0]); });
+            aoa.push(['Total de horas',n(pack.total)]);
+            aoa.push(['Entrega estimada',this.formatDayCount(pack.days)]);
             const ws=XLSX.utils.aoa_to_sheet(aoa);
             fmts.forEach(([r,col,z])=>{ const cell=ws[XLSX.utils.encode_cell({r,c:col})]; if(cell&&cell.t===EXCEL.numberCellType) cell.z=z; });
             ws['!merges']=merges;
-            ws['!cols']=[{wch:32},{wch:62},{wch:20},{wch:11},{wch:13},{wch:11},{wch:22}];
+            ws['!cols']=[{wch:72},{wch:28}];
             const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Estimación');
-            XLSX.writeFile(wb,fileName+EXCEL.extension);
+            XLSX.writeFile(wb,pack.fileName+EXCEL.extension);
           }catch(e){ console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
           finally{ this.setState({exportingEstimacion:false}); }
         }
@@ -4131,62 +4158,50 @@
           if(!w){ this.setState({modal:{type:MODAL.notice,title:'No se pudo abrir la vista para PDF',mensaje:'El navegador bloqueó la ventana. Permite ventanas emergentes para este sitio e intenta de nuevo.'},form:{}}); return; }
           w.document.open(); w.document.write(this.estimacionPrintHtml(d)); w.document.close();
           w.focus();
-          setTimeout(()=>{ try{ w.print(); }catch(e){} },DELAY_MS.printDialog);
+          const logo=w.document.querySelector('.brand');
+          const printWhenReady=()=>{ try{ w.print(); }catch(e){} };
+          if(logo && !logo.complete){ logo.addEventListener('load', printWhenReady, {once:true}); logo.addEventListener('error', ()=>setTimeout(printWhenReady, DELAY_MS.printDialog), {once:true}); }
+          else setTimeout(printWhenReady, DELAY_MS.printDialog);
         }
         estimacionPrintHtml(d){
-          const {c,t,types,rows,fileName}=this.estExportDataAsOnScreen(d), p=c.params, f=(x,dec)=>this.fmtNum(x,dec);
+          const pack=this.clientExportPack(d), f=(x,dec)=>this.fmtNum(x,dec);
           const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-          const days=x=>x==null?'—':f(x,2)+(f(x,2)==='1'?' día':' días');
           const date=d.estimatedOn?this.parseLocalDate(d.estimatedOn).toLocaleDateString(LOCALE):'';
-          const info=[['Código',d.code],['Fecha',date],['Versión',d.versionLabel],['Complejidad',c.complexity?c.complexity.label:''],
+          const info=[['Código',d.code],['Fecha',date],['Versión',d.versionLabel],
             ['Cliente',d.clientName],['Solicitante',d.requesterName],['PM',d.pmName],['Iniciativa',d.initiativeName]]
             .map(([k,v])=>'<div><span>'+k+'</span>'+(esc(String(v||'').trim())||'—')+'</div>').join('');
-          const body=rows.map(l=>l.kind===ESTIMATION_LINE_KIND.section
-            ? '<tr class="sec"><td colspan="7">'+(esc(l.concept)||'&nbsp;')+'</td></tr>'
-            : '<tr><td>'+esc(l.typeLabel)+'</td><td class="concept">'+esc(l.concept)+'</td><td class="n">'+(l.hours===''?'':f(l.hours))+'</td>'
-              +'<td class="n">'+(l.m?f(l.m.optimistic):'')+'</td><td class="n">'+(l.m?f(l.m.mostProbable):'')+'</td><td class="n">'+(l.m?f(l.m.pessimistic):'')+'</td>'
-              +'<td class="n est">'+(l.m?f(l.m.statistical):'')+(l.m&&l.m.needsReview?' <b class="dot" title="En alerta">●</b>':'')+'</td></tr>').join('');
-          const byType=types.map(x=>{ const h=t.byType[x.id]||0; return '<tr><td>'+esc(x.label)+'</td><td class="n">'+f(h)+' h</td><td class="n">'+(t.developer>0?f(h/t.developer*100,1):'0')+' %</td></tr>'; }).join('');
-          return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(fileName)+'</title><style>'
-            +'@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box}'
-            +'body{margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;color:'+PRINT_COLOR.text+';background:'+PRINT_COLOR.paper+';-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+          const logo=new URL('assets/logos/tecno-corp.png', window.location.href).href;
+          const body=pack.rows.map(l=>l.section
+            ? '<tr class="sec"><td colspan="3">'+(esc(l.concept)||'&nbsp;')+'</td></tr>'
+            : '<tr><td>'+esc(l.type)+'</td><td class="concept">'+esc(l.concept)+'</td><td class="n">'+(l.hours==null?'':f(l.hours))+'</td></tr>').join('');
+          return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Estimación</title><style>'
+            +'@page{size:A4;margin:0}*{box-sizing:border-box}'
+            +'body{margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;line-height:1.45;color:'+PRINT_COLOR.text+';background:'+PRINT_COLOR.paper+';-webkit-print-color-adjust:exact;print-color-adjust:exact}'
             +'.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-24px -24px 20px;padding:10px 24px;background:'+PRINT_COLOR.panel+';border-bottom:1px solid '+PRINT_COLOR.panelBorder+';font-size:12px;color:'+PRINT_COLOR.label+'}'
             +'.bar button{font:inherit;font-weight:600;color:'+PRINT_COLOR.paper+';background:'+PRINT_COLOR.brand+';border:0;border-radius:8px;padding:8px 14px;cursor:pointer}'
-            +'.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.gen{font-size:9px;color:'+PRINT_COLOR.faint+'}'
+            +'.top{display:flex;justify-content:space-between;align-items:center;gap:12px}'
+            +'.brand{height:42px;width:auto;flex:none}'
             +'.kicker{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:'+PRINT_COLOR.accent+';font-weight:700}'
             +'h1{margin:2px 0 14px;font-size:20px;color:'+PRINT_COLOR.brand+'}'
-            +'.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px;margin-bottom:10px}'
+            +'.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px;margin-bottom:16px}'
             +'.meta span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:'+PRINT_COLOR.muted+'}'
-            +'.params{font-size:10px;color:'+PRINT_COLOR.muted+';margin-bottom:14px}'
             +'table{width:100%;border-collapse:collapse}thead{display:table-header-group}tr{break-inside:avoid}'
-            +'th{font-size:8.5px;text-transform:uppercase;letter-spacing:.2px;color:'+PRINT_COLOR.label+';text-align:left;background:'+PRINT_COLOR.panel+';padding:6px;border-bottom:1px solid '+PRINT_COLOR.headBorder+'}'
-            +'td{padding:5px 6px;border-bottom:1px solid '+PRINT_COLOR.rowBorder+';vertical-align:top}'
-            +'.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}th.n{white-space:normal}.concept{white-space:pre-wrap}'
-            +'table.lines{table-layout:fixed}'
-            +'tr.sec td{background:'+PRINT_COLOR.sectionBg+';font-weight:700;color:'+PRINT_COLOR.brand+';padding-top:8px}'
-            +'.est{color:'+PRINT_COLOR.accent+';font-weight:700}.dot{color:'+PRINT_COLOR.alert+';font-size:9px}'
-            +'.lines tfoot td{font-weight:700;border-top:1.5px solid '+PRINT_COLOR.faint+';border-bottom:0}'
-            +'.totals{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;margin-top:20px;break-inside:avoid}'
-            +'.sum td:first-child{color:'+PRINT_COLOR.label+'}.sum tr.hl td{background:'+PRINT_COLOR.highlightBg+';font-weight:700;color:'+PRINT_COLOR.brand+'}'
-            +'@media print{body{padding:0}.no-print{display:none}}'
+            +'th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#fff;text-align:left;background:#1f2471;padding:7px 8px;border-bottom:1px solid #1f2471}'
+            +'td{padding:6px 8px;border-bottom:1px solid '+PRINT_COLOR.rowBorder+';vertical-align:top}'
+            +'.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.concept{white-space:pre-wrap}'
+            +'tr.sec td{background:'+PRINT_COLOR.sectionBg+';font-weight:700;color:'+PRINT_COLOR.brand+';padding-top:9px}'
+            +'tfoot td{font-weight:700;border-top:1.5px solid '+PRINT_COLOR.faint+';border-bottom:0}'
+            +'.delivery{margin-top:18px;break-inside:avoid}'
+            +'.delivery td{background:'+PRINT_COLOR.highlightBg+';color:'+PRINT_COLOR.brand+';font-weight:700;font-size:13px;border-bottom:0;padding:12px 14px}'
+            +'@media print{body{padding:14mm 12mm}.no-print{display:none}}'
             +'</style></head><body>'
-            +'<div class="bar no-print"><span>En el diálogo de impresión elige <b>Guardar como PDF</b>.</span><button onclick="window.print()">Imprimir o guardar PDF</button></div>'
-            +'<div class="top"><div class="kicker">Estimación de esfuerzo</div><div class="gen">Generado el '+esc(new Date().toLocaleString(LOCALE))+'</div></div><h1>'+(esc(String(d.initiativeName||'').trim())||'Estimación')+'</h1>'
+            +'<div class="bar no-print"><span>En el diálogo de impresión elige <b>Guardar como PDF</b>. Si aún ves fecha o el nombre del archivo, desactiva <b>Encabezados y pies de página</b>.</span><button onclick="window.print()">Imprimir o guardar PDF</button></div>'
+            +'<div class="top"><div class="kicker">Estimación de esfuerzo</div><img class="brand" src="'+esc(logo)+'" alt="Tecno Corp"></div><h1>'+(esc(String(d.initiativeName||'').trim())||'Estimación')+'</h1>'
             +'<section class="meta">'+info+'</section>'
-            +'<div class="params">Parámetros: decimales de redondeo '+p.decimals+' · umbral de alerta '+f(p.alertRatio)+' · '+f(p.dailyHours,2)+' h diarias · dedicación '+f(p.dedication*100,2)+' %</div>'
-            +'<table class="lines"><colgroup><col style="width:13%"><col style="width:33%"><col style="width:15%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:10.5%"></colgroup>'
-            +'<thead><tr><th>Tipo</th><th>Concepto</th><th class="n">Horas desarrollador</th><th class="n">Optimista</th><th class="n">Más probable</th><th class="n">Pesimista</th><th class="n">Estimación estadística</th></tr></thead>'
+            +'<table><colgroup><col style="width:22%"><col><col style="width:16%"></colgroup><thead><tr><th>Tipo</th><th>Concepto</th><th class="n">Horas</th></tr></thead>'
             +'<tbody>'+body+'</tbody>'
-            +'<tfoot><tr><td></td><td>Subtotal</td><td class="n">'+f(t.developer)+'</td><td></td><td></td><td></td><td class="n est">'+f(t.statistical)+'</td></tr></tfoot></table>'
-            +'<div class="totals"><table class="sum"><tbody>'
-            +'<tr><td>Subtotal horas desarrollador</td><td class="n">'+f(t.developer)+' h</td></tr>'
-            +'<tr><td>Subtotal estimación estadística</td><td class="n">'+f(t.statistical)+' h</td></tr>'
-            +'<tr><td>Horas dedicadas por día</td><td class="n">'+(Number.isFinite(t.dedicated)?f(t.dedicated,2)+' h':'—')+'</td></tr>'
-            +'<tr class="hl"><td>Entrega estimada (estimación estadística ÷ horas dedicadas)</td><td class="n">'+days(t.statisticalDays)+'</td></tr>'
-            +'<tr><td>Días según horas de desarrollador</td><td class="n">'+days(t.developerDays)+'</td></tr>'
-            +'<tr><td>Actividades en alerta <span class="dot">●</span></td><td class="n">'+t.review+'</td></tr>'
-            +'</tbody></table>'
-            +'<table class="types"><thead><tr><th>Horas por tipo</th><th class="n">Horas</th><th class="n">% desarrollador</th></tr></thead><tbody>'+byType+'</tbody></table></div>'
+            +'<tfoot><tr><td></td><td>Total de horas</td><td class="n">'+f(pack.total)+'</td></tr></tfoot></table>'
+            +'<table class="delivery"><tbody><tr><td>Entrega estimada</td><td class="n">'+esc(this.formatDayCount(pack.days))+'</td></tr></tbody></table>'
             +'</body></html>';
         }
 
@@ -4632,6 +4647,9 @@
                 save:()=>this.saveEstimacion(), saveLabel:s.saveStatus===SAVE_STATUS.saving?'Guardando…':'Guardar',
                 exportar:()=>this.exportEstimacion(), exporting:!!s.exportingEstimacion, exportLabel:s.exportingEstimacion?'Generando…':'Exportar Excel',
                 exportarPdf:()=>this.exportEstimacionPdfViaPrintDialog(),
+                exportScenario:this.selectedExportScenario().id,
+                exportScenarios:this.exportHourScenarios().map(x=>({value:x.id,label:x.label})),
+                onExportScenario:e=>this.setExportHourScenario(e.target.value),
                 volver:()=>this.leaveEstimacion(()=>this.goEstimaciones()),
                 code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, requesterName:d.requesterName,
                 pmName:d.pmName, pmOptions:pmOptions, versionLabel:d.versionLabel, complexityId:d.complexityId, complexityOptions:cxList.map(x=>({value:x.id,label:x.label})),

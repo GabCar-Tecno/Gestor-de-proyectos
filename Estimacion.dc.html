@@ -22,7 +22,7 @@
       style-hover="background:var(--gp-cyan-12);border-color:var(--gp-cyan-65)"
     >
       <svg width="15" height="15" style="transform: scaleX(-1)">
-        <use href="{{ icons.chevron }}"></use></svg
+        <use href="#ic-chevron"></use></svg
       >Volver a estimaciones
     </button>
   </div>
@@ -104,6 +104,19 @@
         >
       </sc-if>
       <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+        <label style="display: flex; flex-direction: column; gap: 3px; min-width: 180px">
+          <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.3px; color: var(--gp-muted)">Horas a entregar</span>
+          <select
+            value="{{ est.exportScenario }}"
+            onChange="{{ est.onExportScenario }}"
+            aria-label="Tipo de horas a entregar"
+            style="background:var(--gp-surface-2);border:1px solid var(--gp-line-20);color:var(--gp-text);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600"
+          >
+            <sc-for list="{{ est.exportScenarios }}" as="o" hint-placeholder-count="4">
+              <option value="{{ o.value }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </label>
         <button
           onClick="{{ est.exportar }}"
           disabled="{{ est.exporting }}"
@@ -123,7 +136,7 @@
           style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
         >
           <svg width="14" height="14">
-            <use href="{{ icons.download }}"></use></svg
+            <use href="#ic-download"></use></svg
           >{{ est.exportLabel }}
         </button>
         <button
@@ -145,7 +158,7 @@
           style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
         >
           <svg width="14" height="14">
-            <use href="{{ icons.fileText }}"></use></svg
+            <use href="#ic-filetext"></use></svg
           >Exportar PDF
         </button>
       </sc-if>
@@ -189,7 +202,7 @@
         "
       >
         <svg width="14" height="14">
-          <use href="{{ icons.check }}"></use></svg
+          <use href="#ic-check"></use></svg
         >{{ est.saveLabel }}
       </button>
     </div>
