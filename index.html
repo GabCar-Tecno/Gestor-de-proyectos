@@ -2866,9 +2866,26 @@
         markPressStartedOnBackdrop(e){ this._ovDown = e.target===e.currentTarget; }
         closeModalIfPressStartedAndEndedOnBackdrop(e){ const onBackdrop = this._ovDown && e.target===e.currentTarget; this._ovDown=false; if(onBackdrop) this.closeModal(); }
         setForm(k,v){ this.setState(s=>({form:{...s.form,[k]:v}})); }
-        setReqCode(i,value){ this.setState(s=>{ const codigos=(s.form.codigos||['']).slice(); codigos[i]=value; return {form:{...s.form,codigos}}; }); }
+        storedPrincipalRequirementCode(){
+          const md=this.state.modal||{};
+          const editing=md.mode===MODAL_MODE.edit || (md.reqPending && md.reqPending.mode===MODAL_MODE.edit);
+          if(!editing) return '';
+          return (this.reqCodesOf(this.req())[0]||'').trim();
+        }
+        codesKeepingPrincipal(list){
+          const locked=this.storedPrincipalRequirementCode();
+          if(!locked) return list;
+          return [locked, ...(list||[]).slice(1)];
+        }
+        setReqCode(i,value){
+          if(i===0 && this.storedPrincipalRequirementCode()) return;
+          this.setState(s=>{ const codigos=(s.form.codigos||['']).slice(); codigos[i]=value; return {form:{...s.form,codigos}}; });
+        }
         addReqCode(){ this.setState(s=>({form:{...s.form,codigos:[...(s.form.codigos||['']),'']}})); }
-        removeReqCode(i){ this.setState(s=>{ const codigos=(s.form.codigos||[]).filter((_,j)=>j!==i); return {form:{...s.form,codigos:codigos.length?codigos:['']}}; }); }
+        removeReqCode(i){
+          if(i===0 && this.storedPrincipalRequirementCode()) return;
+          this.setState(s=>{ const codigos=(s.form.codigos||[]).filter((_,j)=>j!==i); return {form:{...s.form,codigos:codigos.length?codigos:['']}}; });
+        }
         cleanReqCodes(list){
           const codes=[], seen=new Set();
           let duplicate=false;
@@ -3263,7 +3280,7 @@
               if(!f.titulo) return;
               const targetProjectId=m.global?f.proyectoId:this.state.proyectoId;
               if(m.global&&!targetProjectId){ this.setState({saveStatus:SAVE_STATUS.idle,modalErr:'Selecciona el proyecto del requerimiento.'}); return; }
-              const cleaned=this.cleanReqCodes(f.codigos);
+              const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(f.codigos));
               if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
               if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
               const prevEstado = m.mode===MODAL_MODE.edit ? ((this.req()||{}).estado) : null;
@@ -3485,7 +3502,7 @@
           const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
           let approvedEstimacion=null;
           try{
-            const cleaned=this.cleanReqCodes(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[]));
+            const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[])));
             if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
             if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
             const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
@@ -4848,11 +4865,12 @@
               const isChecklist=fd.kind===FIELD_KIND.checklist;
               const isCodes=fd.kind===FIELD_KIND.codes;
               const codeRows=s.form.codigos||[''];
+              const storedPrincipal=md.mode===MODAL_MODE.edit ? (this.reqCodesOf(this.req())[0]||'').trim() : '';
               const selectedOwners=s.form.responsables||[];
-              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): ''), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no se modifica. Puedes agregar o quitar los demás PBI.':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type===MODAL.requirement?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type===MODAL.requirement?'var(--gp-surface)':'transparent', fieldBorder:md.type===MODAL.requirement?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
                 isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
-                codes:isCodes?codeRows.map((value,i)=>({value, principal:i===0, onInput:e=>this.setReqCode(i,e.target.value), canRemove:codeRows.length>1, remove:()=>this.removeReqCode(i)})):[],
+                codes:isCodes?codeRows.map((value,i)=>{ const locked=i===0&&!!storedPrincipal; return {value:locked?storedPrincipal:value, principal:i===0, locked, editable:!locked, onInput:e=>this.setReqCode(i,e.target.value), canRemove:!locked&&codeRows.length>1, remove:()=>this.removeReqCode(i)}; }):[],
                 addCode:()=>this.addReqCode(),
                 inputType: isPassword ? this.passwordInputType(shown) : (fd.type||INPUT_TYPE.text), min:fd.min||'', step:fd.step||'1',
                 isPassword, padRight: isPassword?'38px':'12px',
