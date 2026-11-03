@@ -1,0 +1,77 @@
+<x-dc>
+<section
+  style="
+    margin-top: 18px;
+    background: var(--gp-surface);
+    border: 1px solid var(--gp-line-16);
+    border-radius: 16px;
+    padding: 18px 20px 20px;
+  "
+>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+    <div style="font-weight: 600; font-size: 15px">Adicional</div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+      <label
+        style="
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: var(--gp-surface-2);
+          border: 1px solid var(--gp-line-20);
+          color: var(--gp-text-2);
+          border-radius: 10px;
+          padding: 8px 12px;
+          font-size: 12.5px;
+          font-weight: 500;
+          cursor: pointer;
+        "
+        style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
+      >
+        <svg width="14" height="14"><use href="#ic-filetext"></use></svg>
+        Cargar Markdown
+        <input
+          type="file"
+          accept=".md,.markdown,text/markdown,text/plain"
+          onChange="{{ est.onAdditionalFile }}"
+          style="display: none"
+        />
+      </label>
+      <sc-if value="{{ est.hasAdditional }}" hint-placeholder-val="{{ false }}">
+        <button
+          onClick="{{ est.clearAdditional }}"
+          style="
+            background: none;
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-muted);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12.5px;
+            cursor: pointer;
+          "
+          style-hover="color:var(--gp-red);border-color:var(--gp-red-35)"
+        >
+          Quitar
+        </button>
+      </sc-if>
+    </div>
+  </div>
+  <p style="margin: 8px 0 12px; color: var(--gp-muted); font-size: 12.5px; line-height: 1.45">
+    Diseño de la solución, tablas u otra nota. Carga un archivo .md o pégalo aquí. Se guarda con la estimación.
+  </p>
+  <sc-if value="{{ est.additionalFileName }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-bottom: 8px; font-size: 12px; color: var(--gp-muted-2)">{{ est.additionalFileName }}</div>
+  </sc-if>
+  <textarea
+    value="{{ est.additionalMarkdown }}"
+    onInput="{{ est.on.additionalMarkdown }}"
+    placeholder="Pega el Markdown o carga un archivo .md"
+    aria-label="Adicional en Markdown"
+    style="display:block;width:100%;box-sizing:border-box;min-height:180px;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:12px;color:var(--gp-text);font-size:13px;line-height:1.5;font-family:&quot;JetBrains Mono&quot;,monospace;outline:none;resize:vertical"
+    style-focus="border-color:var(--gp-cyan)"
+  ></textarea>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"est":null}'>
+class Component extends DCLogic {
+}
+</script>

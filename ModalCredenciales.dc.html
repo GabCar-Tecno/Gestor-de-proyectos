@@ -40,7 +40,7 @@
             font-size: 13px;
             outline: none;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
         <sc-if
           value="{{ c.canRemove }}"
@@ -62,7 +62,7 @@
               align-items: center;
               justify-content: center;
             "
-            style-hover="border-color:rgba(249,123,123,.4);color:#f97b7b"
+            style-hover="border-color:var(--gp-red-40);color:var(--gp-red)"
           >
             <svg width="14" height="14">
               <use href="#ic-x"></use>
@@ -111,7 +111,7 @@
             font-family:
               &quot;JetBrains Mono&quot;, monospace;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
         <div
           style="
@@ -138,7 +138,7 @@
               font-family:
                 &quot;JetBrains Mono&quot;, monospace;
             "
-            style-focus="border-color:#35c0f0"
+            style-focus="border-color:var(--gp-cyan)"
           />
           <button
             type="button"
@@ -156,7 +156,7 @@
               display: flex;
               padding: 2px;
             "
-            style-hover="color:#35c0f0"
+            style-hover="color:var(--gp-cyan)"
           >
             <svg width="16" height="16">
               <use href="{{ c.eyeHref }}"></use>
@@ -179,7 +179,7 @@
           font-family:
             &quot;JetBrains Mono&quot;, monospace;
         "
-        style-focus="border-color:#35c0f0"
+        style-focus="border-color:var(--gp-cyan)"
       />
       <textarea
         value="{{ c.notes }}"
@@ -197,7 +197,7 @@
           resize: vertical;
           font-family: inherit;
         "
-        style-focus="border-color:#35c0f0"
+        style-focus="border-color:var(--gp-cyan)"
       ></textarea>
     </div>
   </sc-for>
@@ -216,7 +216,7 @@
       align-items: center;
       gap: 7px;
     "
-    style-hover="border-color:rgba(53,192,240,.5);color:#35c0f0"
+    style-hover="border-color:var(--gp-cyan-50);color:var(--gp-cyan)"
   >
     <svg width="14" height="14">
       <use href="#ic-plus"></use></svg
@@ -227,7 +227,7 @@
     hint-placeholder-val="{{ false }}"
     ><div
       style="
-        color: #f97b7b;
+        color: var(--gp-red);
         font-size: 12.5px;
         line-height: 1.5;
       "
