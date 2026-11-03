@@ -1,0 +1,272 @@
+<x-dc>
+<div style="animation: vwIn 0.3s ease">
+  <div style="margin-bottom: 18px">
+    <button
+      onClick="{{ est.volver }}"
+      style="
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: var(--gp-surface);
+        border: 1px solid var(--gp-cyan-38);
+        color: var(--gp-cyan);
+        cursor: pointer;
+        padding: 10px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 600;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      "
+      style-hover="background:var(--gp-cyan-12);border-color:var(--gp-cyan-65)"
+    >
+      <svg width="15" height="15" style="transform: scaleX(-1)">
+        <use href="#ic-chevron"></use></svg
+      >Volver a estimaciones
+    </button>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    "
+  >
+    <div style="flex: 1; min-width: 240px">
+      <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 5px">
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11px;
+            color: var(--gp-muted-2);
+          "
+          >{{ est.codeLine }}</span
+        >
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gp-cyan);
+            background: var(--gp-cyan-12);
+            padding: 1px 8px;
+            border-radius: 6px;
+          "
+          >{{ est.version }}</span
+        >
+        <span
+          style="
+            font-size: 11px;
+            font-weight: 600;
+            color: {{ est.phaseColor }};
+            background: {{ est.phaseBg }};
+            padding: 1px 8px;
+            border-radius: 6px;
+          "
+          >{{ est.phaseLabel }}</span
+        >
+      </div>
+      <h1
+        style="
+          margin: 0;
+          font-size: clamp(21px, 2.7vw, 27px);
+          font-weight: 700;
+          letter-spacing: -0.4px;
+          line-height: 1.2;
+        "
+      >
+        {{ est.title }}
+      </h1>
+      <p style="margin: 4px 0 0; color: var(--gp-muted); font-size: 13.5px">{{ est.clientLine }}</p>
+      <sc-if value="{{ est.phaseHint }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 6px 0 0; color: var(--gp-muted-2); font-size: 12.5px">{{ est.phaseHint }}</p>
+      </sc-if>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <sc-if value="{{ est.statusShow }}" hint-placeholder-val="{{ false }}">
+        <span
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: var(--gp-amber);
+            background: var(--gp-amber-12);
+            padding: 5px 10px;
+            border-radius: 20px;
+          "
+          ><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--gp-amber)"></span
+          >{{ est.statusLabel }}</span
+        >
+      </sc-if>
+      <sc-if value="{{ isDev }}" hint-placeholder-val="{{ true }}">
+        <label style="position: relative; display: flex; min-width: 168px">
+          <span style="position:absolute;left:2px;bottom:calc(100% + 4px);font-size:10px;font-weight:600;letter-spacing:0.3px;color:var(--gp-muted);line-height:1;white-space:nowrap">Horas a entregar</span>
+          <select
+            value="{{ est.exportScenario }}"
+            onChange="{{ est.onExportScenario }}"
+            aria-label="Tipo de horas a entregar"
+            style="box-sizing:border-box;width:100%;height:38px;background:var(--gp-surface-2);border:1px solid var(--gp-line-20);color:var(--gp-text);border-radius:10px;padding:0 12px;font-size:13px;font-weight:500"
+          >
+            <sc-for list="{{ est.exportScenarios }}" as="o" hint-placeholder-count="4">
+              <option value="{{ o.value }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </label>
+        <button
+          onClick="{{ est.exportar }}"
+          disabled="{{ est.exporting }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-text-2);
+            cursor: pointer;
+            box-sizing: border-box;
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+          "
+          style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-download"></use></svg
+          >{{ est.exportLabel }}
+        </button>
+        <button
+          onClick="{{ est.exportarPdf }}"
+          title="Abre una vista para imprimir; en el diálogo elige Guardar como PDF"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid var(--gp-line-20);
+            color: var(--gp-text-2);
+            cursor: pointer;
+            box-sizing: border-box;
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+          "
+          style-hover="border-color:var(--gp-cyan-40);color:var(--gp-cyan)"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-filetext"></use></svg
+          >Exportar PDF
+        </button>
+      </sc-if>
+      <sc-if value="{{ est.canAdvance }}" hint-placeholder-val="{{ false }}">
+        <button
+          onClick="{{ est.advance }}"
+          title="{{ est.advanceTitle }}"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--gp-surface-2);
+            border: 1px solid var(--gp-green-45);
+            color: var(--gp-green);
+            cursor: pointer;
+            box-sizing: border-box;
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+          "
+          style-hover="background:var(--gp-green-12)"
+        >
+          {{ est.advanceLabel }}
+        </button>
+      </sc-if>
+      <button
+        onClick="{{ est.save }}"
+        style="
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+          color: var(--gp-white);
+          border: 0;
+          box-sizing: border-box;
+          height: 38px;
+          padding: 0 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
+        "
+      >
+        <svg width="14" height="14">
+          <use href="#ic-check"></use></svg
+        >{{ est.saveLabel }}
+      </button>
+    </div>
+  </div>
+
+  <dc-import name="EstimacionIdentificacion"
+    est="{{ est }}"
+  />
+
+  <dc-import name="EstimacionParametros"
+    est="{{ est }}"
+  />
+
+  <div class="est-layout">
+    <dc-import name="EstimacionLineas"
+      est="{{ est }}" icons="{{ icons }}"
+    />
+
+    <aside class="est-summary">
+      <dc-import name="EstimacionResumen"
+        est="{{ est }}" icons="{{ icons }}"
+      />
+    </aside>
+  </div>
+
+  <dc-import name="EstimacionAdicional"
+    est="{{ est }}" icons="{{ icons }}"
+  />
+
+  <div
+    class="est-mobilebar"
+    style="
+      position: sticky;
+      bottom: 12px;
+      z-index: 5;
+      margin-top: 14px;
+      align-items: center;
+      gap: 6px 16px;
+      flex-wrap: wrap;
+      background: var(--gp-header-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--gp-line-20);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--gp-muted);
+      box-shadow: 0 10px 30px -12px var(--gp-black-45);
+    "
+  >
+    <span>Desarrollador <b style="color: var(--gp-text-2)">{{ est.summary.developer }}</b></span>
+    <span>Estadística <b style="color: var(--gp-cyan)">{{ est.summary.statistical }}</b></span>
+    <span>Entrega <b style="color: var(--gp-text-2)">{{ est.summary.statDays }}</b></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isDev":false,"est":null,"icons":{"chart":"#ic-chart","check":"#ic-check","chevron":"#ic-chevron","download":"#ic-download","fileText":"#ic-filetext","plus":"#ic-plus","x":"#ic-x"}}'>
+class Component extends DCLogic {
+}
+</script>

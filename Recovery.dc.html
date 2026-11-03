@@ -53,7 +53,7 @@
             outline: none;
             box-sizing: border-box;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
         <button
           type="button"
@@ -71,7 +71,7 @@
             display: flex;
             padding: 2px;
           "
-          style-hover="color:#35c0f0"
+          style-hover="color:var(--gp-cyan)"
         >
           <svg width="16" height="16">
             <use href="{{ recoveryPass1EyeHref }}"></use>
@@ -100,7 +100,7 @@
             outline: none;
             box-sizing: border-box;
           "
-          style-focus="border-color:#35c0f0"
+          style-focus="border-color:var(--gp-cyan)"
         />
         <button
           type="button"
@@ -118,7 +118,7 @@
             display: flex;
             padding: 2px;
           "
-          style-hover="color:#35c0f0"
+          style-hover="color:var(--gp-cyan)"
         >
           <svg width="16" height="16">
             <use href="{{ recoveryPass2EyeHref }}"></use>
@@ -129,7 +129,7 @@
     <sc-if
       value="{{ recoveryErrShow }}"
       hint-placeholder-val="{{ false }}"
-      ><div style="color: #f97b7b; font-size: 12.5px; line-height: 1.5">
+      ><div style="color: var(--gp-red); font-size: 12.5px; line-height: 1.5">
         {{ recoveryError }}
       </div></sc-if
     >
@@ -137,9 +137,9 @@
       type="submit"
       disabled="{{ recoveryLoading }}"
       style="
-        background: linear-gradient(135deg, #2b3bd6, #23a9e0);
+        background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
         border: 0;
-        color: #fff;
+        color: var(--gp-white);
         cursor: pointer;
         padding: 12px 18px;
         border-radius: 10px;
