@@ -1,0 +1,62 @@
+<x-dc>
+<div
+  style="
+    display: flex;
+    align-items: center;
+    gap: 8px 18px;
+    flex-wrap: wrap;
+    margin: 12px 0 18px;
+    padding: 9px 14px;
+    border: 1px dashed var(--gp-line-22);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--gp-muted);
+  "
+>
+  <span style="font-weight: 600; color: var(--gp-muted-2)">Parámetros</span>
+  <label style="display: inline-flex; align-items: center; gap: 7px"
+    >Decimales de redondeo
+    <select
+      value="{{ est.roundingDecimals }}"
+      onChange="{{ est.on.roundingDecimals }}"
+      style="background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:8px;padding:4px 6px;color:var(--gp-text);font-size:12px"
+    >
+      <sc-for list="{{ est.decimalOptions }}" as="o" hint-placeholder-count="5"
+        ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
+      >
+    </select></label
+  >
+  <label style="display: inline-flex; align-items: center; gap: 7px"
+    >Umbral de alerta
+    <input
+      value="{{ est.alertRatio }}"
+      onInput="{{ est.on.alertRatio }}"
+      inputMode="decimal"
+      style="width:58px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.alertBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+      style-focus="border-color:var(--gp-cyan)"
+  /></label>
+  <label style="display: inline-flex; align-items: center; gap: 7px"
+    >Horas diarias
+    <input
+      value="{{ est.dailyHours }}"
+      onInput="{{ est.on.dailyHours }}"
+      inputMode="decimal"
+      style="width:52px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.dailyBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+      style-focus="border-color:var(--gp-cyan)"
+  /></label>
+  <label style="display: inline-flex; align-items: center; gap: 7px"
+    >Dedicación %
+    <input
+      value="{{ est.dedicationPct }}"
+      onInput="{{ est.on.dedicationPct }}"
+      inputMode="decimal"
+      style="width:58px;box-sizing:border-box;background:var(--gp-field);border:1px solid {{ est.dedicationBorder }};border-radius:8px;padding:4px 7px;color:var(--gp-text);font-size:12px;font-family:&quot;JetBrains Mono&quot;,monospace;text-align:right;outline:none"
+      style-focus="border-color:var(--gp-cyan)"
+  /></label>
+  <span style="color: var(--gp-muted-2)">= {{ est.summary.dedicated }} dedicadas por día</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"est":null}'>
+class Component extends DCLogic {
+}
+</script>

@@ -1,0 +1,290 @@
+<x-dc>
+<div class="master-board-light" style="animation: vwIn 0.3s ease">
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    "
+  >
+    <div>
+      <h1
+        style="
+          margin: 0 0 5px;
+          font-size: clamp(22px, 3vw, 29px);
+          font-weight: 700;
+          letter-spacing: -0.5px;
+        "
+      >
+        Tablero de requerimientos
+      </h1>
+      <p style="margin: 0; color: var(--gp-muted-5); font-size: 13.5px">
+        Consulta y administra los cambios de todas las
+        aplicaciones.
+      </p>
+    </div>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+      <sc-if value="{{ isPM }}" hint-placeholder-val="{{ true }}">
+        <button
+          type="button"
+          onClick="{{ exportMaestroExcel }}"
+          disabled="{{ exportingExcel }}"
+          title="Descarga en Excel los requerimientos visibles"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            border: 1px solid var(--gp-line-24);
+            background: none;
+            color: var(--gp-muted);
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+          "
+          style-hover="color:var(--gp-success);border-color:var(--gp-success-line)"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-download"></use></svg
+          >{{ exportExcelLabel }}
+        </button>
+      </sc-if>
+      <span
+        style="
+          font-size: 11px;
+          color: var(--gp-muted-6);
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-soft);
+          border-radius: 20px;
+          padding: 7px 12px;
+        "
+        >{{ maestroVisibleCount }} de {{ maestroCount }}
+        requerimientos</span
+      >
+    </div>
+  </div>
+  <div class="master-metrics">
+    <div
+      class="master-metric"
+      style="--metric-color: var(--gp-metric-total); --metric-tint: var(--gp-metric-total-tint)"
+    >
+      <span class="master-metric-copy"
+        ><span class="master-metric-label"
+          >Total de requerimientos</span
+        ><strong class="master-metric-value"
+          >{{ maestroCount }}</strong
+        ></span
+      >
+    </div>
+    <sc-for
+      list="{{ maestroStatusCounts }}"
+      as="st"
+      hint-placeholder-count="4"
+    >
+      <div
+        class="master-metric"
+        style="--metric-color:{{ st.color }};--metric-tint:{{ st.tint }}"
+      >
+        <span class="master-metric-copy"
+          ><span class="master-metric-label">{{ st.label }}</span
+          ><strong class="master-metric-value"
+            >{{ st.count }}</strong
+          ></span
+        >
+      </div>
+    </sc-for>
+  </div>
+  <div class="master-filter-bar">
+    <label
+      class="master-filter-control master-search-control"
+      aria-label="Buscar requerimientos"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="10.8" cy="10.8" r="6.8" />
+        <path d="m16 16 4.5 4.5" />
+      </svg>
+      <input
+        type="text"
+        value="{{ maestroSearch }}"
+        onInput="{{ setMaestroSearch }}"
+        placeholder="Buscar por #Req, descripción, observaciones o aplicación"
+        autocomplete="off"
+        spellcheck="false"
+        style="
+          color: var(--gp-text) !important;
+          -webkit-text-fill-color: var(--gp-text);
+          caret-color: var(--gp-link);
+          opacity: 1;
+        "
+      />
+    </label>
+    <div
+      class="master-filter-control master-dropdown-control"
+      aria-label="Filtrar por aplicación"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1.3" />
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1.3" />
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1.3" />
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1.3" />
+      </svg>
+      <button
+        type="button"
+        class="master-dropdown-trigger"
+        onClick="{{ toggleMaestroProjectMenu }}"
+        aria-expanded="{{ maestroProjectMenuOpen }}"
+      >
+        <span>{{ maestroProjectLabel }}</span
+        ><svg
+          class="master-filter-chevron"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <sc-if
+        value="{{ maestroProjectMenuOpen }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <dc-import name="MaestroMenuProyecto"
+          closeMaestroProjectMenu="{{ closeMaestroProjectMenu }}" maestroProjectOptions="{{ maestroProjectOptions }}"
+        />
+      </sc-if>
+    </div>
+    <div
+      class="master-filter-control master-dropdown-control"
+      aria-label="Filtrar por estado"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3.2 2" />
+      </svg>
+      <button
+        type="button"
+        class="master-dropdown-trigger"
+        onClick="{{ toggleMaestroStatusMenu }}"
+        aria-expanded="{{ maestroStatusMenuOpen }}"
+      >
+        <span>{{ maestroStatusLabel }}</span
+        ><svg
+          class="master-filter-chevron"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <sc-if
+        value="{{ maestroStatusMenuOpen }}"
+        hint-placeholder-val="{{ false }}"
+      >
+        <dc-import name="MaestroMenuEstado"
+          closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}" maestroStatusOptions="{{ maestroStatusOptions }}"
+        />
+      </sc-if>
+    </div>
+  </div>
+  <div class="master-table">
+    <div class="master-table-head">
+      <span>Aplicación</span><span>#Req</span
+      ><span>Título del requerimiento</span><span>Estado</span
+      ><span>Observaciones</span
+      ><span>Entrega usuario</span
+      ><span>Paso a producción</span>
+    </div>
+    <sc-for
+      list="{{ maestroReqList }}"
+      as="r"
+      hint-placeholder-count="5"
+    >
+      <button
+        onClick="{{ r.open }}"
+        class="master-row"
+        title="Abrir detalle y editar requerimiento"
+      >
+        <span class="master-cell-app master-cell-main"
+          ><span class="master-cell-label">Aplicación</span>{{
+          r.proyecto }}</span
+        >
+        <span
+          class="master-cell-main"
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--gp-code);
+          "
+          ><span class="master-cell-label">#Req</span>{{ r.code
+          }}</span
+        >
+        <span class="master-cell-description master-cell-main"
+          ><span class="master-cell-label"
+            >Título del requerimiento</span
+          >{{ r.titulo }}</span
+        >
+        <span class="master-cell-main"
+          ><span class="master-cell-label">Estado</span
+          ><span
+            style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:{{ r.estadoColor }};background:{{ r.estadoBg }};padding:5px 9px;border-radius:16px"
+            ><span
+              style="width:6px;height:6px;border-radius:50%;background:{{ r.estadoColor }}"
+            ></span
+            >{{ r.estado }}</span
+          ></span
+        >
+        <span
+          class="master-cell-observations master-cell-main"
+          title="{{ r.observaciones }}"
+          ><span class="master-cell-label">Observaciones</span>{{
+          r.observaciones }}<sc-if value="{{ r.sinObservaciones }}" hint-placeholder-val="{{ false }}"><span class="master-cell-sub">Sin observaciones</span></sc-if></span
+        >
+        <span
+          class="master-cell-main"
+          style="font-size:11.5px;color:{{ r.deliveryColor }}"
+          ><span class="master-cell-label"
+            >Entrega usuario</span
+          >{{ r.fechaEntregaUsuario }}</span
+        ><span
+          class="master-cell-main"
+          style="font-size:11.5px;color:{{ r.productionDateColor }}"
+          ><span class="master-cell-label">Paso a producción</span
+          >{{ r.fechaPasoProduccion }}</span
+        >
+      </button>
+    </sc-for>
+    <sc-if
+      value="{{ maestroEmpty }}"
+      hint-placeholder-val="{{ false }}"
+      ><div
+        style="
+          text-align: center;
+          padding: 44px 20px;
+          color: var(--gp-muted-5);
+          font-size: 13.5px;
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-soft);
+          border-radius: 14px;
+        "
+      >
+        No hay requerimientos que coincidan con la búsqueda.
+      </div></sc-if
+    >
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false}'>
+class Component extends DCLogic {
+}
+</script>
