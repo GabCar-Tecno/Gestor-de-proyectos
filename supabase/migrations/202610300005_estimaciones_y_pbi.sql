@@ -77,6 +77,7 @@ create table if not exists public.estimations (
   deviation_alert_ratio numeric(8, 4) not null default 0.3000,
   daily_hours numeric(4, 2) not null default 8,
   dedication numeric(5, 4) not null default 0.6250,
+  additional_markdown text not null default '',
   created_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -143,6 +144,9 @@ comment on column public.estimations.dedication is
 
 comment on column public.estimations.deviation_alert_ratio is
   'Umbral de la columna Verif del Excel. Con el valor 0.3, una actividad marca alerta cuando (pesimista - más probable) / más probable es mayor que 0.3.';
+
+comment on column public.estimations.additional_markdown is
+  'Texto Markdown adicional';
 
 comment on column public.estimation_lines.developer_hours is
   'Horas que escribe la persona. En el Excel es la columna Estimación Desarrollador. Optimista y pesimista se derivan de este valor.';

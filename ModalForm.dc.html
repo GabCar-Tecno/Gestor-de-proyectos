@@ -40,13 +40,21 @@
               <sc-if value="{{ c.principal }}" hint-placeholder-val="{{ false }}">
                 <span style="flex: none; font-size: 11px; font-weight: 600; color: var(--gp-cyan)">Principal</span>
               </sc-if>
-              <input
-                value="{{ c.value }}"
-                onInput="{{ c.onInput }}"
-                placeholder="Ej: 17301"
-                style="flex:1;min-width:0;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box;font-family:&quot;JetBrains Mono&quot;,monospace"
-                style-focus="border-color:var(--gp-cyan)"
-              />
+              <sc-if value="{{ c.locked }}" hint-placeholder-val="{{ false }}">
+                <span
+                  style="flex:1;min-width:0;background:var(--gp-surface-2);border:1px solid var(--gp-line-16);border-radius:10px;padding:11px 12px;color:var(--gp-text);font-size:14px;box-sizing:border-box;font-family:&quot;JetBrains Mono&quot;,monospace"
+                  >{{ c.value }}</span
+                >
+              </sc-if>
+              <sc-if value="{{ c.editable }}" hint-placeholder-val="{{ true }}">
+                <input
+                  value="{{ c.value }}"
+                  onInput="{{ c.onInput }}"
+                  placeholder="Ej: 17301"
+                  style="flex:1;min-width:0;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box;font-family:&quot;JetBrains Mono&quot;,monospace"
+                  style-focus="border-color:var(--gp-cyan)"
+                />
+              </sc-if>
               <sc-if value="{{ c.canRemove }}" hint-placeholder-val="{{ false }}">
                 <button
                   type="button"

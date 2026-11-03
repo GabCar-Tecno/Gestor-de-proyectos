@@ -140,22 +140,6 @@
             <span style="font-size: 11px; color: var(--gp-muted-2)">Entrega</span>
             <span style="font-size: 13px; color: var(--gp-text-2)">{{ e.dias }}</span>
           </div>
-          <sc-if value="{{ e.hasAlertas }}" hint-placeholder-val="{{ false }}">
-            <span
-              style="
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 12px;
-                color: var(--gp-red);
-                background: var(--gp-red-12);
-                padding: 3px 9px;
-                border-radius: 8px;
-              "
-              ><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--gp-red)"></span
-              >{{ e.alertLabel }}</span
-            >
-          </sc-if>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; flex: none">
           <button
