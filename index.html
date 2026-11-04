@@ -2478,6 +2478,7 @@
         isDev(){ return this.state.profileRole===ROLE.dev||this.isPM(); }
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
+        canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
         groupRowsBy(rows,key){ const groups=new Map(); (rows||[]).forEach(row=>{ const group=groups.get(row[key]); if(group) group.push(row); else groups.set(row[key],[row]); }); return groups; }
         indexById(rows){ const index=new Map(); (rows||[]).forEach(row=>{ if(!index.has(row.id)) index.set(row.id,row); }); return index; }
         deployFinderByEnv(deploys){
@@ -2541,7 +2542,7 @@
             const ambientes=rowsFor(envsOf,c.id).sort(byOrder)
               .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0, deployFolder:e.deploy_folder||''}));
             return {
-            id:c.id, nombre:c.name, mono:c.initial, color:c.color, ambientes,
+            id:c.id, nombre:c.name, mono:c.initial, color:c.color, extendedBoard:!!c.extended_board, ambientes,
             servidores:rowsFor(serversOf,c.id).sort(byOrder)
               .map(x=>({id:x.id, code:x.code, ip:x.ip, sortOrder:x.sort_order||0})),
             desplegables:rowsFor(deployablesOf,c.id).sort(byOrder)
