@@ -6,7 +6,10 @@
       "name": "Edwin Julián Gómez Ramírez, Developer",
       "email": "edwin.gomez@coltanques.com.co"
     },
-    "license": { "url": "https://www.coltanques.com.co", "name": "License" },
+    "license": {
+      "url": "https://www.coltanques.com.co",
+      "name": "License"
+    },
     "version": "1.1.3.2026.03201",
     "description": "7 : BackendWebSiteApi - Api Manager BackendWebSite  \n**Log Level:** 🔴 **Error**",
     "termsOfService": "https://www.coltanques.com.co"
@@ -15,17 +18,33 @@
     {
       "name": "Diagramas BD",
       "x-traitTag": true,
-      "description": "Modelo entidad-relación de la base de datos del sistema Aplicación Sitio Web.\n\nEsta sección presenta la evolución del modelo por proceso: para el proceso de vacantes de conductor y para el de conflicto de intereses se muestra la **etapa 1**, el modelo con el que inició el proceso, y la **etapa 2**, el modelo vigente, con las tablas y columnas agregadas en la evolución del proceso resaltadas.\n\n## 1. Vacantes de conductor — Diagrama ER Etapa 1\n\n<!-- IMG:bd-01-vacantes-conductor-etapa-1 -->\n[![Diagrama ER de vacantes de conductor, etapa 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa1.drawio.png)\n\nVista general del modelo inicial del proceso de postulación: la postulación (`VacanteFormulario`) referencia la vacante ofrecida (`Vacante` o `VacanteConductor`), sus documentos anexos (`VacanteFormularioDocumento`), el medio por el que llegó la postulación, el estado y el resultado de la postulación.\n\n## 2. Vacantes de conductor — Diagrama ER Etapa 2\n\n<!-- IMG:bd-02-vacantes-conductor-etapa-2 -->\n[![Diagrama ER de vacantes de conductor, etapa 2](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa%202.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa%202.drawio.png)\n\nModelo vigente con el detalle de columnas de cada tabla. Resalta lo agregado en la evolución del proceso: en `VacanteFormulario` las columnas Edad, MedioPostulacionId, CiudadId y EstadoPostulacionId, y las tablas `ApplicationSource` (medios de postulación), `ApplicationState` (estados de postulación) y `ApplicationStatus` (situación de la postulación con su motivo y justificación).\n\n## 3. Conflicto de intereses — Diagrama ER Etapa 1\n\n<!-- IMG:bd-03-conflicto-de-intereses-etapa-1 -->\n[![Diagrama ER de conflicto de intereses, etapa 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa1.drawio.png)\n\nVista general de las entidades del modelo inicial del proceso y sus relaciones.\n\n## 4. Conflicto de intereses — Diagrama ER Etapa 2\n\n<!-- IMG:bd-04-conflicto-de-intereses-etapa-2 -->\n[![Diagrama ER de conflicto de intereses, etapa 2](diagrams/conflicto-intereses-er-vigente.svg)](diagrams/conflicto-intereses-er-vigente.svg)\n\nModelo vigente del proceso de declaración: el formato del declarante (`ConfIntEmployeeFormat`) se relaciona con el tipo de relación con la compañía (`ConfIntRelationshipStates`), el estado del formato (`ConfIntFormatStatus`), la versión del formato (`ConfIntFormat`), las respuestas (`ConfInt_Answers`) a las preguntas (`ConfIntQuestions`) con su configuración (`ConfInt_QuestionConfig`, `ConfInt_QuestionByConfig`, `ConfInt_AnswerConfig`) y los anexos de la declaración (`ConfIntAttachments`). Resalta las columnas UnsignedDocumentPath y SignedDocumentPath de `ConfIntEmployeeFormat`, agregadas para guardar la ruta del PDF de la declaración."
+      "description": "Modelo entidad-relación de la base de datos del sistema Aplicación Sitio Web.\n\nEsta sección presenta la evolución del modelo por proceso: para el proceso de vacantes de conductor y para el de conflicto de intereses se muestra la **etapa 1**, el modelo con el que inició el proceso, y la **etapa 2**, el modelo vigente, con las tablas y columnas agregadas en la evolución del proceso resaltadas.\n\n## 1. Vacantes de conductor — Diagrama ER Etapa 1\n\n<!-- IMG:bd-01-vacantes-conductor-etapa-1 -->\n[![Diagrama ER de vacantes de conductor, etapa 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa1.drawio.png)\n\nVista general del modelo inicial del proceso de postulación: la postulación (`VacanteFormulario`) referencia la vacante ofrecida (`Vacante` o `VacanteConductor`), sus documentos anexos (`VacanteFormularioDocumento`), el medio por el que llegó la postulación, el estado y el resultado de la postulación.\n\n## 2. Vacantes de conductor — Diagrama ER Etapa 2\n\n<!-- IMG:bd-02-vacantes-conductor-etapa-2 -->\n[![Diagrama ER de vacantes de conductor, etapa 2](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa%202.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20proceso%20vacantes%20conductor-Diagrama%20ER%20Etapa%202.drawio.png)\n\nModelo vigente con el detalle de columnas de cada tabla. Resalta lo agregado en la evolución del proceso: en `VacanteFormulario` las columnas Edad, MedioPostulacionId, CiudadId y EstadoPostulacionId, y las tablas `ApplicationSource` (medios de postulación), `ApplicationState` (estados de postulación) y `ApplicationStatus` (situación de la postulación con su motivo y justificación).\n\n## 3. Conflicto de intereses — Diagrama ER Etapa 1\n\n<!-- IMG:bd-03-conflicto-de-intereses-etapa-1 -->\n[![Diagrama ER de conflicto de intereses, etapa 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa1.drawio.png)\n\nVista general de las entidades del modelo inicial del proceso y sus relaciones.\n\n## 4. Conflicto de intereses — Diagrama ER Etapa 2\n\n<!-- IMG:bd-04-conflicto-de-intereses-etapa-2 -->\n[![Diagrama ER de conflicto de intereses, etapa 2](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa%202.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/Diagrama%20conflicto%20intereses-Diagrama%20ER%20Etapa%202.drawio.png)\n\nModelo vigente del proceso de declaración: el formato del declarante (`ConfIntEmployeeFormat`) se relaciona con el tipo de relación con la compañía (`ConfIntRelationshipStates`), el estado del formato (`ConfIntFormatStatus`), la versión del formato (`ConfIntFormat`), las respuestas (`ConfInt_Answers`) a las preguntas (`ConfIntQuestions`) con su configuración (`ConfInt_QuestionConfig`, `ConfInt_QuestionByConfig`, `ConfInt_AnswerConfig`) y los anexos de la declaración (`ConfIntAttachments`). Resalta las columnas UnsignedDocumentPath y SignedDocumentPath de `ConfIntEmployeeFormat`, agregadas para guardar la ruta del PDF de la declaración."
     },
     {
       "name": "Diagramas de flujo",
       "x-traitTag": true,
-      "description": "Esta sección describe los procesos operativos del sistema Aplicación Sitio Web en su orden de uso: primero los procesos de cara al público (postulación a vacantes de conductor, declaración de conflicto de intereses, registro de PQR y registro de llamadas de servicio al cliente), luego el proceso interno de publicación de contenido del sitio y, por último, las consultas de información de viajes, que consumen las aplicaciones de atención a clientes de la plataforma.\n\n## 1. Diagrama de postulación a vacante de conductor\n\n<!-- IMG:01-postulacion-a-vacante-de-conductor -->\n[![Diagrama de postulación a vacante de conductor](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-1.%20Postulaci%C3%B3n%20vacante%20conductor.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-1.%20Postulaci%C3%B3n%20vacante%20conductor.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Una vacante de conductor activa publicada en el sitio web.\n\nEl proceso:\n\n1. El aspirante ingresa al sitio web, entra a la sección de trabaje con nosotros y selecciona la vacante de conductor de su interés.\n2. El sitio web consulta la vacante de conductor por su Id para mostrar el perfil, los requisitos, la regional y el salario ofrecido.\n3. El sitio web carga las listas de selección del formulario: tipo de documento, departamento, ciudad y medio por el cual se enteró de la vacante.\n4. El aspirante diligencia el formulario. Son obligatorios el tipo de documento, el número de documento, el nombre (entre 3 y 50 caracteres), el teléfono, la edad, el departamento, la ciudad, el medio de postulación y la autorización de tratamiento de datos personales.\n5. El aspirante confirma el envío de la postulación.\n6. El backend valida que no exista otra postulación del mismo número de documento a la misma vacante de conductor en el mismo día. Si ya existe, devuelve el mensaje de que la postulación ya fue registrada y el proceso termina.\n7. El backend crea, dentro de una misma transacción, la situación de la postulación en estado Aplicado en la tabla `ApplicationStatus` y el registro de la postulación en la tabla `VacanteFormulario`, con la fecha en hora de Bogotá y el registro activo. Si alguna de las dos operaciones falla, se revierten ambas.\n8. El sitio web muestra al aspirante la confirmación del registro de su postulación.\n9. El área de gestión humana consulta las postulaciones recibidas por vacante de conductor y actualiza el estado de cada una registrando el estado, el motivo y la justificación en la tabla `ApplicationStatus`.\n\nLas tablas parametricas son: `TipoDocIdentificacion`, `Municipalidad`, `Regional`, `ApplicationSource`, `ApplicationState`, `ApplicationStatesReason`.\n\n## 2. Diagrama de declaración de conflicto de intereses\n\n<!-- IMG:02-declaracion-de-conflicto-de-intereses -->\n[![Diagrama de declaración de conflicto de intereses](diagrams/conflicto-intereses-flujo.svg)](diagrams/conflicto-intereses-flujo.svg)\n\nPara iniciar el proceso se necesita:\n\n1. Las preguntas del formato y los tipos de relación con la compañía configurados y activos.\n\nEl proceso del formulario vigente en develop:\n\n1. El empleado, contratista o proveedor ingresa a la sección de declaración de conflicto de intereses.\n2. El sitio web consulta las preguntas y los tipos de relación con la compañía; además carga los tipos de documento requeridos por el formulario.\n3. Paso 1: el declarante selecciona su relación con la compañía e ingresa tipo y número de documento, nombre, correo y teléfono. Cuando corresponde a un empleado, el formulario consulta el nombre mediante el número de identificación y permite registrar el cargo (employeePosition).\n4. Al continuar, el formulario crea el registro en ConfIntEmployeeFormat y conserva el confIntEmployeeId devuelto por la API.\n5. Paso 2: el declarante responde las preguntas. Si todas las respuestas son negativas, el formulario avanza sin llamar al endpoint de respuestas. Si hay respuestas afirmativas, envía formAnswers, agrupadas por questionId, con los valores questionConfigId y answer.\n6. Paso 3: el declarante escribe el texto de la declaración y adjunta archivos. El formulario envía declarationConflictOfInterest y los archivos con name, base64 y format.\n7. Paso 4: al confirmar, el formulario solicita la generación del PDF con POST /confint/employeeFormats/{id} y un cuerpo JSON vacío.\n8. Si la respuesta indica éxito, el formulario muestra la confirmación de generación del documento.\n\nEl OpenAPI también documenta operaciones de consulta y exportación para la gestión administrativa; esas operaciones no forman parte del flujo público del formulario descrito arriba.\n\nLas tablas parametricas son: `ConfInt_Questions`, `ConfInt_QuestionConfig`, `ConfInt_QuestionByConfig`, `ConfIntRelationshipStates`, `TipoDocIdentificacion`.\n\n## 3. Diagrama de registro de PQR\n\n<!-- IMG:03-registro-de-pqr -->\n[![Diagrama de registro de PQR](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-3.%20Registro%20de%20PQR.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-3.%20Registro%20de%20PQR.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Las agencias activas y la plantilla de correo de notificación configuradas.\n\nEl proceso:\n\n1. El usuario ingresa a la sección de PQR del sitio web y abre el formulario de registro.\n2. El sitio web carga la plantilla de correo de notificación y la lista de agencias activas.\n3. El usuario diligencia los datos de la solicitud. Si se identifica como cliente, el sitio web valida su código de cliente antes de continuar.\n4. El usuario adjunta los archivos de soporte de la solicitud, si los tiene.\n5. El sitio web registra la PQR en el api de gestión de PQR de la plataforma y obtiene el número de radicado.\n6. El sitio web sube cada archivo adjunto al repositorio de archivos de la plataforma.\n7. El backend registra cada archivo adjunto en la tabla `PqrDocumento`, asociado al número de radicado de la PQR.\n8. El sitio web solicita el envío del correo de notificación al usuario y a la agencia responsable, usando la plantilla configurada.\n9. El backend registra la solicitud de contacto en la tabla `LlamadasServicioClienteWeb` para el seguimiento del área de servicio al cliente.\n10. El sitio web muestra al usuario el número de radicado con el que puede consultar el avance de su solicitud.\n\nLas tablas parametricas son: `PqrDocumento`, `LlamadasServicioClienteWeb`, `Regional`.\n\n## 4. Diagrama de registro de llamada de servicio al cliente\n\n<!-- IMG:04-registro-de-llamada-de-servicio-al-cliente -->\n[![Diagrama de registro de llamada de servicio al cliente](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-4.%20Llamada%20de%20servicio%20al%20cliente.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-4.%20Llamada%20de%20servicio%20al%20cliente.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. La solicitud de contacto diligenciada por el usuario en el sitio web.\n\nEl proceso:\n\n1. El usuario diligencia en el sitio web la solicitud de contacto con sus datos, el asunto y la observación.\n2. El backend registra la solicitud en la tabla `LlamadasServicioClienteWeb` con la fecha de creación, el estado inicial y la fecha estimada de cierre.\n3. El área de servicio al cliente consulta las solicitudes registradas y las atiende.\n4. Al cerrar la atención, el área actualiza el estado de la solicitud y registra la observación del cierre.\n5. Las solicitudes que ya no se deben mostrar se inactivan; el registro se conserva en la tabla para consulta histórica.\n\nLas tablas parametricas son: `LlamadasServicioClienteWeb`.\n\n## 5. Diagrama de publicación de contenido del sitio web\n\n<!-- IMG:05-publicacion-de-contenido-del-sitio-web -->\n[![Diagrama de publicación de contenido del sitio web](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-5.%20Publicaci%C3%B3n%20de%20contenido.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-5.%20Publicaci%C3%B3n%20de%20contenido.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. El contenido aprobado por el área de comunicaciones.\n\nEl proceso:\n\n1. El área de comunicaciones registra el contenido en el api del sitio web: noticias, hitos de la historia de la compañía, certificaciones, premios y reconocimientos, e indicadores económicos.\n2. Cada registro se crea con su código, nombre, descripción, texto e imagen en base64, y queda activo.\n3. El sitio web consulta cada tipo de contenido sin incluir inactivos, de modo que solo muestra lo que está publicado.\n4. Para retirar un contenido del sitio web, el área lo inactiva; el registro se conserva en la base de datos y deja de aparecer en las consultas del sitio.\n5. Los indicadores económicos se actualizan periódicamente con el valor vigente, el valor máximo, el mínimo y el promedio del periodo.\n6. El orden en que se muestran las noticias, los hitos y los premios se controla con el campo de posición u orden de cada registro.\n\nLas tablas parametricas son: `Noticia`, `Historia`, `Certificacion`, `PremioReconocimiento`, `IndicadorEconomico`.\n\n## 6. Diagrama de consulta de información de viajes del cliente\n\n<!-- IMG:06-consulta-de-informacion-de-viajes-del-cliente -->\n[![Diagrama de consulta de información de viajes del cliente](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-6.%20Consulta%20de%20viajes%20del%20cliente.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-6.%20Consulta%20de%20viajes%20del%20cliente.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. El NIT del cliente y la información de la operación cargada por los sistemas de transporte.\n\nEl proceso:\n\n1. La aplicación que atiende al cliente solicita el token al api de seguridad a través del gateway.\n2. La aplicación consulta los planes de viaje del cliente enviando el NIT y, de manera opcional, origen, destino, fechas, placa, manifiesto o documento del cliente.\n3. El backend resuelve la consulta con los procedimientos almacenados de planes de viaje y devuelve los viajes que cumplen los filtros.\n4. Para un viaje seleccionado, la aplicación consulta los ítems del plan de viaje, que son los eventos de seguimiento con fecha, hora, lugar y coordenadas.\n5. La aplicación consulta las remesas del viaje por manifiesto, agencia y placa.\n6. La aplicación consulta los documentos asociados al viaje o a la factura y los descarga del repositorio de archivos.\n7. La aplicación consulta los indicadores del cliente: viajes, cargues, entregas, llegadas, facturación, efectividad, detalle de efectividad y novedades.\n8. Estos servicios los consumen las aplicaciones de atención a clientes de la plataforma; el sitio web público no los invoca.\n\nLas tablas parametricas son: `PlanViaje`, `ItemPlanViaje`, `Remesa`, `Documento`, `ViajesXCliente`, `IndCargues`, `IndEntrega`, `IndLlegada`, `IndFacturacion`, `IndEfectividad`, `DET_Indefectividad`, `IndNovedades`.\n\n## Inscripción de terceros (F14/F16)\n\n<!-- IMG:03-inscripcion-terceros -->\n[![Diagrama del flujo de inscripción de terceros F14 y F16](diagrams/terceros-flujo.svg)](diagrams/terceros-flujo.svg)\n\nEl frontend crea el registro y consulta las preguntas. Si alguna respuesta es NO, el formulario bloquea el avance y no llama a POST dataTreatment; solo guarda las respuestas cuando todas son afirmativas. Después envía los datos de persona (F14) o conductor (F16). En F14, los vínculos tenedor y tenedor-propietario incluyen vehículos; el vínculo propietario y el formato F16 omiten esa rama. A continuación consulta los tipos documentales, carga los archivos aplicables e inicia la firma digital. El formulario confirma el inicio y la firma se completa desde el enlace seguro enviado por correo o WhatsApp. El repositorio revisado no contiene el modelo ER ni el mapeo a controladores internos de este módulo."
+      "description": "Esta sección describe los procesos operativos del sistema Aplicación Sitio Web en su orden de uso: primero los procesos de cara al público (postulación a vacantes de conductor, declaración de conflicto de intereses, registro de PQR y registro de llamadas de servicio al cliente), luego el proceso interno de publicación de contenido del sitio y, por último, las consultas de información de viajes, que consumen las aplicaciones de atención a clientes de la plataforma.\n\n## 1. Diagrama de postulación a vacante de conductor\n\n<!-- IMG:01-postulacion-a-vacante-de-conductor -->\n[![Diagrama de postulación a vacante de conductor](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-1.%20Postulaci%C3%B3n%20vacante%20conductor.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-1.%20Postulaci%C3%B3n%20vacante%20conductor.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Una vacante de conductor activa publicada en el sitio web.\n\nEl proceso:\n\n1. El aspirante ingresa al sitio web, entra a la sección de trabaje con nosotros y selecciona la vacante de conductor de su interés.\n2. El sitio web consulta la vacante de conductor por su Id para mostrar el perfil, los requisitos, la regional y el salario ofrecido.\n3. El sitio web carga las listas de selección del formulario: tipo de documento, departamento, ciudad y medio por el cual se enteró de la vacante.\n4. El aspirante diligencia el formulario. Son obligatorios el tipo de documento, el número de documento, el nombre (entre 3 y 50 caracteres), el teléfono, la edad, el departamento, la ciudad, el medio de postulación y la autorización de tratamiento de datos personales.\n5. El aspirante confirma el envío de la postulación.\n6. El backend valida que no exista otra postulación del mismo número de documento a la misma vacante de conductor en el mismo día. Si ya existe, devuelve el mensaje de que la postulación ya fue registrada y el proceso termina.\n7. El backend crea, dentro de una misma transacción, la situación de la postulación en estado Aplicado en la tabla `ApplicationStatus` y el registro de la postulación en la tabla `VacanteFormulario`, con la fecha en hora de Bogotá y el registro activo. Si alguna de las dos operaciones falla, se revierten ambas.\n8. El sitio web muestra al aspirante la confirmación del registro de su postulación.\n9. El área de gestión humana consulta las postulaciones recibidas por vacante de conductor y actualiza el estado de cada una registrando el estado, el motivo y la justificación en la tabla `ApplicationStatus`.\n\nLas tablas parametricas son: `TipoDocIdentificacion`, `Municipalidad`, `Regional`, `ApplicationSource`, `ApplicationState`, `ApplicationStatesReason`.\n\n## 2. Diagrama de declaración de conflicto de intereses\n\n<!-- IMG:02-declaracion-de-conflicto-de-intereses -->\n[![Diagrama de declaración de conflicto de intereses](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-2.%20Conflicto%20de%20intereses.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-2.%20Conflicto%20de%20intereses.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Las preguntas del formato y los tipos de relación con la compañía configurados y activos.\n\nEl proceso:\n\n1. El empleado, contratista o proveedor ingresa a la sección de declaración de conflicto de intereses del sitio web.\n2. El sitio web carga los tipos de documento y los tipos de relación con la compañía.\n3. Paso 1: el declarante registra su relación con la compañía, tipo y número de documento, nombre completo, correo y teléfono.\n4. El backend crea el formato en la tabla `ConfIntEmployeeFormat` y devuelve el identificador del formato, que el sitio web conserva para los pasos siguientes.\n5. Paso 2: el sitio web muestra las preguntas del formato y el declarante responde cada una.\n6. Si todas las respuestas son negativas, el sitio web avanza al paso siguiente sin registrar respuestas. Si al menos una respuesta es afirmativa, el backend registra las respuestas en la tabla `ConfInt_Answers` asociadas al formato.\n7. Paso 3: el declarante escribe el texto de su declaración y adjunta los documentos de soporte.\n8. El backend guarda los archivos en el repositorio de archivos de la plataforma y registra los anexos en la tabla `ConfIntAttachments` junto con el texto de la declaración.\n9. Paso 4: el declarante confirma la declaración.\n10. El backend genera el PDF de la declaración con los datos del declarante y sus respuestas, lo guarda en el repositorio de archivos y deja la ruta del documento en el formato.\n11. El sitio web confirma la declaración y deja disponible la descarga del PDF.\n12. El área encargada consulta los formatos con filtros de texto, tipo de relación y fecha, y puede exportarlos a Excel o descargar el PDF de cada declaración.\n\nLas tablas parametricas son: `ConfInt_Questions`, `ConfInt_QuestionConfig`, `ConfInt_QuestionByConfig`, `ConfIntRelationshipStates`, `TipoDocIdentificacion`.\n\n## 3. Diagrama de registro de PQR\n\n<!-- IMG:03-registro-de-pqr -->\n[![Diagrama de registro de PQR](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-3.%20Registro%20de%20PQR.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-3.%20Registro%20de%20PQR.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Las agencias activas y la plantilla de correo de notificación configuradas.\n\nEl proceso:\n\n1. El usuario ingresa a la sección de PQR del sitio web y abre el formulario de registro.\n2. El sitio web carga la plantilla de correo de notificación y la lista de agencias activas.\n3. El usuario diligencia los datos de la solicitud. Si se identifica como cliente, el sitio web valida su código de cliente antes de continuar.\n4. El usuario adjunta los archivos de soporte de la solicitud, si los tiene.\n5. El sitio web registra la PQR en el api de gestión de PQR de la plataforma y obtiene el número de radicado.\n6. El sitio web sube cada archivo adjunto al repositorio de archivos de la plataforma.\n7. El backend registra cada archivo adjunto en la tabla `PqrDocumento`, asociado al número de radicado de la PQR.\n8. El sitio web solicita el envío del correo de notificación al usuario y a la agencia responsable, usando la plantilla configurada.\n9. El backend registra la solicitud de contacto en la tabla `LlamadasServicioClienteWeb` para el seguimiento del área de servicio al cliente.\n10. El sitio web muestra al usuario el número de radicado con el que puede consultar el avance de su solicitud.\n\nLas tablas parametricas son: `PqrDocumento`, `LlamadasServicioClienteWeb`, `Regional`.\n\n## 4. Diagrama de registro de llamada de servicio al cliente\n\n<!-- IMG:04-registro-de-llamada-de-servicio-al-cliente -->\n[![Diagrama de registro de llamada de servicio al cliente](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-4.%20Llamada%20de%20servicio%20al%20cliente.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-4.%20Llamada%20de%20servicio%20al%20cliente.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. La solicitud de contacto diligenciada por el usuario en el sitio web.\n\nEl proceso:\n\n1. El usuario diligencia en el sitio web la solicitud de contacto con sus datos, el asunto y la observación.\n2. El backend registra la solicitud en la tabla `LlamadasServicioClienteWeb` con la fecha de creación, el estado inicial y la fecha estimada de cierre.\n3. El área de servicio al cliente consulta las solicitudes registradas y las atiende.\n4. Al cerrar la atención, el área actualiza el estado de la solicitud y registra la observación del cierre.\n5. Las solicitudes que ya no se deben mostrar se inactivan; el registro se conserva en la tabla para consulta histórica.\n\nLas tablas parametricas son: `LlamadasServicioClienteWeb`.\n\n## 5. Diagrama de publicación de contenido del sitio web\n\n<!-- IMG:05-publicacion-de-contenido-del-sitio-web -->\n[![Diagrama de publicación de contenido del sitio web](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-5.%20Publicaci%C3%B3n%20de%20contenido.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-5.%20Publicaci%C3%B3n%20de%20contenido.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. El contenido aprobado por el área de comunicaciones.\n\nEl proceso:\n\n1. El área de comunicaciones registra el contenido en el api del sitio web: noticias, hitos de la historia de la compañía, certificaciones, premios y reconocimientos, e indicadores económicos.\n2. Cada registro se crea con su código, nombre, descripción, texto e imagen en base64, y queda activo.\n3. El sitio web consulta cada tipo de contenido sin incluir inactivos, de modo que solo muestra lo que está publicado.\n4. Para retirar un contenido del sitio web, el área lo inactiva; el registro se conserva en la base de datos y deja de aparecer en las consultas del sitio.\n5. Los indicadores económicos se actualizan periódicamente con el valor vigente, el valor máximo, el mínimo y el promedio del periodo.\n6. El orden en que se muestran las noticias, los hitos y los premios se controla con el campo de posición u orden de cada registro.\n\nLas tablas parametricas son: `Noticia`, `Historia`, `Certificacion`, `PremioReconocimiento`, `IndicadorEconomico`.\n\n## 6. Diagrama de consulta de información de viajes del cliente\n\n<!-- IMG:06-consulta-de-informacion-de-viajes-del-cliente -->\n[![Diagrama de consulta de información de viajes del cliente](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-6.%20Consulta%20de%20viajes%20del%20cliente.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/backendwebsite/diagramas-flujo-sitio-web_2-6.%20Consulta%20de%20viajes%20del%20cliente.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. El NIT del cliente y la información de la operación cargada por los sistemas de transporte.\n\nEl proceso:\n\n1. La aplicación que atiende al cliente solicita el token al api de seguridad a través del gateway.\n2. La aplicación consulta los planes de viaje del cliente enviando el NIT y, de manera opcional, origen, destino, fechas, placa, manifiesto o documento del cliente.\n3. El backend resuelve la consulta con los procedimientos almacenados de planes de viaje y devuelve los viajes que cumplen los filtros.\n4. Para un viaje seleccionado, la aplicación consulta los ítems del plan de viaje, que son los eventos de seguimiento con fecha, hora, lugar y coordenadas.\n5. La aplicación consulta las remesas del viaje por manifiesto, agencia y placa.\n6. La aplicación consulta los documentos asociados al viaje o a la factura y los descarga del repositorio de archivos.\n7. La aplicación consulta los indicadores del cliente: viajes, cargues, entregas, llegadas, facturación, efectividad, detalle de efectividad y novedades.\n8. Estos servicios los consumen las aplicaciones de atención a clientes de la plataforma; el sitio web público no los invoca.\n\nLas tablas parametricas son: `PlanViaje`, `ItemPlanViaje`, `Remesa`, `Documento`, `ViajesXCliente`, `IndCargues`, `IndEntrega`, `IndLlegada`, `IndFacturacion`, `IndEfectividad`, `DET_Indefectividad`, `IndNovedades`."
     },
     {
       "name": "Diccionario de datos",
       "x-traitTag": true,
       "description": "Estructura física de las 49 tablas de base de datos que utiliza el API.\n\n**Convenciones**\n\n- `Length` con valor `1,1` corresponde a una columna de identidad (`IDENTITY(1,1)`), no a una longitud de dato.\n- La columna `Default` se documenta vacía en todas las tablas: el origen no especifica valores por omisión.\n- Las columnas de auditoría (usuario y fecha de creación y de modificación, y el indicador de activo) provienen de la clase base `AuditFields` y ya vienen incluidas en cada tabla que la hereda.\n\n**Índice de tablas** (navegables desde el menú lateral)\n\n1. `Aplicacion` — 23 columnas\n2. `ApplicationSource` — 5 columnas\n3. `ApplicationState` — 4 columnas\n4. `ApplicationStatesReason` — 4 columnas\n5. `ApplicationStatus` — 6 columnas\n6. `Certificacion` — 11 columnas\n7. `ConfInt_AnswerConfig` — 4 columnas\n8. `ConfInt_Answers` — 7 columnas\n9. `ConfInt_QuestionByConfig` — 3 columnas\n10. `ConfInt_QuestionConfig` — 2 columnas\n11. `ConfIntAttachments` — 5 columnas\n12. `ConfIntEmployeeFormat` — 18 columnas\n13. `ConfIntFormat` — 6 columnas\n14. `ConfIntFormatStatus` — 2 columnas\n15. `ConfIntQuestions` — 7 columnas\n16. `ConfIntRelationshipStates` — 6 columnas\n17. `DET_Indefectividad` — 23 columnas\n18. `Documento` — 9 columnas\n19. `Historia` — 14 columnas\n20. `IndCargues` — 4 columnas\n21. `IndEfectividad` — 6 columnas\n22. `IndEntrega` — 4 columnas\n23. `IndFacturacion` — 5 columnas\n24. `IndicadorEconomico` — 14 columnas\n25. `IndLlegada` — 4 columnas\n26. `IndNovedades` — 4 columnas\n27. `ItemPlanViaje` — 10 columnas\n28. `LlamadasServicioClienteWeb` — 10 columnas\n29. `LogAplicacion` — 11 columnas\n30. `LogManagerData` — 9 columnas\n31. `Municipalidad` — 2 columnas\n32. `Noticia` — 11 columnas\n33. `PedidoCliente` — 12 columnas\n34. `PlanViaje` — 33 columnas\n35. `PqrDocumento` — 11 columnas\n36. `PremioReconocimiento` — 11 columnas\n37. `Regional` — 2 columnas\n38. `Remesa` — 14 columnas\n39. `SprItemPlanViaje` — 5 columnas\n40. `SprPlanViaje` — 27 columnas\n41. `SprRemesa` — 4 columnas\n42. `SprSetAplication` — 2 columnas\n43. `TipoDocIdentificacion` — 2 columnas\n44. `Usuario` — 17 columnas\n45. `Vacante` — 15 columnas\n46. `VacanteConductor` — 14 columnas\n47. `VacanteFormulario` — 24 columnas\n48. `VacanteFormularioDocumento` — 11 columnas\n49. `ViajesXCliente` — 5 columnas\n\n## Aplicacion\n\n*23 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | YES |  |  |\n| Url | varchar |  | YES |  |  |\n| ConnexionBase | varchar |  | YES |  |  |\n| MultiUsuario | bit |  | NO |  |  |\n| Usuario | varchar |  | YES |  |  |\n| Contrasena | varchar |  | YES |  |  |\n| Llave | varchar |  | YES |  |  |\n| TiempoVigMinToken | number |  | NO |  |  |\n| LogActivo | bit |  | NO |  |  |\n| LogNivel | varchar |  | YES |  |  |\n| UsaRecaptcha | bit |  | NO |  |  |\n| LlaveRecaptcha | varchar |  | YES |  |  |\n| ValidaCodigoOtp | bit |  | NO |  |  |\n| TiempoVigMinOtp | number |  | NO |  |  |\n| Version | varchar |  | YES |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## ApplicationSource\n\n*5 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Icon | varchar | 50 | NO |  |  |\n| Description | varchar | 50 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n\n## ApplicationState\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 50 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n\n## ApplicationStatesReason\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 50 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n\n## ApplicationStatus\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| ApplicationStateId | number |  | NO |  |  |\n| ApplicationStatesReasonId | number |  | YES |  |  |\n| Justification | varchar | 300 | YES |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n\n## Certificacion\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | NO |  |  |\n| Imagen | varchar |  | YES |  |  |\n| Texto | varchar |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## ConfInt_AnswerConfig\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| QuestionConfigId | number |  | YES |  |  |\n| AnswerId | number |  | YES |  |  |\n| Description | varchar | 500 | YES |  |  |\n\n## ConfInt_Answers\n\n*7 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| EmployeeId | number |  | NO |  |  |\n| QuestionId | number |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| IsActive | bit |  | NO |  |  |\n\n## ConfInt_QuestionByConfig\n\n*3 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| QuestionId | number |  | NO |  |  |\n| QuestionConfigId | number |  | NO |  |  |\n| Order | number |  | NO |  |  |\n\n## ConfInt_QuestionConfig\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Label | varchar |  | YES |  |  |\n\n## ConfIntAttachments\n\n*5 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| EmployeeFormatId | number |  | NO |  |  |\n| Path | varchar | 255 | YES |  |  |\n| DocumentName | varchar | 255 | YES |  |  |\n| Format | varchar | 50 | YES |  |  |\n\n## ConfIntEmployeeFormat\n\n*18 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| ConflictOfInterestId | number |  | NO |  |  |\n| RelationCompanyId | number |  | NO |  |  |\n| IdentificationTypeId | number |  | NO |  |  |\n| FormatStatusId | number |  | YES |  |  |\n| Fullname | varchar | 255 | NO |  |  |\n| IdentificationNumber | varchar | 20 | NO |  |  |\n| Email | varchar | 255 | YES |  |  |\n| Phone | varchar | 20 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| UnsignedDocumentPath | varchar | 255 | YES |  |  |\n| SignedDocumentPath | varchar | 255 | YES |  |  |\n| DeclarationConflictOfInterest | varchar |  | YES |  |  |\n| RequestId | varchar | 255 | YES |  |  |\n| EmployeePosition | varchar | 255 | YES |  |  |\n\n## ConfIntFormat\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Path | varchar | 255 | YES |  |  |\n| Version | varchar | 50 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| IsActive | bit |  | NO |  |  |\n\n## ConfIntFormatStatus\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 100 | YES |  |  |\n\n## ConfIntQuestions\n\n*7 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| ConflictOfInterestId | number |  | NO |  |  |\n| Description | varchar | 500 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| IsActive | bit |  | NO |  |  |\n\n## ConfIntRelationshipStates\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Name | varchar | 100 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n\n## DET_Indefectividad\n\n*23 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| Origen | varchar |  | YES |  |  |\n| Destino | varchar |  | YES |  |  |\n| TipoVehiculo | varchar |  | YES |  |  |\n| Estado | varchar |  | YES |  |  |\n| FecCargue | timestamp |  | YES |  |  |\n| DocCliente | varchar |  | YES |  |  |\n| Placa | varchar |  | YES |  |  |\n| Valorfacturar | number |  | YES |  |  |\n| NumFactura | varchar |  | YES |  |  |\n| FechaFactura | timestamp |  | YES |  |  |\n| LlegadaCargue | timestamp |  | YES |  |  |\n| InicioCargue | timestamp |  | YES |  |  |\n| SalidaCargue | timestamp |  | YES |  |  |\n| LlegadaDescargue1 | timestamp |  | YES |  |  |\n| InicioDescargue1 | timestamp |  | YES |  |  |\n| SalidaDescargue1 | timestamp |  | YES |  |  |\n| LlegadaDesacrgue2 | timestamp |  | YES |  |  |\n| Iniciodescargue2 | timestamp |  | YES |  |  |\n| Salidadescargue2 | timestamp |  | YES |  |  |\n| Idpedido | number |  | YES |  |  |\n| AgePedido | number |  | YES |  |  |\n\n## Documento\n\n*9 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| CodPath | number |  | NO |  |  |\n| NomPath | varchar |  | YES |  |  |\n| Horreg | timestamp |  | YES |  |  |\n| Idagencia | number |  | YES |  |  |\n| Idmanifiesto | number |  | YES |  |  |\n| Idremesa | number |  | YES |  |  |\n| DocCliente | varchar |  | YES |  |  |\n| NumFactura | number |  | YES |  |  |\n| IdAgenciaFactura | number |  | YES |  |  |\n\n## Historia\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | NO |  |  |\n| Imagen | varchar |  | NO |  |  |\n| Texto | varchar |  | NO |  |  |\n| Icono | varchar |  | YES |  |  |\n| IconoImagen | varchar |  | YES |  |  |\n| Posicion | varchar |  | YES |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## IndCargues\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| Rango | varchar |  | YES |  |  |\n| Cantidad | number |  | YES |  |  |\n\n## IndEfectividad\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| PedidosSolicitados | number |  | YES |  |  |\n| PedidosAtendidos | number |  | YES |  |  |\n| TipoVehiculo | varchar |  | YES |  |  |\n| TotalPedidos | number |  | YES |  |  |\n\n## IndEntrega\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| PedidosAtendidos | number |  | YES |  |  |\n| CumplieronEntrega | number |  | YES |  |  |\n\n## IndFacturacion\n\n*5 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| PorCumplimiento | number |  | YES |  |  |\n| Semana | number |  | YES |  |  |\n| Desde | timestamp |  | YES |  |  |\n| Hasta | timestamp |  | YES |  |  |\n\n## IndicadorEconomico\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | NO |  |  |\n| Url | varchar |  | NO |  |  |\n| Valor | varchar |  | NO |  |  |\n| ValorArriba | varchar |  | NO |  |  |\n| ValorAbajo | varchar |  | NO |  |  |\n| ValorPromedio | varchar |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## IndLlegada\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| PedidosAtendidos | number |  | YES |  |  |\n| VehiculosAtiempo | number |  | YES |  |  |\n\n## IndNovedades\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| Rango | number |  | YES |  |  |\n| Cantidad | number |  | YES |  |  |\n\n## ItemPlanViaje\n\n*10 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| IdAgencia | number |  | NO |  |  |\n| Consecutivo | number |  | NO |  |  |\n| Evento | varchar |  | YES |  |  |\n| Fecha | timestamp |  | YES |  |  |\n| Obs | varchar |  | YES |  |  |\n| Cod | varchar |  | YES |  |  |\n| HorEst | timestamp |  | YES |  |  |\n| Latitud | number |  | YES |  |  |\n| Longitud | number |  | YES |  |  |\n\n## LlamadasServicioClienteWeb\n\n*10 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| NumRegistro | number |  | NO |  |  |\n| Fecha | timestamp |  | NO |  |  |\n| Cliente | varchar |  | YES |  |  |\n| Observacion | varchar |  | YES |  |  |\n| Estado | number |  | YES |  |  |\n| Contacto | varchar |  | YES |  |  |\n| Usuario | varchar |  | YES |  |  |\n| FechaCrea | timestamp |  | YES |  |  |\n| Email | varchar |  | YES |  |  |\n| FecEstimadaCierre | timestamp |  | YES |  |  |\n\n## LogAplicacion\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| AplicacionId | number |  | NO |  |  |\n| Servicio | varchar |  | YES |  |  |\n| Metodo | varchar |  | YES |  |  |\n| Estado | varchar |  | YES |  |  |\n| DataPeticion | varchar |  | YES |  |  |\n| DataRespuesta | varchar |  | YES |  |  |\n| Mensaje | varchar |  | YES |  |  |\n| Excepcion | varchar |  | YES |  |  |\n| Ip | varchar |  | YES |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n\n## LogManagerData\n\n*9 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| ApplicationId | number |  | NO |  |  |\n| Service | varchar |  | YES |  |  |\n| Method | varchar |  | YES |  |  |\n| Status | varchar |  | YES |  |  |\n| RequestData | varchar |  | YES |  |  |\n| ResponseData | varchar |  | YES |  |  |\n| Message | varchar |  | YES |  |  |\n| Exception | varchar |  | YES |  |  |\n| Ip | varchar |  | YES |  |  |\n\n## Municipalidad\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Codigo | varchar | 1,1 | NO |  | PK |\n| Nombre | varchar |  | YES |  |  |\n\n## Noticia\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | NO |  |  |\n| Foto | varbinary |  | YES |  |  |\n| Texto | varchar |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## PedidoCliente\n\n*12 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Fecha | timestamp |  | NO |  |  |\n| ClienteId | varchar |  | YES |  |  |\n| Origen | varchar |  | YES |  |  |\n| Destino | varchar |  | YES |  |  |\n| ProductoId | number |  | NO |  |  |\n| TipoVehiculoId | number |  | NO |  |  |\n| TipoCarroceriaId | number |  | NO |  |  |\n| Descripcion | varchar |  | YES |  |  |\n| ValorCarga | number |  | NO |  |  |\n| Peso | number |  | NO |  |  |\n| EstadoId | number |  | NO |  |  |\n\n## PlanViaje\n\n*33 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| IdAgencia | number |  | NO |  |  |\n| Id | number | 1,1 | NO |  | PK |\n| FecPla | timestamp |  | YES |  |  |\n| PlaVeh | varchar |  | YES |  |  |\n| PlaRem | varchar |  | YES |  |  |\n| Conductor | varchar |  | YES |  |  |\n| IdeCli | varchar |  | YES |  |  |\n| LinPro | number |  | YES |  |  |\n| TipoVehiculo | varchar |  | YES |  |  |\n| Ruta | varchar |  | YES |  |  |\n| Origen | varchar |  | YES |  |  |\n| Destino | varchar |  | YES |  |  |\n| FechaDespacho | timestamp |  | YES |  |  |\n| EstPla | number |  | YES |  |  |\n| AgeMan | number |  | YES |  |  |\n| Man | number |  | YES |  |  |\n| OrdCar | number |  | YES |  |  |\n| AgeOrdCar | number |  | YES |  |  |\n| DocCliente1 | varchar |  | YES |  |  |\n| DocCliente2 | varchar |  | YES |  |  |\n| Ultimopuesto | varchar |  | YES |  |  |\n| UltimoReporte | timestamp |  | YES |  |  |\n| FechaEstimadaLlegada | timestamp |  | YES |  |  |\n| TipoContenedor | number |  | YES |  |  |\n| NoContenedor | varchar |  | YES |  |  |\n| VenceBodegaje | timestamp |  | YES |  |  |\n| FechaReg | timestamp |  | YES |  |  |\n| DocCumplidoCliente | varchar |  | YES |  |  |\n| Estado | varchar |  | YES |  |  |\n| LatitudOrigen | number |  | YES |  |  |\n| LongitudOrigen | number |  | YES |  |  |\n| LatitudDestino | number |  | YES |  |  |\n| LongitudDestino | number |  | YES |  |  |\n\n## PqrDocumento\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| PqrId | number |  | NO |  |  |\n| NumArchivo | number |  | NO |  |  |\n| NombreArchivo | varchar |  | YES |  |  |\n| RutaArchivo | varchar |  | YES |  |  |\n| EstadoId | number |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## PremioReconocimiento\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | NO |  |  |\n| Foto | varchar |  | NO |  |  |\n| Texto | varchar |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## Regional\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Codigo | number |  | NO |  |  |\n| Descripcion | varchar |  | YES |  |  |\n\n## Remesa\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| IdAgencia | number |  | NO |  |  |\n| IdRemesa | number |  | NO |  |  |\n| IdAgenciaManifiesto | number |  | YES |  |  |\n| IdManifiesto | number |  | YES |  |  |\n| PlacaVeh | varchar |  | YES |  |  |\n| IdCliente | varchar |  | YES |  |  |\n| FechaCargue | timestamp |  | YES |  |  |\n| FechaConsultNomImg | timestamp |  | YES |  |  |\n| FechaConsultImg | timestamp |  | YES |  |  |\n| CantidadImagenes | number |  | YES |  |  |\n| CodeResposeLogitracs | number |  | YES |  |  |\n| MessageResponseLogitracs | varchar |  | YES |  |  |\n| IndNomImg | bit |  | YES |  |  |\n| IndImg | bit |  | YES |  |  |\n\n## SprItemPlanViaje\n\n*5 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Evento | varchar |  | YES |  |  |\n| Fecha | timestamp |  | NO |  |  |\n| Obs | varchar |  | YES |  |  |\n| Latitud | number |  | YES |  |  |\n| Longitud | number |  | YES |  |  |\n\n## SprPlanViaje\n\n*27 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| IdAgencia | number |  | NO |  |  |\n| Id | number | 1,1 | NO |  | PK |\n| FecPla | timestamp |  | YES |  |  |\n| PlaVeh | varchar |  | YES |  |  |\n| PlaRem | varchar |  | YES |  |  |\n| Conductor | varchar |  | YES |  |  |\n| IdeCli | varchar |  | YES |  |  |\n| LinPro | number |  | YES |  |  |\n| LineaProducto | varchar |  | YES |  |  |\n| TipoVehiculo | varchar |  | YES |  |  |\n| Ruta | varchar |  | YES |  |  |\n| Origen | varchar |  | YES |  |  |\n| Destino | varchar |  | YES |  |  |\n| FechaDespacho | timestamp |  | YES |  |  |\n| Man | number |  | YES |  |  |\n| Ultimopuesto | varchar |  | YES |  |  |\n| UltimoReporte | timestamp |  | YES |  |  |\n| FechaEstimadaLlegada | timestamp |  | YES |  |  |\n| NoContenedor | varchar |  | YES |  |  |\n| DocCliente1 | varchar |  | YES |  |  |\n| DocCliente2 | varchar |  | YES |  |  |\n| DocCumplidoCliente | varchar |  | YES |  |  |\n| Estado | varchar |  | YES |  |  |\n| LatitudOrigen | number |  | YES |  |  |\n| LongitudOrigen | number |  | YES |  |  |\n| LatitudDestino | number |  | YES |  |  |\n| LongitudDestino | number |  | YES |  |  |\n\n## SprRemesa\n\n*4 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| IdRemesa | number |  | NO |  |  |\n| CantidadImagenes | number |  | NO |  |  |\n| NombreArchivo | varchar |  | YES |  |  |\n| PathImg | varchar |  | YES |  |  |\n\n## SprSetAplication\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Operacion | bit |  | NO |  |  |\n| Mensaje | varchar |  | YES |  |  |\n\n## TipoDocIdentificacion\n\n*2 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Nombre | varchar |  | YES |  |  |\n\n## Usuario\n\n*17 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| NombreUsuario | varchar |  | NO |  |  |\n| Apellido1 | varchar |  | NO |  |  |\n| Apellido2 | varchar |  | NO |  |  |\n| Nombre1 | varchar |  | NO |  |  |\n| Nombre2 | varchar |  | NO |  |  |\n| Celular | varchar |  | NO |  |  |\n| Correo | varchar |  | NO |  |  |\n| Contrasena | varchar |  | NO |  |  |\n| TipoUsuarioId | number |  | NO |  |  |\n| TipoEstadoId | number |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## Vacante\n\n*15 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | YES |  |  |\n| Ubicacion | varchar |  | YES |  |  |\n| DescripcionOferta | varchar |  | YES |  |  |\n| Requisito | varchar |  | YES |  |  |\n| OfertaSalarial | varchar |  | YES |  |  |\n| Foto | varchar |  | YES |  |  |\n| Orden | number |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## VacanteConductor\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| Nombre | varchar |  | NO |  |  |\n| Descripcion | varchar |  | YES |  |  |\n| RegionalId | number |  | NO |  |  |\n| Perfil | varchar |  | YES |  |  |\n| Requisito | varchar |  | YES |  |  |\n| OfertaSalarial | varchar |  | YES |  |  |\n| Cantidad | number |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## VacanteFormulario\n\n*24 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| VacanteId | number |  | YES |  |  |\n| VacanteConductorId | number |  | YES |  |  |\n| TipoIdentificacionId | number |  | YES |  |  |\n| MedioPostulacionId | number |  | YES |  |  |\n| EstadoPostulacionId | number |  | YES |  |  |\n| Identificacion | varchar |  | YES |  |  |\n| NombreCompleto | varchar |  | YES |  |  |\n| Correo | varchar |  | YES |  |  |\n| Telefono | varchar |  | YES |  |  |\n| Participado | bit |  | YES |  |  |\n| RangoEdad | number |  | YES |  |  |\n| Edad | number |  | YES |  |  |\n| FechaNacimiento | timestamp |  | YES |  |  |\n| SalarioActual | number |  | YES |  |  |\n| Experiencia | number |  | YES |  |  |\n| ArchivoAdicional | bit |  | YES |  |  |\n| Fecha | timestamp |  | YES |  |  |\n| CiudadId | number |  | YES |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## VacanteFormularioDocumento\n\n*11 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Id | number | 1,1 | NO |  | PK |\n| VacanteFormularioId | number |  | NO |  |  |\n| NumArchivo | number |  | NO |  |  |\n| NombreArchivo | varchar |  | YES |  |  |\n| RutaArchivo | varchar |  | YES |  |  |\n| EstadoId | number |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |\n\n## ViajesXCliente\n\n*5 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|-------------|------|--------|----------|---------|-------------|\n| Nit | varchar |  | YES |  |  |\n| Mes | number |  | YES |  |  |\n| Vehiculo | varchar |  | YES |  |  |\n| CanViajes | number |  | YES |  |  |\n| Kilometros | number |  | YES |  |  |"
+    },
+    {
+      "name": "Token",
+      "x-displayName": "1. Autenticación"
+    },
+    {
+      "name": "News",
+      "x-displayName": "2. Noticias"
+    },
+    {
+      "name": "Histories",
+      "x-displayName": "3. Historia de la Compañía"
+    },
+    {
+      "name": "Certifications",
+      "x-displayName": "4. Certificaciones"
     },
     { "name": "Token", "x-displayName": "1. Autenticación" },
     { "name": "News", "x-displayName": "2. Noticias" },
@@ -81,6 +100,10 @@
       "name": "ConfIntRelationshipStates",
       "x-displayName": "18. Conflicto de Intereses: Tipos de Relación"
     },
+    {
+      "name": "PqrDocuments",
+      "x-displayName": "19. Documentos de PQR"
+    },
     { "name": "PqrDocuments", "x-displayName": "19. Documentos de PQR" },
     {
       "name": "CallServiceCustomerWebs",
@@ -97,8 +120,24 @@
       "description": "Operaciones del formulario público de inscripción y actualización de terceros (formatos F14 y F16)."
     },
     {
-      "name": "ThirdPartyFormSupport",
-      "description": "Catálogos y consultas compartidas que usa el formulario público de terceros."
+      "name": "PlanTrips",
+      "x-displayName": "22. Planes de Viaje"
+    },
+    {
+      "name": "ItemPlanTrips",
+      "x-displayName": "23. Ítems del Plan de Viaje"
+    },
+    {
+      "name": "Remittances",
+      "x-displayName": "24. Remesas"
+    },
+    {
+      "name": "Documents",
+      "x-displayName": "25. Documentos"
+    },
+    {
+      "name": "PreAlerts",
+      "x-displayName": "26. Prealertas"
     }
   ],
   "paths": {
@@ -3599,74 +3638,11 @@
         }
       }
     },
-    "/catalogs/trailerClasses": {
-      "get": {
-        "tags": ["ThirdPartyFormSupport"],
-        "servers": [
-          {
-            "url": "https://{host}:1000/gateway",
-            "variables": {
-              "host": {
-                "enum": [
-                  "www.coltanques.net",
-                  "www.coltanques.co",
-                  "www.coltanques.com.co"
-                ],
-                "default": "www.coltanques.net",
-                "description": "Host del entorno configurado en apiURL."
-              }
-            },
-            "description": "Servidor gateway consumido por el frontend del sitio web."
-          }
-        ],
-        "summary": "Consulta el catálogo trailerClasses utilizado por el formulario de terceros.",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "result",
-                    "message",
-                    "statusCode",
-                    "numberRecord",
-                    "catalog"
-                  ],
-                  "properties": {
-                    "result": { "type": "integer" },
-                    "catalog": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/CatalogItemDto"
-                      },
-                      "nullable": true
-                    },
-                    "message": { "type": "string" },
-                    "statusCode": { "type": "integer" },
-                    "numberRecord": { "type": "integer" }
-                  },
-                  "additionalProperties": true
-                },
-                "example": {
-                  "result": 0,
-                  "catalog": [],
-                  "message": "string",
-                  "statusCode": 200,
-                  "numberRecord": 0
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "description": "**Ruta en el gateway:** `GET /catalogs/trailerClasses`. Ruta relativa a la URL base `/gateway/` configurada por el frontend. El mapeo interno a controladores del backend no está disponible en el repositorio revisado.",
-        "operationId": "ThirdPartyCatalogTrailerClassesGet"
-      }
-    },
     "/api/ConfIntQuestions/Get": {
       "get": {
-        "tags": ["ConfIntQuestions"],
+        "tags": [
+          "ConfIntQuestions"
+        ],
         "summary": "Consulta las preguntas registradas en el sitio web",
         "responses": {
           "200": {
@@ -3699,7 +3675,9 @@
           {
             "in": "query",
             "name": "includeinactives",
-            "schema": { "type": "boolean" },
+            "schema": {
+              "type": "boolean"
+            },
             "required": false
           }
         ],
@@ -4248,40 +4226,41 @@
     },
     "/api/ConfIntEmployeeFormat": {
       "post": {
-        "tags": ["ConfIntEmployeeFormats"],
-        "summary": "Crea el formato de declaración de conflicto de intereses con los datos personales y la relación con la compañía.",
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
+        "summary": "Crea el formato de declaración de conflicto de intereses de un empleado con sus datos personales y su relación con la compañía",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "result": 1,
-                  "message": "Formato creado correctamente.",
-                  "statusCode": 200,
-                  "numberRecord": 1,
-                  "confIntEmployeeId": 123
+                  "result": 0,
+                  "message": "string",
+                  "statusCode": 100,
+                  "currentPage": 0,
+                  "numberRecord": 0,
+                  "confIntEmployeeFormats": [
+                    {
+                      "id": 0,
+                      "date": "string",
+                      "name": "string",
+                      "email": "string",
+                      "phone": "string",
+                      "status": "string",
+                      "documentType": "string",
+                      "relationship": "string",
+                      "documentNumber": "string"
+                    }
+                  ]
                 }
               }
             },
             "description": "OK"
-          },
-          "201": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "result": 1,
-                  "message": "Formato creado correctamente.",
-                  "statusCode": 201,
-                  "numberRecord": 1,
-                  "confIntEmployeeId": 123
-                }
-              }
-            },
-            "description": "Formato creado."
           }
         },
-        "description": "Crea el formato de declaración de conflicto de intereses con los datos personales y la relación con la compañía.\n\n**Comportamiento observado en el formulario web**\n\n1. Envía relationCompanyId, identificationTypeId, fullname, identificationNumber, email, phone y employeePosition. employeePosition puede enviarse como null.\n2. La respuesta consumida por el formulario contiene confIntEmployeeId, result, message y statusCode. El formulario continúa cuando statusCode es 200 o 201.\n3. El confIntEmployeeId se usa en las operaciones siguientes del formulario.\n\n**Ruta relativa usada por el formulario:** /confint/employeeFormats.",
-        "operationId": "ConfIntEmployeeFormats_Create",
+        "description": "Crea el formato de declaración de conflicto de intereses de un empleado con sus datos personales y su relación con la compañía.\n\n**Reglas de Negocio**\n\n1. Requiere token JWT válido en la cabecera Authorization con el esquema Bearer; sin él el servicio responde 401.\n2. Si el cuerpo de la petición no cumple el modelo esperado responde 400 con el detalle de la validación.\n3. El formato se crea en estado activo y queda listo para registrar respuestas y anexos.\n4. Si la operación es exitosa responde 201 con el formato creado.\n5. Cualquier excepción no controlada se registra en el servicio de log de aplicaciones y el servicio responde 500 con el detalle del error.\n\n**Ruta en el gateway:** no publicada; el endpoint se consume directamente en la red interna del api del sitio web.",
+        "operationId": "ConfIntEmployeeFormats_GetByFilter",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5491,7 +5470,9 @@
     },
     "/api/ConfIntEmployeeFormat/Get": {
       "get": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Consulta los formatos de conflicto de intereses registrados en el sitio web",
         "responses": {
           "200": {
@@ -5530,7 +5511,9 @@
           {
             "in": "query",
             "name": "includeinactives",
-            "schema": { "type": "boolean" },
+            "schema": {
+              "type": "boolean"
+            },
             "required": false
           }
         ],
@@ -5540,7 +5523,9 @@
     },
     "/api/ConfIntQuestions/Get/{id}": {
       "get": {
-        "tags": ["ConfIntQuestions"],
+        "tags": [
+          "ConfIntQuestions"
+        ],
         "summary": "Consulta la pregunta identificada con el Id indicado",
         "responses": {
           "200": {
@@ -5555,7 +5540,10 @@
                     "id": 0,
                     "description": "string",
                     "questionConfig": [
-                      { "questionConfigId": 0, "questionConfigLabel": "string" }
+                      {
+                        "questionConfigId": 0,
+                        "questionConfigLabel": "string"
+                      }
                     ]
                   }
                 }
@@ -5568,7 +5556,10 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
@@ -6056,16 +6047,18 @@
     },
     "/api/ConfIntEmployeeFormat/{id}": {
       "post": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Genera el PDF de la declaración de conflicto de intereses del empleado con sus datos y sus respuestas, y lo guarda en el repositorio de archivos",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "result": 1,
-                  "message": "PDF generado correctamente.",
-                  "statusCode": 200,
+                  "result": 0,
+                  "message": "string",
+                  "statusCode": 100,
                   "numberRecord": 0
                 }
               }
@@ -6077,20 +6070,15 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
-        "description": "Genera y guarda el PDF de la declaración. El formulario invoca esta operación con un cuerpo JSON vacío y considera exitosa una respuesta cuyo statusCode está entre 200 y 299.\n\nRuta relativa usada por el formulario: POST /confint/employeeFormats/{id}.",
-        "operationId": "ConfIntEmployeeFormats_GeneratePdfById",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "type": "object", "additionalProperties": false },
-              "example": {}
-            }
-          }
-        }
+        "description": "Genera el PDF de la declaración de conflicto de intereses del empleado con sus datos y sus respuestas, y lo guarda en el repositorio de archivos.\n\n**Reglas de Negocio**\n\n1. Requiere token JWT válido en la cabecera Authorization con el esquema Bearer; sin él el servicio responde 401.\n2. El Id de la ruta debe corresponder a un formato de conflicto de intereses existente.\n3. El PDF se arma con los datos del empleado y las respuestas registradas en el formato.\n4. El documento generado se guarda en el repositorio de archivos y su ruta queda en el formato.\n5. Si la generación falla el servicio responde con el código de estado devuelto por el generador.\n6. Cualquier excepción no controlada se registra en el servicio de log de aplicaciones y el servicio responde 500 con el detalle del error.\n\n**Ruta en el gateway:** `/gateway/confint/employeeFormats/{id}`",
+        "operationId": "ConfIntEmployeeFormats_GetByFilterId"
       }
     },
     "/api/OrderCustomers/ChangeState": {
@@ -6737,7 +6725,9 @@
     },
     "/api/ConfIntRelationshipStates/Get": {
       "get": {
-        "tags": ["ConfIntRelationshipStates"],
+        "tags": [
+          "ConfIntRelationshipStates"
+        ],
         "summary": "Consulta los tipos de relación registrados en el sitio web",
         "responses": {
           "200": {
@@ -6748,7 +6738,12 @@
                   "message": "string",
                   "statusCode": 100,
                   "numberRecord": 0,
-                  "confIntRelationshipStates": [{ "id": 0, "name": "string" }]
+                  "confIntRelationshipStates": [
+                    {
+                      "id": 0,
+                      "name": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -6759,7 +6754,9 @@
           {
             "in": "query",
             "name": "includeinactives",
-            "schema": { "type": "boolean" },
+            "schema": {
+              "type": "boolean"
+            },
             "required": false
           }
         ],
@@ -6906,40 +6903,9 @@
     },
     "/api/ConfIntEmployeeFormat/Employee": {
       "get": {
-        "tags": ["ConfIntEmployeeFormats"],
-        "summary": "Busca el nombre de un empleado por su número de identificación.",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "result": 1,
-                  "message": "Empleado encontrado.",
-                  "fullname": "Nombre del empleado",
-                  "statusCode": 200,
-                  "numberRecord": 1
-                }
-              }
-            },
-            "description": "Resultado de la búsqueda."
-          }
-        },
-        "parameters": [
-          {
-            "in": "query",
-            "name": "identificationNumber",
-            "schema": { "type": "string" },
-            "required": true,
-            "description": "Número de identificación del empleado."
-          }
+        "tags": [
+          "ConfIntEmployeeFormats"
         ],
-        "description": "Busca el empleado por su número de identificación. El formulario completa el nombre cuando la respuesta informa statusCode 200, result 1 y un fullname no vacío. La respuesta consumida contiene numberRecord, result, message, statusCode y fullname; fullname puede ser null.\n\n**Ruta relativa usada por el formulario:** /confint/employeeFormats/Employee.",
-        "operationId": "ConfIntEmployeeFormats_GetEmployeeByIdentificationNumber"
-      }
-    },
-    "/api/ConfIntEmployeeFormat/Get/{id}": {
-      "get": {
-        "tags": ["ConfIntEmployeeFormats"],
         "summary": "Consulta el formato de conflicto de intereses identificado con el Id indicado",
         "responses": {
           "200": {
@@ -6976,7 +6942,10 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
@@ -7357,7 +7326,9 @@
     },
     "/api/ConfIntEmployeeFormat/GetAllForm": {
       "get": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Consulta paginada de los formatos de conflicto de intereses con el detalle de la relación con la compañía y el estado de cada formato",
         "responses": {
           "200": {
@@ -7392,37 +7363,52 @@
           {
             "in": "query",
             "name": "TxtSearch",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "RelationshipId",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "Date",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "PageNumber",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "PageSize",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "IncludeInactives",
-            "schema": { "type": "boolean" },
+            "schema": {
+              "type": "boolean"
+            },
             "required": false
           }
         ],
@@ -7742,7 +7728,9 @@
     },
     "/api/ConfIntEmployeeFormat/Export/Excel": {
       "get": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Exporta a un archivo de Excel los formatos de conflicto de intereses, aplicando los mismos filtros de la consulta con filtros",
         "responses": {
           "200": {
@@ -7764,37 +7752,52 @@
           {
             "in": "query",
             "name": "TxtSearch",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "RelationshipId",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "Date",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "PageNumber",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "PageSize",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": false
           },
           {
             "in": "query",
             "name": "IncludeInactives",
-            "schema": { "type": "boolean" },
+            "schema": {
+              "type": "boolean"
+            },
             "required": false
           }
         ],
@@ -7804,16 +7807,18 @@
     },
     "/api/ConfIntEmployeeFormat/{id}/Answers": {
       "post": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Registra las respuestas del empleado a las preguntas del formato de conflicto de intereses",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "result": 1,
-                  "message": "Respuestas registradas correctamente.",
-                  "statusCode": 200,
+                  "result": 0,
+                  "message": "string",
+                  "statusCode": 100,
                   "numberRecord": 0
                 }
               }
@@ -7825,11 +7830,14 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
-        "description": "Registra las respuestas agrupadas en formAnswers. Cada elemento contiene questionId y answers; cada respuesta incluye questionConfigId y answer. El formulario omite esta llamada cuando todas las respuestas son negativas.\n\n**Ruta relativa usada por el formulario:** /confint/employeeFormats/{id}/answers.",
+        "description": "Registra las respuestas del empleado a las preguntas del formato de conflicto de intereses.\n\n**Reglas de Negocio**\n\n1. Requiere token JWT válido en la cabecera Authorization con el esquema Bearer; sin él el servicio responde 401.\n2. El Id de la ruta debe corresponder a un formato de conflicto de intereses existente.\n3. Las respuestas se envían agrupadas por pregunta (questionId) y cada respuesta referencia la opción configurada (questionConfigId).\n4. Si el cuerpo de la petición no cumple el modelo esperado responde 400 con el detalle de la validación.\n5. Cualquier excepción no controlada se registra en el servicio de log de aplicaciones y el servicio responde 500 con el detalle del error.\n\n**Ruta en el gateway:** no publicada; el endpoint se consume directamente en la red interna del api del sitio web.",
         "operationId": "ConfIntEmployeeFormats_AnswersById",
         "requestBody": {
           "content": {
@@ -7840,7 +7848,12 @@
               "example": {
                 "formAnswers": [
                   {
-                    "answers": [{ "answer": "string", "questionConfigId": 0 }],
+                    "answers": [
+                      {
+                        "answer": "string",
+                        "questionConfigId": 0
+                      }
+                    ],
                     "questionId": 0
                   }
                 ]
@@ -7852,7 +7865,9 @@
     },
     "/api/ConfIntRelationshipStates/Get/{id}": {
       "get": {
-        "tags": ["ConfIntRelationshipStates"],
+        "tags": [
+          "ConfIntRelationshipStates"
+        ],
         "summary": "Consulta el tipo de relación identificado con el Id indicado",
         "responses": {
           "200": {
@@ -7863,7 +7878,10 @@
                   "message": "string",
                   "statusCode": 100,
                   "numberRecord": 0,
-                  "confIntRelationshipStates": { "id": 0, "name": "string" }
+                  "confIntRelationshipStates": {
+                    "id": 0,
+                    "name": "string"
+                  }
                 }
               }
             },
@@ -7874,7 +7892,10 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
@@ -8391,7 +8412,9 @@
     },
     "/api/ConfIntEmployeeFormat/Export/{id}/Pdf": {
       "get": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Descarga en base64 el PDF de la declaración de conflicto de intereses previamente generado para el empleado",
         "responses": {
           "200": {
@@ -8413,7 +8436,10 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
@@ -9254,60 +9280,20 @@
         "operationId": "Vacants_IncludeInactivesByIncludeinactives"
       }
     },
-    "/masters/bytypemasterid/includeinactives/1/false": {
-      "get": {
-        "tags": ["ThirdPartyFormSupport"],
-        "servers": [
-          {
-            "url": "https://{host}:1000/gateway",
-            "variables": {
-              "host": {
-                "enum": [
-                  "www.coltanques.net",
-                  "www.coltanques.co",
-                  "www.coltanques.com.co"
-                ],
-                "default": "www.coltanques.net",
-                "description": "Host del entorno configurado en apiURL."
-              }
-            },
-            "description": "Servidor gateway consumido por el frontend del sitio web."
-          }
-        ],
-        "summary": "Consulta los tipos de identificación usados por el formulario.",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ThirdPartyIdentificationTypesResponse"
-                },
-                "example": {
-                  "result": 0,
-                  "message": "string",
-                  "statusCode": 200
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "description": "**Ruta en el gateway:** `GET /masters/bytypemasterid/includeinactives/1/false`. Ruta relativa a la URL base `/gateway/` configurada por el frontend. El mapeo interno a controladores del backend no está disponible en el repositorio revisado.",
-        "operationId": "ThirdPartyIdentificationTypesGet"
-      }
-    },
     "/api/ConfIntEmployeeFormat/{id}/ConflictStatements": {
       "post": {
-        "tags": ["ConfIntEmployeeFormats"],
+        "tags": [
+          "ConfIntEmployeeFormats"
+        ],
         "summary": "Adjunta al formato de conflicto de intereses el texto de la declaración y los archivos de soporte que el empleado carga desde el sitio web",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "result": 1,
-                  "message": "Declaración registrada correctamente.",
-                  "statusCode": 200,
+                  "result": 0,
+                  "message": "string",
+                  "statusCode": 100,
                   "numberRecord": 0
                 }
               }
@@ -9319,11 +9305,14 @@
           {
             "in": "path",
             "name": "id",
-            "schema": { "type": "integer", "format": "int32" },
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
             "required": true
           }
         ],
-        "description": "Adjunta al formato el texto de la declaración y los archivos de soporte. Cada archivo se envía con name, base64 y format.\n\n**Ruta relativa usada por el formulario:** /confint/employeeFormats/{id}/conflictStatements.",
+        "description": "Adjunta al formato de conflicto de intereses el texto de la declaración y los archivos de soporte que el empleado carga desde el sitio web.\n\n**Reglas de Negocio**\n\n1. Requiere token JWT válido en la cabecera Authorization con el esquema Bearer; sin él el servicio responde 401.\n2. El Id de la ruta debe corresponder a un formato de conflicto de intereses existente.\n3. Cada archivo debe traer su contenido en base64, el nombre y el formato.\n4. Los archivos se almacenan en el repositorio de archivos de la plataforma usando el token del usuario que hace la petición.\n5. Si el cuerpo de la petición no cumple el modelo esperado responde 400 con el detalle de la validación.\n6. Cualquier excepción no controlada se registra en el servicio de log de aplicaciones y el servicio responde 500 con el detalle del error.\n\n**Ruta en el gateway:** `/gateway/confint/employeeFormats/{id}/conflictStatements`",
         "operationId": "ConfIntEmployeeFormats_ConflictStatementsById",
         "requestBody": {
           "content": {
@@ -9333,7 +9322,11 @@
               },
               "example": {
                 "files": [
-                  { "name": "string", "base64": "string", "format": "string" }
+                  {
+                    "name": "string",
+                    "base64": "string",
+                    "format": "string"
+                  }
                 ],
                 "declarationConflictOfInterest": "string"
               }
@@ -12718,7 +12711,10 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "answer": { "type": "string", "nullable": true },
+                      "answer": {
+                        "type": "string",
+                        "nullable": true
+                      },
                       "questionConfigId": {
                         "type": "integer",
                         "format": "int32"
@@ -12728,7 +12724,10 @@
                   },
                   "nullable": true
                 },
-                "questionId": { "type": "integer", "format": "int32" }
+                "questionId": {
+                  "type": "integer",
+                  "format": "int32"
+                }
               },
               "additionalProperties": false
             },
@@ -12759,7 +12758,7 @@
           "employeePosition": {
             "type": "string",
             "nullable": true,
-            "description": "Cargo que ocupa el empleado; el formulario puede enviar null cuando no aplica."
+            "description": "Cargo que ocupa el empleado."
           },
           "relationCompanyId": {
             "type": "integer",
@@ -12853,14 +12852,23 @@
             "items": {
               "type": "object",
               "properties": {
-                "name": { "type": "string", "nullable": true },
-                "base64": { "type": "string", "nullable": true },
-                "format": { "type": "string", "nullable": true }
+                "name": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "base64": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "format": {
+                  "type": "string",
+                  "nullable": true
+                }
               },
               "additionalProperties": false
             },
             "nullable": true,
-            "description": "Archivos adjuntos enviados con nombre, contenido base64 y formato."
+            "description": "Archivos adjuntos del formulario."
           },
           "declarationConflictOfInterest": {
             "type": "string",

@@ -163,7 +163,7 @@
     },
     NEW_TAB: { target: '_blank', blankUrl: 'about:blank', rel: 'noopener noreferrer' },
     LOCAL_DATE_SUFFIX: 'T00:00:00',
-    DELAY_MS: { redocRender: 90, copiedFeedback: 1500, printDialog: 300 },
+    DELAY_MS: { redocLoadTimeout: 10000, redocLoadPoll: 100, copiedFeedback: 1500, printDialog: 300 },
     COPY_KEY: {
       emailBody: 'correo-cuerpo',
       projectDeploymentPrefix: 'p:',

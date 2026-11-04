@@ -2938,10 +2938,10 @@
         addCredRow(){ this.setState(s=>({form:{...s.form,credRows:[...s.form.credRows,{environmentId:'',label:'',username:'',secret:'',url:'',notes:''}]}})); }
         removeCredRow(i){ this.setState(s=>({form:{...s.form,credRows:s.form.credRows.filter((r,j)=>j!==i)}})); }
 
-        openApiDoc(){ const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:VIEW.apiDoc, apiUrlInput:spec.source===API_TAB.url?(spec.url||''):'', apiErr:'', apiHasRender:!!spec.source}); if(spec.source){ setTimeout(()=>this.renderSpec(spec),DELAY_MS.redocRender); } }
-        renderSpec(spec){ const el=this._redocEl; if(!window.Redoc){ this.setState({apiErr:'No se pudo cargar Redoc (revisa tu conexión).'}); return; } if(!el) return; const opts={hideDownloadButton:!this.isDev()}; try{ el.replaceChildren(); if(spec.source===API_TAB.url){ window.Redoc.init(spec.url,opts,el,(err)=>{ if(err){ this.setState({apiErr:'No se pudo cargar la spec: no se encontró el archivo en esa ruta.'}); } }); } else { const obj=JSON.parse(spec.json); window.Redoc.init(obj,opts,el); } }catch(e){ this.setState({apiErr:'Error al renderizar: '+e.message}); } }
+        openApiDoc(){ clearTimeout(this._redocWaitT); this._redocWaitSpec=null; const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:VIEW.apiDoc, apiUrlInput:spec.source===API_TAB.url?(spec.url||''):'', apiErr:'', apiHasRender:!!spec.source}); this._pendingSpec=spec.source?spec:null; }
+        waitForRedoc(spec){ clearTimeout(this._redocWaitT); this._redocWaitSpec=spec; const started=Date.now(); const tick=()=>{ if(this._redocWaitSpec!==spec) return; if(window.Redoc){ this._redocWaitSpec=null; this.renderSpec(spec); return; } if(Date.now()-started>=DELAY_MS.redocLoadTimeout){ this._redocWaitSpec=null; this.setState({apiErr:'No se pudo cargar Redoc (revisa tu conexión).'}); return; } this._redocWaitT=setTimeout(tick,DELAY_MS.redocLoadPoll); }; tick(); }
+        renderSpec(spec){ const el=this._redocEl; if(!el) return; if(!window.Redoc){ this.waitForRedoc(spec); return; } const opts={hideDownloadButton:!this.isDev()}; try{ el.replaceChildren(); if(spec.source===API_TAB.url){ window.Redoc.init(spec.url,opts,el,(err)=>{ if(err){ this.setState({apiErr:'No se pudo cargar la spec: no se encontró el archivo en esa ruta.'}); } }); } else { const obj=JSON.parse(spec.json); window.Redoc.init(obj,opts,el); } }catch(e){ this.setState({apiErr:'Error al renderizar: '+e.message}); } }
         toggleApiFullscreen(){ const el=this._redocContainerEl; if(!el) return; if(document.fullscreenElement){ document.exitFullscreen(); } else if(el.requestFullscreen){ el.requestFullscreen(); } }
-
         async saveApiUrl(){
           if(!this.isDev()||this._busy) return; this._busy=true;
           try{ await this._saveApiUrl(); } finally{ this._busy=false; }
@@ -2954,7 +2954,7 @@
           this.setState({saveStatus:error?SAVE_STATUS.error:SAVE_STATUS.saved});
           if(error){ this.setState({apiErr:'No se pudo guardar: '+error.message}); return; }
           await this.loadData();
-          setTimeout(()=>this.renderSpec(spec),DELAY_MS.redocRender);
+          this._pendingSpec=spec; this.setState({apiErr:''});
         }
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
@@ -4524,7 +4524,7 @@
           R.toggleFullscreen=()=>this.toggleApiFullscreen();
           R.fullscreenTitle=s.apiFullscreen?'Salir de pantalla completa':'Pantalla completa';
           R.fullscreenIconHref=ICON.expand;
-          R.redocRef=(el)=>{ this._redocEl=el; };
+          R.redocRef=(el)=>{ this._redocEl=el; const spec=this._pendingSpec; if(el&&spec){ this._pendingSpec=null; setTimeout(()=>this.renderSpec(spec),0); } };
           R.redocContainerRef=(el)=>{ this._redocContainerEl=el; };
 
           const empresaLogos={ coltanques:'./assets/logos/coltanques.svg', tecno:'./assets/logos/tecno.svg', d1:'./assets/logos/d1.png', 'tiendas d1':'./assets/logos/d1.png' };
