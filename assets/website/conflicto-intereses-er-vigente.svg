@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="1475" viewBox="0 0 1660 1475" role="img" aria-labelledby="title desc">
+<title id="title">Conflicto de intereses · modelo EF vigente</title><desc id="desc">Nombres físicos según Context.cs. La validación contra Empleado es una consulta del servicio, sin FK.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
+<style>text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:bold}.sub{font-size:15px;fill:#475569}.head{font-size:17px;font-weight:bold}.row{font-size:14px}.edge{fill:none;stroke:#94a3b8;stroke-width:1.8;marker-end:url(#arrow)}.node{fill:#fff;stroke:#334155;stroke-width:1.5}.cap{fill:#e0f2fe;stroke:#334155;stroke-width:1.5}</style>
+<rect width="1660" height="1475" fill="#f8fafc"/>
+<text x="30" y="36" class="title">Conflicto de intereses · modelo EF vigente</text>
+<text x="30" y="66" class="sub">Nombres físicos según Context.cs. La validación contra Empleado es una consulta del servicio, sin FK.</text>
+<path class="edge" d="M 275 430 V 387.5 H 275 V 345"><title>ConfInt_Questions.ConflictOfInterestId → ConfInt_Format</title></path>
+<path class="edge" d="M 815 430 V 387.5 H 275 V 345"><title>ConfInt_EmployeeFormat.ConflictOfInterestId → ConfInt_Format</title></path>
+<path class="edge" d="M 815 430 V 387.5 H 815 V 345"><title>ConfInt_EmployeeFormat.RelationCompanyId → ConfInt_RelationshipStates</title></path>
+<path class="edge" d="M 815 430 V 387.5 H 1355 V 345"><title>ConfInt_EmployeeFormat.FormatStatusId → ConfInt_FormatStatus</title></path>
+<path class="edge" d="M 1355 430 V 552.5 H 815 V 675"><title>ConfInt_Attachments.EmployeeFormatId → ConfInt_EmployeeFormat</title></path>
+<path class="edge" d="M 815 760 V 882.5 H 275 V 1005"><title>ConfInt_QuestionByConfig.QuestionConfigId → ConfInt_QuestionConfig</title></path>
+<path class="edge" d="M 815 760 V 717.5 H 275 V 675"><title>ConfInt_QuestionByConfig.QuestionId → ConfInt_Questions</title></path>
+<path class="edge" d="M 1355 760 V 717.5 H 815 V 675"><title>ConfInt_Answers.EmployeeId → ConfInt_EmployeeFormat</title></path>
+<path class="edge" d="M 1355 760 V 717.5 H 275 V 675"><title>ConfInt_Answers.QuestionId → ConfInt_Questions</title></path>
+<path class="edge" d="M 275 1090 V 1047.5 H 275 V 1005"><title>ConfInt_AnswerConfig.QuestionConfigId → ConfInt_QuestionConfig</title></path>
+<path class="edge" d="M 275 1090 V 1047.5 H 1355 V 1005"><title>ConfInt_AnswerConfig.AnswerId → ConfInt_Answers</title></path>
+<rect class="node" x="30" y="100" width="490" height="245" rx="8"/>
+<rect class="cap" x="30" y="100" width="490" height="42" rx="8"/>
+<text class="head" x="42" y="127">ConfInt_Format</text>
+<text class="row" x="42" y="166">PK Id : int</text>
+<text class="sub" x="42" y="330">6 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="570" y="100" width="490" height="245" rx="8"/>
+<rect class="cap" x="570" y="100" width="490" height="42" rx="8"/>
+<text class="head" x="582" y="127">ConfInt_RelationshipStates</text>
+<text class="row" x="582" y="166">PK Id : int</text>
+<text class="row" x="582" y="189">Name : varchar(100) ?</text>
+<text class="sub" x="582" y="330">6 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="1110" y="100" width="490" height="245" rx="8"/>
+<rect class="cap" x="1110" y="100" width="490" height="42" rx="8"/>
+<text class="head" x="1122" y="127">ConfInt_FormatStatus</text>
+<text class="row" x="1122" y="166">PK Id : int</text>
+<text class="row" x="1122" y="189">Description : varchar(100) ?</text>
+<text class="sub" x="1122" y="330">2 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="30" y="430" width="490" height="245" rx="8"/>
+<rect class="cap" x="30" y="430" width="490" height="42" rx="8"/>
+<text class="head" x="42" y="457">ConfInt_Questions</text>
+<text class="row" x="42" y="496">PK Id : int</text>
+<text class="row" x="42" y="519">FK ConflictOfInterestId : int</text>
+<text class="row" x="42" y="542">Description : varchar(500) ?</text>
+<text class="sub" x="42" y="660">7 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="570" y="430" width="490" height="245" rx="8"/>
+<rect class="cap" x="570" y="430" width="490" height="42" rx="8"/>
+<text class="head" x="582" y="457">ConfInt_EmployeeFormat</text>
+<text class="row" x="582" y="496">PK Id : int</text>
+<text class="row" x="582" y="519">FK ConflictOfInterestId : int</text>
+<text class="row" x="582" y="542">FK RelationCompanyId : int</text>
+<text class="row" x="582" y="565">FK IdentificationTypeId : int</text>
+<text class="row" x="582" y="588">FK FormatStatusId : int ?</text>
+<text class="row" x="582" y="611">Fullname : varchar(255)</text>
+<text class="row" x="582" y="634">IdentificationNumber : nvarchar(max)</text>
+<text class="sub" x="582" y="660">18 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="1110" y="430" width="490" height="245" rx="8"/>
+<rect class="cap" x="1110" y="430" width="490" height="42" rx="8"/>
+<text class="head" x="1122" y="457">ConfInt_Attachments</text>
+<text class="row" x="1122" y="496">PK Id : int</text>
+<text class="row" x="1122" y="519">FK EmployeeFormatId : int</text>
+<text class="row" x="1122" y="542">Format : varchar(50) ?</text>
+<text class="sub" x="1122" y="660">5 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="30" y="760" width="490" height="245" rx="8"/>
+<rect class="cap" x="30" y="760" width="490" height="42" rx="8"/>
+<text class="head" x="42" y="787">ConfInt_QuestionConfig</text>
+<text class="row" x="42" y="826">PK Id : int</text>
+<text class="sub" x="42" y="990">2 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="570" y="760" width="490" height="245" rx="8"/>
+<rect class="cap" x="570" y="760" width="490" height="42" rx="8"/>
+<text class="head" x="582" y="787">ConfInt_QuestionByConfig</text>
+<text class="row" x="582" y="826">PK/FK QuestionId : int</text>
+<text class="row" x="582" y="849">PK/FK QuestionConfigId : int</text>
+<text class="sub" x="582" y="990">3 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="1110" y="760" width="490" height="245" rx="8"/>
+<rect class="cap" x="1110" y="760" width="490" height="42" rx="8"/>
+<text class="head" x="1122" y="787">ConfInt_Answers</text>
+<text class="row" x="1122" y="826">PK Id : int</text>
+<text class="row" x="1122" y="849">FK EmployeeId : int</text>
+<text class="row" x="1122" y="872">FK QuestionId : int</text>
+<text class="sub" x="1122" y="990">7 columnas · detalle completo en el diccionario</text>
+<rect class="node" x="30" y="1090" width="490" height="245" rx="8"/>
+<rect class="cap" x="30" y="1090" width="490" height="42" rx="8"/>
+<text class="head" x="42" y="1117">ConfInt_AnswerConfig</text>
+<text class="row" x="42" y="1156">PK Id : int</text>
+<text class="row" x="42" y="1179">FK QuestionConfigId : int ?</text>
+<text class="row" x="42" y="1202">FK AnswerId : int ?</text>
+<text class="row" x="42" y="1225">Description : varchar(500) ?</text>
+<text class="sub" x="42" y="1320">4 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="30" y="1441">Flecha FK: tabla hija → tabla padre · ?: nullable · claves y columnas seleccionadas; vínculos externos en el diccionario.</text>
+</svg>
