@@ -2479,6 +2479,35 @@
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
         canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
+        reqFormCompany(m,f){ return m&&m.global ? (this.state.data||[]).find(c=>c.id===(f&&f.empresaId))||null : this.empresa()||null; }
+        pmPickerView(company,form){
+          const contacts=(company&&company.contactos)||[];
+          const selected=contacts.find(c=>c.id===form.pmContactId)||null;
+          const editing=form.pmQuery!==undefined, query=editing?form.pmQuery:'';
+          const matches=editing?BOARD_EXT.filterPmContacts(contacts,query).slice(0,8):[];
+          const canAdd=editing&&!!query.trim()&&!BOARD_EXT.findPmContactByName(contacts,query);
+          return { value:editing?query:(selected?selected.name:''), open:editing&&(matches.length>0||canAdd),
+            options:matches.map(c=>({label:c.name, pick:()=>this.pickPmContact(c.id)})),
+            canAdd, addLabel:'Agregar «'+query.trim()+'» como PM', add:()=>this.createPmContact(company&&company.id,query),
+            hasValue:!!selected||editing, clear:()=>this.pickPmContact(''),
+            onInput:e=>this.setPmQuery(e.target.value), onFocus:()=>{ if(!editing) this.setPmQuery(''); },
+            onKeyDown:e=>{ if(e.key==='Enter'){ e.preventDefault(); const exact=BOARD_EXT.findPmContactByName(contacts,query); if(exact) this.pickPmContact(exact.id); else if(canAdd) this.createPmContact(company&&company.id,query); } if(e.key==='Escape') this.setState(s=>({form:{...s.form,pmQuery:undefined}})); } };
+        }
+        setPmQuery(q){ this.setState(s=>({form:{...s.form,pmQuery:q}})); }
+        pickPmContact(id){ this.setState(s=>({form:{...s.form,pmContactId:id||'',pmQuery:undefined}})); }
+        setFacturado(on){ this.setState(s=>({form:{...s.form,facturado:!!on,mesFacturado:on?s.form.mesFacturado||'':''}})); }
+        async createPmContact(companyId,name){
+          const clean=String(name||'').replace(/\s+/g,' ').trim(); if(!clean||!companyId||!this.isPM()) return;
+          const company=(this.state.data||[]).find(c=>c.id===companyId); if(!company) return;
+          const existing=BOARD_EXT.findPmContactByName(company.contactos,clean);
+          if(existing){ this.pickPmContact(existing.id); return; }
+          const maxOrder=(company.contactos||[]).reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const id=this.gid(ID_PREFIX.contact);
+          const { error } = await this._sb.from(TABLE.companyContacts).insert({ id, company_id:companyId, name:clean, email:null, role:BOARD_EXT.CONTACT_ROLE.pm, default_field:null, sort_order:maxOrder+1 });
+          if(error){ this.setState({modalErr:'No se pudo crear el PM: '+error.message}); return; }
+          await this.loadData();
+          this.pickPmContact(id);
+        }
         groupRowsBy(rows,key){ const groups=new Map(); (rows||[]).forEach(row=>{ const group=groups.get(row[key]); if(group) group.push(row); else groups.set(row[key],[row]); }); return groups; }
         indexById(rows){ const index=new Map(); (rows||[]).forEach(row=>{ if(!index.has(row.id)) index.set(row.id,row); }); return index; }
         deployFinderByEnv(deploys){
@@ -2559,7 +2588,7 @@
                 const owners=this.parseOwners(r.owner);
                 return {
                 id:r.id, codigos, codigo:codigos[0]||r.code||'', titulo:r.title, responsable:owners.join(', ')||DB_DEFAULT.owner, responsables:owners, estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
-                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'',
+                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'', ...BOARD_EXT.mapExtendedRow(r),
                 documentos:rowsFor(docsOf,r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
                 despliegues:rowsFor(reqDeploysOf,r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
                 bloqueantes:rowsFor(blockersOf,r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
@@ -2781,7 +2810,7 @@
         addReqGlobal(){
           if(!this.isDev()) return;
           const first=this.statusOrder().flow[0]||REQ_STATUS.development;
-          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}});
+          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}});
         }
         openReqFromMaster(companyId, projectId, reqId){
           const company=(this.state.data||[]).find(c=>c.id===companyId);
@@ -2790,7 +2819,7 @@
           if(!company||!project||!req) return;
           const code=this.reqCodeLabel(req)||'Sin codigo', title=(req.titulo||'').trim()||code;
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
-          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
+          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado,...BOARD_EXT.extendedFormFromReq(req)};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:VIEW.master};
           const env=this.reqEnvByStageElseLatestDeploy(company,project,req);
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
@@ -2961,8 +2990,8 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:MODAL.project,mode:MODAL_MODE.create,title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:MODAL.document,mode:MODAL_MODE.create,title:'Agregar documento',form:{nombre:'',tipo:DB_DEFAULT.documentType,url:''}}); this.setState({documentFileName:''}); }
         setDocumentFile(e){
           this._documentFile=e.target.files&&e.target.files[0]||null;
@@ -3282,16 +3311,20 @@
               if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
               const prevEstado = m.mode===MODAL_MODE.edit ? ((this.req()||{}).estado) : null;
               const statusChanged = m.mode===MODAL_MODE.create ? true : (prevEstado !== f.estado);
+              const extOn=this.canSeeExtended(this.reqFormCompany(m,f));
+              const extErr=extOn?BOARD_EXT.validateExtended(f):null;
+              if(extErr){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:extErr}); return; }
+              const extPayload=extOn?BOARD_EXT.extendedPayload(f):null;
               const targetAmb = ((this.empresa()||{}).ambientes||[]).find(a=>a.stage===f.estado);
               if(!m.global && targetAmb && statusChanged){
                 this.setState({saveStatus:SAVE_STATUS.idle});
-                this.openPromoteConfirm(m, f, targetAmb);
+                this.openPromoteConfirm(m, {...f, extPayload}, targetAmb);
                 return;
               }
               const hoursValue=f.horas===''||f.horas==null?null:Number(f.horas);
               if(hoursValue!==null&&(!Number.isFinite(hoursValue)||hoursValue<0)){ this.setState({saveStatus:SAVE_STATUS.idle,modalErr:'Las horas deben ser un número igual o mayor que cero.'}); return; }
               const ownerNames=(f.responsables||[]).filter(Boolean);
-              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue };
+              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue, ...(extPayload||{}) };
               if(statusChanged) payload.status_updated_at=new Date().toISOString();
               let reqId=m.id;
               const creating=m.mode===MODAL_MODE.create;
@@ -3487,7 +3520,7 @@
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
                 fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'',
                 fechaPasoProduccion:f.fechaPasoProduccion!==undefined?f.fechaPasoProduccion:(req&&req.fechaPasoProduccion)||'',
-                horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null },
+                horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null, extPayload:f.extPayload||null },
               projectUrl:envRow.url||'Sin URL registrada', projectVersion:envRow.version||'Sin version registrada', valueSource:source },
             form:{url,version}, modalErr:'',
           });
@@ -3502,7 +3535,7 @@
             const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[])));
             if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
             if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
-            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
+            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso, ...(rp.extPayload||{}) };
             let reqId=rp.id;
             const creating=rp.mode===MODAL_MODE.create;
             if(creating){
@@ -4017,6 +4050,7 @@
               horas:Number.isFinite(hours)?hours:'',
               responsables:pm?[pm]:[],
               estado:this.estimationStatusId(),
+              ...BOARD_EXT.emptyExtendedForm(),
             },
           });
         }
@@ -4945,12 +4979,23 @@
             const companyOptions=[{value:'',label:'Selecciona una empresa'}].concat((s.data||[]).map(c=>({value:c.id,label:c.nombre})));
             const masterCompany=(s.data||[]).find(c=>c.id===s.form.empresaId);
             const masterProjectOptions=[{value:'',label:masterCompany?'Selecciona un proyecto':'Selecciona primero una empresa'}].concat(((masterCompany&&masterCompany.proyectos)||[]).map(p=>({value:p.id,label:p.nombre})));
+            const reqExtCompany=md.type===MODAL.requirement?this.reqFormCompany(md,s.form):null;
+            const reqExtFields=reqExtCompany&&this.canSeeExtended(reqExtCompany)?[
+              {label:'PM Entrega',key:'pmContactId',kind:FIELD_KIND.pmPicker},
+              {label:'Fecha de solicitud',key:'fechaSolicitud',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha entrega estimación',key:'fechaEntregaEstimacion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha aprobación estimación',key:'fechaAprobacionEstimacion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha inicio desarrollo',key:'fechaInicioDesarrollo',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha real entrega a pruebas',key:'fechaEntregaPruebas',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Facturado',key:'facturado',kind:FIELD_KIND.checkbox},
+              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.text,type:INPUT_TYPE.month}]:[]),
+            ]:[];
             const responsibleOptions=(s.devProfiles||[]).map(p=>({value:p.label,label:p.label}));
             (s.form.responsables||[]).filter(name=>!responsibleOptions.some(o=>o.value===name)).forEach(name=>responsibleOptions.push({value:name,label:name+' (ya no aparece como DEV)'}));
             const fields={
               [MODAL.company]:[{label:'Nombre de la empresa',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Coltanques'}],
               [MODAL.project]:[{label:'Nombre del proyecto',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:FIELD_KIND.area,placeholder:'Breve descripción'}],
-              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions}],
+              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
               [MODAL.document]:[{label:'Nombre',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:FIELD_KIND.text,placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'}],
               [MODAL.deployment]:[{label:'Ambiente',key:'env',kind:FIELD_KIND.select,options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'},{label:'Versión / release',key:'version',kind:FIELD_KIND.text,placeholder:'v1.0.0'}],
               [MODAL.blocker]:[{label:'Descripción del bloqueante',key:'texto',kind:FIELD_KIND.area,placeholder:'¿Qué está bloqueando el avance?'}],
@@ -4970,7 +5015,11 @@
               const codeRows=s.form.codigos||[''];
               const storedPrincipal=md.mode===MODAL_MODE.edit ? (this.reqCodesOf(this.req())[0]||'').trim() : '';
               const selectedOwners=s.form.responsables||[];
-              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+              const isPmPicker=fd.kind===FIELD_KIND.pmPicker;
+              const pmPicker=isPmPicker?this.pmPickerView(reqExtCompany,s.form):null;
+              return { isCheckbox:fd.kind===FIELD_KIND.checkbox, checked:!!s.form[fd.key], onToggle:e=>this.setFacturado(e.target.checked),
+                isPmPicker, pm:pmPicker||{},
+                label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type===MODAL.requirement?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type===MODAL.requirement?'var(--gp-surface)':'transparent', fieldBorder:md.type===MODAL.requirement?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
                 isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
                 codes:isCodes?codeRows.map((value,i)=>{ const locked=i===0&&!!storedPrincipal; return {value:locked?storedPrincipal:value, principal:i===0, locked, editable:!locked, onInput:e=>this.setReqCode(i,e.target.value), canRemove:!locked&&codeRows.length>1, remove:()=>this.removeReqCode(i)}; }):[],

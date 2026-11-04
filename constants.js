@@ -7,7 +7,7 @@
   };
 
   const estimationPhase = { created: 'creada', sent: 'enviada', approved: 'aprobada' };
-  const inputType = { text: 'text', password: 'password', date: 'date', number: 'number' };
+  const inputType = { text: 'text', password: 'password', date: 'date', number: 'number', month: 'month' };
   const deployableKind = { api: 'api', app: 'app', gateway: 'gateway' };
   const reqStatus = {
     estimation: 'estimacion',
@@ -122,7 +122,7 @@
       discord: 'discord'
     },
     MODAL_MODE: { create: 'crear', edit: 'editar' },
-    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes' },
+    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes', checkbox: 'checkbox', pmPicker: 'pmPicker' },
     INPUT_TYPE: inputType,
     TABLE: {
       companies: 'companies',

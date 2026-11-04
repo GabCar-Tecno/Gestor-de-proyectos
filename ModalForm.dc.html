@@ -189,6 +189,67 @@
           </sc-if>
         </div>
       </sc-if>
+      <sc-if value="{{ f.isCheckbox }}" hint-placeholder-val="{{ false }}">
+        <label
+          style="display:inline-flex;align-items:center;gap:9px;font-size:14px;color:var(--gp-text);cursor:pointer;padding:9px 0"
+        >
+          <input
+            id="{{ f.fieldId }}"
+            type="checkbox"
+            checked="{{ f.checked }}"
+            onChange="{{ f.onToggle }}"
+            style="width:17px;height:17px;accent-color:var(--gp-cyan);cursor:pointer"
+          />
+          Sí, ya se facturó
+        </label>
+      </sc-if>
+      <sc-if value="{{ f.isPmPicker }}" hint-placeholder-val="{{ false }}">
+        <div style="position: relative">
+          <input
+            id="{{ f.fieldId }}"
+            type="text"
+            autocomplete="off"
+            value="{{ f.pm.value }}"
+            onInput="{{ f.pm.onInput }}"
+            onFocus="{{ f.pm.onFocus }}"
+            onKeyDown="{{ f.pm.onKeyDown }}"
+            placeholder="Escribe para buscar un PM"
+            style="width:100%;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px 34px 11px 12px;color:var(--gp-text);font-size:14px;outline:none;box-sizing:border-box"
+            style-focus="border-color:var(--gp-cyan)"
+          />
+          <sc-if value="{{ f.pm.hasValue }}" hint-placeholder-val="{{ false }}">
+            <button
+              type="button"
+              onClick="{{ f.pm.clear }}"
+              title="Quitar PM"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--gp-muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px"
+              style-hover="color:var(--gp-red)"
+            >×</button>
+          </sc-if>
+          <sc-if value="{{ f.pm.open }}" hint-placeholder-val="{{ false }}">
+            <div
+              style="position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);background:var(--gp-surface);border:1px solid var(--gp-line-22);border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.14);padding:4px;max-height:220px;overflow-y:auto"
+            >
+              <sc-for list="{{ f.pm.options }}" as="o" hint-placeholder-count="2">
+                <button
+                  type="button"
+                  onClick="{{ o.pick }}"
+                  style="display:block;width:100%;text-align:left;background:none;border:0;border-radius:7px;padding:8px 10px;color:var(--gp-text);font-size:13.5px;cursor:pointer"
+                  style-hover="background:var(--gp-cyan-10)"
+                >{{ o.label }}</button>
+              </sc-for>
+              <sc-if value="{{ f.pm.canAdd }}" hint-placeholder-val="{{ false }}">
+                <button
+                  type="button"
+                  onClick="{{ f.pm.add }}"
+                  style="display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--gp-line-16);border-radius:7px;padding:8px 10px;color:var(--gp-cyan);font-size:13.5px;font-weight:600;cursor:pointer"
+                  style-hover="background:var(--gp-cyan-10)"
+                >+ {{ f.pm.addLabel }}</button>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
       <sc-if
         value="{{ f.isArea }}"
         hint-placeholder-val="{{ false }}"
