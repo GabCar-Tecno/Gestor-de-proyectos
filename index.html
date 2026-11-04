@@ -770,6 +770,34 @@
           .master-cell-label {
             display: none;
           }
+          @media (min-width: 761px) {
+            .master-table.master-table--extended {
+              overflow-x: auto;
+            }
+            .master-table--extended .master-table-head,
+            .master-table--extended .master-row {
+              grid-template-columns: 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
+              min-width: 2240px;
+              gap: 12px;
+            }
+            .master-table--extended .master-cell-observations {
+              order: 99;
+            }
+            .master-table--extended .master-sticky {
+              position: sticky;
+              z-index: 1;
+              background: var(--gp-wisp);
+            }
+            .master-table--extended .master-sticky-1 { left: 0; }
+            .master-table--extended .master-sticky-2 { left: 142px; }
+            .master-table--extended .master-table-head .master-sticky { background: var(--gp-fog); }
+            .master-table--extended .master-row:hover .master-sticky {
+              background: linear-gradient(var(--gp-cyan-5_5), var(--gp-cyan-5_5)), var(--gp-wisp);
+            }
+            .master-board-light .master-table--extended .master-sticky { background: var(--gp-fog); }
+            .master-board-light .master-table--extended .master-table-head .master-sticky { background: var(--gp-vapor); }
+            .master-board-light .master-table--extended .master-row:hover .master-sticky { background: var(--gp-frost); }
+          }
           .master-cell-main {
             min-width: 0;
             overflow: hidden;
@@ -1810,7 +1838,7 @@
                 toggleMaestroStatusMenu="{{ toggleMaestroStatusMenu }}" maestroStatusMenuOpen="{{ maestroStatusMenuOpen }}"
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
-                maestroEmpty="{{ maestroEmpty }}" icons="{{ icons }}"
+                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" icons="{{ icons }}"
               />
             </sc-if>
 
@@ -2479,6 +2507,18 @@
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
         canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
+        extendedDisplay(company,req){
+          const byId={}; ((company&&company.contactos)||[]).forEach(c=>{ byId[c.id]=c; });
+          const day=v=>v?this.parseLocalDate(v).toLocaleDateString(LOCALE):'—';
+          const pm=req.pmContactId&&byId[req.pmContactId];
+          const d={ pmEntrega:pm?pm.name:'—', fechaSolicitud:day(req.fechaSolicitud), fechaEntregaEstimacion:day(req.fechaEntregaEstimacion),
+            fechaAprobacionEstimacion:day(req.fechaAprobacionEstimacion), fechaInicioDesarrollo:day(req.fechaInicioDesarrollo), fechaEntregaPruebas:day(req.fechaEntregaPruebas),
+            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:req.horas!==''&&req.horas!=null?String(req.horas):'—',
+            facturadoTxt:BOARD_EXT.formatInvoiced(req.facturado,req.mesFacturado,LOCALE), facturadoColor:req.facturado?'var(--gp-success)':'var(--gp-muted-3)' };
+          d.items=[['PM Entrega',d.pmEntrega],['Fecha de solicitud',d.fechaSolicitud],['Fecha entrega estimación',d.fechaEntregaEstimacion],['Fecha aprobación estimación',d.fechaAprobacionEstimacion],
+            ['Fecha inicio desarrollo',d.fechaInicioDesarrollo],['Fecha real entrega a pruebas',d.fechaEntregaPruebas],['Facturado',d.facturadoTxt]].map(([label,value])=>({label,value}));
+          return d;
+        }
         reqFormCompany(m,f){ return m&&m.global ? (this.state.data||[]).find(c=>c.id===(f&&f.empresaId))||null : this.empresa()||null; }
         pmPickerView(company,form){
           const contacts=(company&&company.contactos)||[];
@@ -4527,6 +4567,8 @@
               {label:'Producción',count:stateCount(MASTER_STATUS_GROUP.production),color:'var(--gp-success)',tint:'var(--gp-metric-prod-tint)'},
               {label:'Bloqueados',count:stateCount(MASTER_STATUS_GROUP.blocked),color:'var(--gp-metric-block)',tint:'var(--gp-metric-block-tint)'},
             ];
+            R.maestroExtended=this.canSeeExtended(this.empresa());
+            R.maestroTableClass=R.maestroExtended?'master-table--extended':'';
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:envIndexOf.get(company).get(d.environmentId)}));
@@ -4543,6 +4585,7 @@
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'var(--gp-red)':'var(--gp-muted-2)', deliveryColor:req.fechaEntregaUsuario||userDelivery?'var(--gp-success)':'var(--gp-muted-3)',
                 openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:()=>this.openReqFromMaster(company.id,project.id,req.id),
+                ext:R.maestroExtended?this.extendedDisplay(company,req):{},
               };
             });
             R.maestroEmpty=filtered.length===0;
@@ -4716,6 +4759,7 @@
               code:this.reqCodeLabel(req)||this.fallbackReqCode(idx), titulo:req.titulo, responsable:req.responsable, iniciales:this.iniciales(req.responsable),
               descripcionCambios:(req.descripcionCambios||'').trim()||'Sin descripción registrada', observaciones:(req.observaciones||'').trim()||'Sin observaciones',
               fechaEntregaUsuario:req.fechaEntregaUsuario?this.parseLocalDate(req.fechaEntregaUsuario).toLocaleDateString(LOCALE):'Sin fecha registrada',
+              extShow:this.canSeeExtended(emp), extItems:this.canSeeExtended(emp)?this.extendedDisplay(emp,req).items:[],
               estLabel:m[0],estColor:m[1],estBg:m[2],hasStatusDate:!!req.estadoActualizadoAt,statusDate:req.estadoActualizadoAt?new Date(req.estadoActualizadoAt).toLocaleString(LOCALE):'',
               documentos:req.documentos.map(d=>({nombre:d.nombre,tipo:d.tipo,iconHref:this.docIcon(d.tipo),open:()=>this.openDoc(d.url),del:(e)=>{e.stopPropagation();this.delDoc(d.id);}})),
               despliegues:req.despliegues.map(d=>{
