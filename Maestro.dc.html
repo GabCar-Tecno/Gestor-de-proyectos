@@ -196,7 +196,11 @@
       </sc-if>
     </div>
   </div>
-  <div class="master-table {{ maestroTableClass }}">
+  <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+    ><div class="master-scroll-top" onScroll="{{ maestroTopScroll }}" aria-hidden="true"
+      ><div class="master-scroll-top-inner"></div></div
+  ></sc-if>
+  <div class="master-table {{ maestroTableClass }}" onScroll="{{ maestroTableScroll }}">
     <div class="master-table-head">
       <span class="master-sticky master-sticky-1">Aplicación</span><span class="master-sticky master-sticky-2">#Req</span
       ><span>Título del requerimiento</span><span>Estado</span
@@ -317,7 +321,7 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroTableClass":""}'>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null}'>
 class Component extends DCLogic {
 }
 </script>

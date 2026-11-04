@@ -780,6 +780,41 @@
               min-width: 2240px;
               gap: 12px;
             }
+            .master-scroll-top {
+              overflow-x: scroll;
+              overflow-y: hidden;
+              height: 12px;
+              margin-bottom: 6px;
+              border-radius: 8px;
+            }
+            .master-scroll-top-inner {
+              width: 2272px;
+              height: 1px;
+            }
+            .master-scroll-top,
+            .master-table.master-table--extended {
+              scrollbar-width: thin;
+              scrollbar-color: var(--gp-storm-18) transparent;
+            }
+            .master-scroll-top::-webkit-scrollbar,
+            .master-table--extended::-webkit-scrollbar {
+              height: 10px;
+            }
+            .master-scroll-top::-webkit-scrollbar-track,
+            .master-table--extended::-webkit-scrollbar-track {
+              background: var(--gp-fog);
+              border-radius: 8px;
+            }
+            .master-scroll-top::-webkit-scrollbar-thumb,
+            .master-table--extended::-webkit-scrollbar-thumb {
+              background: #b7c2d2;
+              border-radius: 8px;
+              border: 2px solid var(--gp-fog);
+            }
+            .master-scroll-top::-webkit-scrollbar-thumb:hover,
+            .master-table--extended::-webkit-scrollbar-thumb:hover {
+              background: #95a3b8;
+            }
             .master-table--extended .master-cell-observations {
               order: 99;
             }
@@ -1841,7 +1876,7 @@
                 toggleMaestroStatusMenu="{{ toggleMaestroStatusMenu }}" maestroStatusMenuOpen="{{ maestroStatusMenuOpen }}"
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
-                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" icons="{{ icons }}"
+                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
               />
             </sc-if>
 
@@ -2521,6 +2556,12 @@
           d.items=[['PM Entrega',d.pmEntrega],['Fecha de solicitud',d.fechaSolicitud],['Fecha entrega estimación',d.fechaEntregaEstimacion],['Fecha aprobación estimación',d.fechaAprobacionEstimacion],
             ['Fecha inicio desarrollo',d.fechaInicioDesarrollo],['Fecha real entrega a pruebas',d.fechaEntregaPruebas],['Facturado',d.facturadoTxt]].map(([label,value])=>({label,value}));
           return d;
+        }
+        syncMaestroScroll(src,targetSelector){
+          const dst=document.querySelector(targetSelector); if(!src||!dst) return;
+          const srcMax=src.scrollWidth-src.clientWidth, dstMax=dst.scrollWidth-dst.clientWidth;
+          const next=srcMax>0&&dstMax>0 ? src.scrollLeft*dstMax/srcMax : 0;
+          if(Math.abs(dst.scrollLeft-next)>=1) dst.scrollLeft=next;
         }
         reqFormCompany(m,f){ return m&&m.global ? (this.state.data||[]).find(c=>c.id===(f&&f.empresaId))||null : this.empresa()||null; }
         pmPickerView(company,form){
@@ -4576,6 +4617,8 @@
             ];
             R.maestroExtended=this.canSeeExtended(this.empresa());
             R.maestroTableClass=R.maestroExtended?'master-table--extended':'';
+            R.maestroTopScroll=e=>this.syncMaestroScroll(e.currentTarget,'.master-table--extended');
+            R.maestroTableScroll=e=>{ if(R.maestroExtended) this.syncMaestroScroll(e.currentTarget,'.master-scroll-top'); };
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:envIndexOf.get(company).get(d.environmentId)}));
@@ -4599,7 +4642,7 @@
           }
 
           R.viewApidoc=v===VIEW.apiDoc;
-          R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : '1240px');
+          R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : (v===VIEW.master&&R.maestroExtended ? '1600px' : '1240px'));
           R.apiUrlVal=s.apiUrlInput||'';
           R.onApiUrl=(e)=>this.setState({apiUrlInput:e.target.value});
           R.saveApiUrl=()=>this.saveApiUrl();
