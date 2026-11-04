@@ -10,7 +10,7 @@
       "url": "https://www.coltanques.com.co",
       "name": "License"
     },
-    "version": "1.1.3.2026.03201",
+    "version": "1.1.3.2026.11041",
     "description": "7 : BackendWebSiteApi - Api Manager BackendWebSite  \n**Log Level:** 🔴 **Error**",
     "termsOfService": "https://www.coltanques.com.co"
   },
@@ -144,7 +144,7 @@
     },
     {
       "name": "ThirdParty",
-      "x-displayName": "27. ThirdParty",
+      "x-displayName": "27. Formulario terceros",
       "description": "Formulario de vinculación y actualización de terceros. F14: tenedores y/o propietarios; F16: conductores. Los contratos se corresponden con ThirdPartyController y sus DTO C#; los ejemplos contienen datos ficticios.\n\n**Dependencias de otros servicios a través del gateway**\n\nEl formulario consulta tipos de identificación mediante `/masters/bytypemasterid/includeinactives/{typemasterid}/{includeInactives}` (usa maestro 1 y false), países mediante `/countries/includeinactives/{includeinactives}`, departamentos mediante `/departments/bycountryid/{countryid}/includeinactives/{includeinactives}` y municipios mediante `/municipalities/bydepartmentid/{departmentid}`. Estas rutas se redirigen a servicios distintos de BackendWebSiteApi; por eso se describen como dependencias y no se agregan como operaciones de este controlador.\n"
     },
     {
