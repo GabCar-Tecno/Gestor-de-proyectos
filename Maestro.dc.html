@@ -197,8 +197,8 @@
     </div>
   </div>
   <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
-    ><div class="master-scroll-top" onScroll="{{ maestroTopScroll }}" aria-hidden="true"
-      ><div class="master-scroll-top-inner"></div></div
+    ><div class="master-scroll-top" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
+      ><div class="master-scroll-thumb"></div></div
   ></sc-if>
   <div class="master-table {{ maestroTableClass }}" onScroll="{{ maestroTableScroll }}">
     <div class="master-table-head">
