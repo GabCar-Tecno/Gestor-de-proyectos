@@ -8,6 +8,14 @@ update public.companies
 set extended_board = true
 where lower(trim(name)) = 'd1';
 
+-- Per-company display names for statuses ({"<status id>": "<label>"}); grouping logic keeps the global label.
+alter table public.companies
+  add column if not exists status_labels jsonb not null default '{}'::jsonb;
+
+update public.companies
+set status_labels = '{"usuarios": "En pruebas de usuario"}'::jsonb
+where lower(trim(name)) = 'd1' and status_labels = '{}'::jsonb;
+
 -- 2. Contacts: optional email and a role ('pm' or null).
 alter table public.company_contacts
   add column if not exists role text;

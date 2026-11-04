@@ -104,6 +104,12 @@
     return pmContacts(contacts).filter((c) => normalizeName(c.name).includes(q));
   }
 
+  function statusLabel(company, statusId, fallback) {
+    const labels = company && company.statusLabels;
+    const custom = labels && typeof labels === 'object' ? labels[statusId] : '';
+    return custom ? String(custom) : fallback;
+  }
+
   function extendedExcelValues(ext, contactsById) {
     const e = ext || emptyExtendedForm();
     const pm = e.pmContactId && contactsById && contactsById[e.pmContactId];
@@ -119,7 +125,7 @@
   const api = Object.freeze({
     CONTACT_ROLE, EXTENDED_EXCEL_COLUMNS, canSeeExtended, emptyExtendedForm, extendedFormFromReq, mapExtendedRow,
     validateExtended, extendedPayload, formatMonth, formatInvoiced, emailableContacts, normalizeName, pmContacts,
-    findPmContactByName, filterPmContacts, extendedExcelValues
+    findPmContactByName, filterPmContacts, extendedExcelValues, statusLabel
   });
 
   if (typeof window !== 'undefined') window.BOARD_EXT = api;

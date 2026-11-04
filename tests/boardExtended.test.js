@@ -74,3 +74,11 @@ test('extendedExcelValues aligns with EXTENDED_EXCEL_COLUMNS', () => {
   assert.deepEqual(headers, ['PM Entrega', 'Fecha de solicitud', 'Fecha entrega estimación', 'Fecha aprobación estimación',
     'Fecha inicio desarrollo', 'Fecha real entrega a pruebas', 'Facturado', 'Mes de facturación']);
 });
+
+test('statusLabel uses the company override, else the default label', () => {
+  const d1 = { statusLabels: { usuarios: 'En pruebas de usuario' } };
+  assert.equal(X.statusLabel(d1, 'usuarios', 'Usuarios'), 'En pruebas de usuario');
+  assert.equal(X.statusLabel(d1, 'produccion', 'Produccion'), 'Produccion');
+  assert.equal(X.statusLabel({}, 'usuarios', 'Usuarios'), 'Usuarios');
+  assert.equal(X.statusLabel(null, 'usuarios', 'Usuarios'), 'Usuarios');
+});

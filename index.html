@@ -2676,7 +2676,7 @@
             const ambientes=rowsFor(envsOf,c.id).sort(byOrder)
               .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0, deployFolder:e.deploy_folder||''}));
             return {
-            id:c.id, nombre:c.name, mono:c.initial, color:c.color, extendedBoard:!!c.extended_board, ambientes,
+            id:c.id, nombre:c.name, mono:c.initial, color:c.color, extendedBoard:!!c.extended_board, statusLabels:c.status_labels||{}, ambientes,
             servidores:rowsFor(serversOf,c.id).sort(byOrder)
               .map(x=>({id:x.id, code:x.code, ip:x.ip, sortOrder:x.sort_order||0})),
             desplegables:rowsFor(deployablesOf,c.id).sort(byOrder)
@@ -2813,7 +2813,7 @@
           if(this._statusIndexFor!==list){ this._statusIndexFor=list; this._statusIndex=this.indexById(list); }
           return this._statusIndex.get(id);
         }
-        estMeta(e){ const st=this.statusById(e); return st ? [st.label||e, st.color||'var(--gp-muted-2)', st.color_bg||'var(--gp-steel-16)'] : ['—','var(--gp-muted-2)','var(--gp-steel-16)']; }
+        estMeta(e){ const st=this.statusById(e); return st ? [BOARD_EXT.statusLabel(this.empresa(),e,st.label||e), st.color||'var(--gp-muted-2)', st.color_bg||'var(--gp-steel-16)'] : ['—','var(--gp-muted-2)','var(--gp-steel-16)']; }
         statusOrder(){ const list=(this.state.statuses||[]); const flow=list.filter(st=>!st.is_lateral).map(st=>st.id); const lat=list.filter(st=>st.is_lateral).map(st=>st.id); return {flow, lat, canonical:flow.concat(lat), reversed:flow.slice().reverse().concat(lat)}; }
         iniciales(n){ return (this.parseOwners(n)[0]||n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
         parseOwners(value){ return Array.isArray(value)?value.map(x=>String(x).trim()).filter(Boolean):String(value||'').split(/\s*[,;]\s*/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==DB_DEFAULT.owner.toLowerCase()); }
@@ -4599,7 +4599,7 @@
             const q=(s.maestroSearch||'').trim().toLocaleLowerCase(LOCALE);
             const stateText=(id)=>{const st=this.statusById(id);return ((st&&st.label)||id||'').toLocaleLowerCase(LOCALE);};
             const stateGroup=(id)=>{const x=stateText(id);return x.includes(STATUS_LABEL_HINT.blocked)?MASTER_STATUS_GROUP.blocked:x.includes(STATUS_LABEL_HINT.estimation)?MASTER_STATUS_GROUP.estimation:x.includes(STATUS_LABEL_HINT.production)?MASTER_STATUS_GROUP.production:x.includes(STATUS_LABEL_HINT.userTesting)||x.includes(STATUS_LABEL_HINT.testing)||x===STATUS_LABEL_HINT.qa?MASTER_STATUS_GROUP.userTesting:x.includes(STATUS_LABEL_HINT.development)?MASTER_STATUS_GROUP.development:MASTER_STATUS_GROUP.other;};
-            const statusOptions=[{value:FILTER_ALL,label:'Todos los estados',dot:'var(--gp-dot)'},...(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id,dot:st.color||'var(--gp-dot)'}))];
+            const statusOptions=[{value:FILTER_ALL,label:'Todos los estados',dot:'var(--gp-dot)'},...(s.statuses||[]).map(st=>({value:st.id,label:BOARD_EXT.statusLabel(this.empresa(),st.id,st.label||st.id),dot:st.color||'var(--gp-dot)'}))];
             const listedProjects=new Set();
             const projectOptions=all.filter(({project})=>!listedProjects.has(project.id)&&listedProjects.add(project.id)).map(({company,project})=>({value:project.id,label:project.nombre+' · '+company.nombre})).sort((a,b)=>a.label.localeCompare(b.label,LOCALE));
             const allProjectOptions=[{value:FILTER_ALL,label:'Todas las aplicaciones'},...projectOptions];
@@ -5091,7 +5091,8 @@
               R.recursoOpenLabel = 'Abrir en Drive';
             }
             const ch=(k)=>(e)=>this.setForm(k,e.target.value);
-            const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id}));
+            const estadoCompany=md.type===MODAL.requirement?this.reqFormCompany(md,s.form):emp;
+            const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:BOARD_EXT.statusLabel(estadoCompany,st.id,st.label||st.id)}));
             const ambienteOptions=((emp&&emp.ambientes)||[]).map(a=>({value:a.id,label:(a.label&&a.label!==a.code)?(a.label+' ('+a.code+')'):a.code}));
             const servidorOptions=((emp&&emp.servidores)||[]).map(x=>({value:x.id,label:x.code+' — '+x.ip}));
             const stageOptions=[{value:'',label:'— Sin etapa'}].concat(estadoOptions);
