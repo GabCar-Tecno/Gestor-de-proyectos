@@ -74,20 +74,18 @@
     return name + ' ' + m[1];
   }
 
-  function monthOptions(today, selected, locale) {
-    const now = today || new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    const opts = [];
-    for (let y = now.getFullYear() + 1; y >= now.getFullYear() - 2; y--) {
-      for (let m = 12; m >= 1; m--) {
-        const value = y + '-' + pad(m);
-        opts.push({ value, label: formatMonth(value, locale) });
-      }
-    }
-    if (selected && /^\d{4}-\d{2}$/.test(selected) && !opts.some((o) => o.value === selected)) {
-      opts.push({ value: selected, label: formatMonth(selected, locale) });
-    }
-    return [{ value: '', label: 'Selecciona el mes' }].concat(opts);
+  const MONTH_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  function monthGrid(year, selected) {
+    return MONTH_SHORT.map((short, i) => {
+      const value = year + '-' + String(i + 1).padStart(2, '0');
+      return { value, short, selected: value === selected };
+    });
+  }
+
+  function yearOf(value, fallback) {
+    const m = /^(\d{4})-\d{2}$/.exec(value || '');
+    return m ? +m[1] : fallback;
   }
 
   function formatInvoiced(facturado, mesFacturado, locale) {
@@ -141,7 +139,7 @@
   const api = Object.freeze({
     CONTACT_ROLE, EXTENDED_EXCEL_COLUMNS, canSeeExtended, emptyExtendedForm, extendedFormFromReq, mapExtendedRow,
     validateExtended, extendedPayload, formatMonth, formatInvoiced, emailableContacts, normalizeName, pmContacts,
-    findPmContactByName, filterPmContacts, extendedExcelValues, statusLabel, monthOptions
+    findPmContactByName, filterPmContacts, extendedExcelValues, statusLabel, monthGrid, yearOf
   });
 
   if (typeof window !== 'undefined') window.BOARD_EXT = api;

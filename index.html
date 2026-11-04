@@ -2598,6 +2598,19 @@
             onInput:e=>this.setPmQuery(e.target.value), onFocus:()=>{ if(!editing) this.setPmQuery(''); },
             onKeyDown:e=>{ if(e.key==='Enter'){ e.preventDefault(); const exact=BOARD_EXT.findPmContactByName(contacts,query); if(exact) this.pickPmContact(exact.id); else if(canAdd) this.createPmContact(company&&company.id,query); } if(e.key==='Escape') this.setState(s=>({form:{...s.form,pmQuery:undefined}})); } };
         }
+        monthPickerView(form){
+          const now=new Date(), year=form.mesPickerYear||BOARD_EXT.yearOf(form.mesFacturado,now.getFullYear());
+          const todayValue=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+          const set=patch=>this.setState(s=>({form:{...s.form,...patch}}));
+          const monthText=form.mesFacturado?BOARD_EXT.formatMonth(form.mesFacturado,LOCALE):'';
+          return { label:monthText?monthText.charAt(0).toUpperCase()+monthText.slice(1):'Selecciona el mes', hasValue:!!form.mesFacturado,
+            labelColor:form.mesFacturado?'var(--gp-text)':'var(--gp-muted-2)', open:!!form.mesPickerOpen, year:String(year),
+            toggle:()=>set({mesPickerOpen:!form.mesPickerOpen, mesPickerYear:year}),
+            prev:()=>set({mesPickerYear:year-1}), next:()=>set({mesPickerYear:year+1}),
+            months:BOARD_EXT.monthGrid(year,form.mesFacturado).map(m=>({ label:m.short, pick:()=>set({mesFacturado:m.value,mesPickerOpen:false}),
+              bg:m.selected?'var(--gp-cyan)':'transparent', color:m.selected?'var(--gp-white)':'var(--gp-text)', weight:m.selected?700:500,
+              border:m.value===todayValue&&!m.selected?'var(--gp-cyan-40)':'transparent' })) };
+        }
         setPmQuery(q){ this.setState(s=>({form:{...s.form,pmQuery:q}})); }
         pickPmContact(id){ this.setState(s=>({form:{...s.form,pmContactId:id||'',pmQuery:undefined}})); }
         setFacturado(on){ this.setState(s=>({form:{...s.form,facturado:!!on,mesFacturado:on?s.form.mesFacturado||'':''}})); }
@@ -5108,7 +5121,7 @@
               {label:'Fecha inicio desarrollo',key:'fechaInicioDesarrollo',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
               {label:'Fecha real entrega a pruebas',key:'fechaEntregaPruebas',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
               {label:'Facturado',key:'facturado',kind:FIELD_KIND.checkbox},
-              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.select,options:BOARD_EXT.monthOptions(new Date(),s.form.mesFacturado,LOCALE)}]:[]),
+              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.monthPicker}]:[]),
             ]:[];
             const responsibleOptions=(s.devProfiles||[]).map(p=>({value:p.label,label:p.label}));
             (s.form.responsables||[]).filter(name=>!responsibleOptions.some(o=>o.value===name)).forEach(name=>responsibleOptions.push({value:name,label:name+' (ya no aparece como DEV)'}));
@@ -5138,7 +5151,7 @@
               const isPmPicker=fd.kind===FIELD_KIND.pmPicker;
               const pmPicker=isPmPicker?this.pmPickerView(reqExtCompany,s.form):null;
               return { isCheckbox:fd.kind===FIELD_KIND.checkbox, checked:!!s.form[fd.key], onToggle:e=>this.setFacturado(e.target.checked),
-                isPmPicker, pm:pmPicker||{},
+                isPmPicker, pm:pmPicker||{}, isMonthPicker:fd.kind===FIELD_KIND.monthPicker, mp:fd.kind===FIELD_KIND.monthPicker?this.monthPickerView(s.form):{},
                 label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type===MODAL.requirement?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type===MODAL.requirement?'var(--gp-surface)':'transparent', fieldBorder:md.type===MODAL.requirement?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
                 isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),

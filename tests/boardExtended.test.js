@@ -83,17 +83,16 @@ test('statusLabel uses the company override, else the default label', () => {
   assert.equal(X.statusLabel(null, 'usuarios', 'Usuarios'), 'Usuarios');
 });
 
-test('monthOptions lists months newest first from next year back two years', () => {
-  const opts = X.monthOptions(new Date(2026, 10, 4), '');
-  assert.equal(opts[0].value, '');
-  assert.equal(opts[0].label, 'Selecciona el mes');
-  assert.deepEqual(opts[1], { value: '2027-12', label: 'diciembre 2027' });
-  assert.deepEqual(opts[opts.length - 1], { value: '2024-01', label: 'enero 2024' });
-  assert.equal(opts.length, 1 + 48);
-  assert.ok(opts.some((o) => o.value === '2026-11' && o.label === 'noviembre 2026'));
+test('monthGrid returns 12 months of a year marking the selected one', () => {
+  const g = X.monthGrid(2026, '2026-04');
+  assert.equal(g.length, 12);
+  assert.deepEqual(g[0], { value: '2026-01', short: 'ene', selected: false });
+  assert.deepEqual(g[3], { value: '2026-04', short: 'abr', selected: true });
+  assert.equal(g[11].short, 'dic');
+  assert.equal(X.monthGrid(2025, '2026-04').some((m) => m.selected), false);
 });
 
-test('monthOptions keeps a selected month outside the range', () => {
-  const opts = X.monthOptions(new Date(2026, 10, 4), '2020-03');
-  assert.ok(opts.some((o) => o.value === '2020-03' && o.label === 'marzo 2020'));
+test('yearOf returns the year of a YYYY-MM value or the fallback', () => {
+  assert.equal(X.yearOf('2025-11', 2026), 2025);
+  assert.equal(X.yearOf('', 2026), 2026);
 });

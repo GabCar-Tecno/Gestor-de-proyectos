@@ -203,6 +203,53 @@
           Sí, ya se facturó
         </label>
       </sc-if>
+      <sc-if value="{{ f.isMonthPicker }}" hint-placeholder-val="{{ false }}">
+        <div style="position: relative">
+          <button
+            id="{{ f.fieldId }}"
+            type="button"
+            onClick="{{ f.mp.toggle }}"
+            style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:11px 12px;color:{{ f.mp.labelColor }};font-size:14px;font-family:inherit;cursor:pointer;text-align:left;box-sizing:border-box"
+            style-hover="border-color:var(--gp-cyan)"
+          >
+            <span>{{ f.mp.label }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gp-muted)"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+          </button>
+          <sc-if value="{{ f.mp.open }}" hint-placeholder-val="{{ false }}">
+            <div
+              style="position:absolute;z-index:20;right:0;bottom:calc(100% + 6px);width:260px;background:var(--gp-surface);border:1px solid var(--gp-line-22);border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.16);padding:10px"
+            >
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <button
+                  type="button"
+                  onClick="{{ f.mp.prev }}"
+                  title="Año anterior"
+                  style="width:30px;height:30px;border:0;border-radius:8px;background:none;color:var(--gp-text);font-size:18px;cursor:pointer;line-height:1"
+                  style-hover="background:var(--gp-cyan-10)"
+                >‹</button>
+                <span style="font-size:14px;font-weight:700;color:var(--gp-text)">{{ f.mp.year }}</span>
+                <button
+                  type="button"
+                  onClick="{{ f.mp.next }}"
+                  title="Año siguiente"
+                  style="width:30px;height:30px;border:0;border-radius:8px;background:none;color:var(--gp-text);font-size:18px;cursor:pointer;line-height:1"
+                  style-hover="background:var(--gp-cyan-10)"
+                >›</button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+                <sc-for list="{{ f.mp.months }}" as="m" hint-placeholder-count="12">
+                  <button
+                    type="button"
+                    onClick="{{ m.pick }}"
+                    style="padding:9px 0;border-radius:8px;border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.color }};font-weight:{{ m.weight }};font-size:13px;font-family:inherit;text-transform:capitalize;cursor:pointer"
+                    style-hover="background:var(--gp-cyan-10)"
+                  >{{ m.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
       <sc-if value="{{ f.isPmPicker }}" hint-placeholder-val="{{ false }}">
         <div style="position: relative">
           <input
