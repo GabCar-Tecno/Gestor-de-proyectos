@@ -5,7 +5,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from import_d1_excel import canonical_pm, map_status, parse_invoiced, sql_literal  # noqa: E402
+from import_d1_excel import build_sql, canonical_pm, map_status, parse_invoiced, sql_literal  # noqa: E402
 
 
 class MapStatusTest(unittest.TestCase):
@@ -52,6 +52,22 @@ class SqlLiteralTest(unittest.TestCase):
         self.assertEqual(sql_literal(True), 'true')
         self.assertEqual(sql_literal(12.5), '12.5')
         self.assertEqual(sql_literal(date(2026, 4, 1)), "'2026-04-01'")
+
+
+class BuildSqlTest(unittest.TestCase):
+    ROW = {'code': '1', 'status': 'produccion', 'project': 'D1', 'title': 'Corto', 'pm': None, 'owner': 'Ana', 'hours': None,
+           'request_date': None, 'estimate_delivery_date': None, 'estimate_approval_date': None, 'development_start_date': None,
+           'user_delivery_date': None, 'user_testing_delivery_date': None, 'production_date': None, 'invoiced': False, 'invoiced_month': None}
+
+    def test_update_keeps_existing_change_description(self):
+        sql = build_sql([self.ROW])
+        update = [l for l in sql.splitlines() if l.strip().startswith('if v_req is not null then update')][0]
+        self.assertIn("change_description = case when btrim(coalesce(change_description, '')) = '' then 'Corto' else change_description end", update)
+
+    def test_update_touches_status_timestamp_only_on_change(self):
+        sql = build_sql([self.ROW])
+        update = [l for l in sql.splitlines() if l.strip().startswith('if v_req is not null then update')][0]
+        self.assertIn('status_updated_at = case when status_id is distinct from v_status then now() else status_updated_at end', update)
 
 
 if __name__ == '__main__':

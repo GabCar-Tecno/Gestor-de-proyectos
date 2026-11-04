@@ -2,6 +2,8 @@
 
 Reads the "GESTIÓN OPERACION D1" sheet of the D1 Excel schedule and prints SQL to stdout.
 It never connects to a database: review the SQL, then apply it with psql.
+Meant to run once. Re-running is safe for duplicates (rows are matched by D1 + PBI code), but it
+re-applies the Excel values over the matched requirements; an existing change description is kept.
 
 Usage:
     python3 -I scripts/import_d1_excel.py "/path/CRONOGRAMA REQUERIMIENTOS D1 2025 -2026.xlsx" > import_d1.sql
@@ -161,18 +163,20 @@ def build_sql(rows):
         out.append("  select r.id into v_req from public.requirements r join public.projects p on p.id = r.project_id"
                    " join public.requirement_codes c on c.requirement_id = r.id"
                    " where p.company_id = v_company and lower(btrim(c.code)) = lower(%s) limit 1;" % L(r['code']))
-        fields = ("title = {t}, change_description = {t}, owner = {o}, status = v_status, status_id = v_status, estimated_hours = {h},"
+        fields = ("title = {t}, owner = {o}, status = v_status, status_id = v_status, estimated_hours = {h},"
                   " user_delivery_date = {ud}, production_date = {pd}, request_date = {rd}, estimate_delivery_date = {ed},"
                   " estimate_approval_date = {ad}, development_start_date = {sd}, user_testing_delivery_date = {td},"
                   " client_pm_contact_id = v_contact, invoiced = {inv}, invoiced_month = {im}").format(
             t=L(r['title']), o=L(r['owner'] or 'Sin asignar'), h=L(r['hours']), ud=L(r['user_delivery_date']), pd=L(r['production_date']),
             rd=L(r['request_date']), ed=L(r['estimate_delivery_date']), ad=L(r['estimate_approval_date']),
             sd=L(r['development_start_date']), td=L(r['user_testing_delivery_date']), inv=L(r['invoiced']), im=L(r['invoiced_month']))
-        out.append("  if v_req is not null then update public.requirements set %s where id = v_req; else" % fields)
+        keep = ("change_description = case when btrim(coalesce(change_description, '')) = '' then {t} else change_description end,"
+                " status_updated_at = case when status_id is distinct from v_status then now() else status_updated_at end, ").format(t=L(r['title']))
+        out.append("  if v_req is not null then update public.requirements set %s%s where id = v_req; else" % (keep, fields))
         out.append("    v_req := %s;" % L('r-d1x-' + r['code']))
         out.append("    insert into public.requirements (id, project_id, title, code, status, status_id, owner) values (v_req, v_project, %s, %s, v_status, v_status, %s);"
                    % (L(r['title']), L(r['code']), L(r['owner'] or 'Sin asignar')))
-        out.append("    update public.requirements set %s where id = v_req;" % fields)
+        out.append("    update public.requirements set change_description = %s, status_updated_at = now(), %s where id = v_req;" % (L(r['title']), fields))
         out.append("    insert into public.requirement_codes (id, requirement_id, code, is_principal, sort_order) values (%s, v_req, %s, true, 1);"
                    % (L('rc-d1x-' + r['code']), L(r['code'])))
         out.append('  end if;')
