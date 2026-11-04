@@ -783,20 +783,23 @@
             .master-table--extended .master-cell-observations {
               order: 99;
             }
+            .master-table--extended { --sticky-bg: var(--gp-wisp); }
+            .master-table--extended .master-table-head { --sticky-bg: var(--gp-fog); }
+            .master-table--extended .master-row:hover { --sticky-bg: var(--gp-mist); }
+            .master-board-light .master-table--extended { --sticky-bg: var(--gp-fog); }
+            .master-board-light .master-table--extended .master-table-head { --sticky-bg: var(--gp-vapor); }
+            .master-board-light .master-table--extended .master-row:hover { --sticky-bg: var(--gp-frost); }
             .master-table--extended .master-sticky {
               position: sticky;
               z-index: 1;
-              background: var(--gp-wisp);
+              align-self: stretch;
+              display: flex;
+              align-items: center;
+              background: var(--sticky-bg);
+              box-shadow: 12px 0 0 var(--sticky-bg);
             }
             .master-table--extended .master-sticky-1 { left: 0; }
             .master-table--extended .master-sticky-2 { left: 142px; }
-            .master-table--extended .master-table-head .master-sticky { background: var(--gp-fog); }
-            .master-table--extended .master-row:hover .master-sticky {
-              background: linear-gradient(var(--gp-cyan-5_5), var(--gp-cyan-5_5)), var(--gp-wisp);
-            }
-            .master-board-light .master-table--extended .master-sticky { background: var(--gp-fog); }
-            .master-board-light .master-table--extended .master-table-head .master-sticky { background: var(--gp-vapor); }
-            .master-board-light .master-table--extended .master-row:hover .master-sticky { background: var(--gp-frost); }
           }
           .master-cell-main {
             min-width: 0;
