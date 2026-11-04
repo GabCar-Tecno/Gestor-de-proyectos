@@ -58,21 +58,6 @@
       />
     </div>
     <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
-      <label for="est-complexity" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)"
-        >Complejidad</label
-      >
-      <select
-        id="est-complexity"
-        value="{{ est.complexityId }}"
-        onChange="{{ est.on.complexityId }}"
-        style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:9px 11px;color:var(--gp-text);font-size:13.5px"
-      >
-        <sc-for list="{{ est.complexityOptions }}" as="o" hint-placeholder-count="5"
-          ><option value="{{ o.value }}">{{ o.label }}</option></sc-for
-        >
-      </select>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0">
       <label for="est-client" style="font-size: 11.5px; font-weight: 600; color: var(--gp-muted)">Cliente</label>
       <input
         id="est-client"
