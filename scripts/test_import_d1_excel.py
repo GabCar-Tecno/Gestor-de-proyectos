@@ -5,7 +5,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from import_d1_excel import build_sql, canonical_pm, map_status, parse_invoiced, sql_literal  # noqa: E402
+from import_d1_excel import build_sql, canonical_pm, canonical_project, map_status, parse_invoiced, sql_literal  # noqa: E402
 
 
 class MapStatusTest(unittest.TestCase):
@@ -26,6 +26,16 @@ class CanonicalPmTest(unittest.TestCase):
 
     def test_trims_and_collapses_spaces(self):
         self.assertEqual(canonical_pm('  Meyli   Herrera '), 'Meyli Herrera')
+
+
+class CanonicalProjectTest(unittest.TestCase):
+    def test_d1_maps_to_d1wb(self):
+        self.assertEqual(canonical_project('D1'), 'D1WB')
+        self.assertEqual(canonical_project(' d1 '), 'D1WB')
+
+    def test_other_projects_unchanged(self):
+        self.assertEqual(canonical_project('D1 RRHH'), 'D1 RRHH')
+        self.assertEqual(canonical_project('NIIF16'), 'NIIF16')
 
 
 class ParseInvoicedTest(unittest.TestCase):
@@ -63,6 +73,11 @@ class BuildSqlTest(unittest.TestCase):
         sql = build_sql([self.ROW])
         update = [l for l in sql.splitlines() if l.strip().startswith('if v_req is not null then update')][0]
         self.assertIn("change_description = case when btrim(coalesce(change_description, '')) = '' then 'Corto' else change_description end", update)
+
+    def test_update_moves_requirement_to_excel_project(self):
+        sql = build_sql([self.ROW])
+        update = [l for l in sql.splitlines() if l.strip().startswith('if v_req is not null then update')][0]
+        self.assertIn('project_id = v_project', update)
 
     def test_update_touches_status_timestamp_only_on_change(self):
         sql = build_sql([self.ROW])

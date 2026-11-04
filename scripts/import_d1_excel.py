@@ -29,6 +29,11 @@ PM_ALIASES = {
     'david alexader garcia': 'David Alexander Garcia',
 }
 
+# Excel "Aplicativo" names that differ from the project names in the app.
+PROJECT_ALIASES = {
+    'd1': 'D1WB',
+}
+
 MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 # Column order of the sheet (0-based).
@@ -56,6 +61,11 @@ def map_status(text):
 def canonical_pm(name):
     clean = re.sub(r'\s+', ' ', str(name or '')).strip()
     return PM_ALIASES.get(_plain(clean), clean)
+
+
+def canonical_project(name):
+    clean = re.sub(r'\s+', ' ', str(name or '')).strip()
+    return PROJECT_ALIASES.get(_plain(clean), clean)
 
 
 def parse_invoiced(text, ref_date):
@@ -120,7 +130,7 @@ def read_rows(path):
         rows.append({
             'code': code,
             'status': status,
-            'project': str(r[COL['aplicativo']] or 'D1').strip(),
+            'project': canonical_project(r[COL['aplicativo']] or 'D1'),
             'title': re.sub(r'\s+', ' ', str(r[COL['descripcion']])).strip(),
             'pm': canonical_pm(r[COL['pm']]) if r[COL['pm']] else None,
             'owner': re.sub(r'\s+', ' ', str(r[COL['desarrollador']] or '')).strip(),
@@ -163,7 +173,7 @@ def build_sql(rows):
         out.append("  select r.id into v_req from public.requirements r join public.projects p on p.id = r.project_id"
                    " join public.requirement_codes c on c.requirement_id = r.id"
                    " where p.company_id = v_company and lower(btrim(c.code)) = lower(%s) limit 1;" % L(r['code']))
-        fields = ("title = {t}, owner = {o}, status = v_status, status_id = v_status, estimated_hours = {h},"
+        fields = ("project_id = v_project, title = {t}, owner = {o}, status = v_status, status_id = v_status, estimated_hours = {h},"
                   " user_delivery_date = {ud}, production_date = {pd}, request_date = {rd}, estimate_delivery_date = {ed},"
                   " estimate_approval_date = {ad}, development_start_date = {sd}, user_testing_delivery_date = {td},"
                   " client_pm_contact_id = v_contact, invoiced = {inv}, invoiced_month = {im}").format(
