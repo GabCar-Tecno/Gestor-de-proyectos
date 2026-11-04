@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2200" height="2135" viewBox="0 0 2200 2135" role="img" aria-labelledby="title desc">
-<title id="title">Formulario de terceros · modelo de datos</title><desc id="desc">21 tablas según entidades y ThirdPartyScript.sql. No se atribuyen endpoints a entidades sin API de captura.</desc>
+<title id="title">Formulario de terceros · modelo de datos</title><desc id="desc">Tablas y relaciones del registro de terceros, personas, vehículos y documentos.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
 <style>text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:bold}.sub{font-size:15px;fill:#475569}.head{font-size:17px;font-weight:bold}.row{font-size:14px}.edge{fill:none;stroke:#94a3b8;stroke-width:1.8;marker-end:url(#arrow)}.node{fill:#fff;stroke:#334155;stroke-width:1.5}.cap{fill:#e0f2fe;stroke:#334155;stroke-width:1.5}</style>
 <rect width="2200" height="2135" fill="#f8fafc"/>
 <text x="30" y="36" class="title">Formulario de terceros · modelo de datos</text>
-<text x="30" y="66" class="sub">21 tablas según entidades y ThirdPartyScript.sql. No se atribuyen endpoints a entidades sin API de captura.</text>
+<text x="30" y="66" class="sub">Tablas y relaciones del registro de terceros, personas, vehículos y documentos.</text>
 <path class="edge" d="M 815 100 V 222.5 H 275 V 345"><title>ThirdParty_Questions.FormatId → ThirdParty_Format</title></path>
 <path class="edge" d="M 1355 100 V 222.5 H 275 V 345"><title>ThirdParty_DocumentTypes.FormatId → ThirdParty_Format</title></path>
 <path class="edge" d="M 1895 100 V 222.5 H 275 V 345"><title>ThirdParty_Registrations.FormatId → ThirdParty_Format</title></path>
@@ -34,14 +34,14 @@
 <text class="row" x="42" y="166">PK Id : int</text>
 <text class="row" x="42" y="189">Code : varchar(50) ?</text>
 <text class="row" x="42" y="212">Name : varchar(255) ?</text>
-<text class="sub" x="42" y="330">9 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="42" y="330">9 columnas</text>
 <rect class="node" x="570" y="100" width="490" height="245" rx="8"/>
 <rect class="cap" x="570" y="100" width="490" height="42" rx="8"/>
 <text class="head" x="582" y="127">ThirdParty_Questions</text>
 <text class="row" x="582" y="166">PK Id : int</text>
 <text class="row" x="582" y="189">FK FormatId : int</text>
 <text class="row" x="582" y="212">Description : nvarchar(max) ?</text>
-<text class="sub" x="582" y="330">8 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="582" y="330">8 columnas</text>
 <rect class="node" x="1110" y="100" width="490" height="245" rx="8"/>
 <rect class="cap" x="1110" y="100" width="490" height="42" rx="8"/>
 <text class="head" x="1122" y="127">ThirdParty_DocumentTypes</text>
@@ -49,7 +49,7 @@
 <text class="row" x="1122" y="189">FK FormatId : int</text>
 <text class="row" x="1122" y="212">Code : varchar(50) ?</text>
 <text class="row" x="1122" y="235">Name : varchar(500) ?</text>
-<text class="sub" x="1122" y="330">13 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1122" y="330">13 columnas</text>
 <rect class="node" x="1650" y="100" width="490" height="245" rx="8"/>
 <rect class="cap" x="1650" y="100" width="490" height="42" rx="8"/>
 <text class="head" x="1662" y="127">ThirdParty_Registrations</text>
@@ -59,7 +59,7 @@
 <text class="row" x="1662" y="235">SignatureRequestId : varchar(255) ?</text>
 <text class="row" x="1662" y="258">UnsignedDocumentPath : varchar(255) ?</text>
 <text class="row" x="1662" y="281">SignedDocumentPath : varchar(255) ?</text>
-<text class="sub" x="1662" y="330">19 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1662" y="330">19 columnas</text>
 <rect class="node" x="30" y="430" width="490" height="245" rx="8"/>
 <rect class="cap" x="30" y="430" width="490" height="42" rx="8"/>
 <text class="head" x="42" y="457">ThirdParty_DataTreatmentAnswers</text>
@@ -67,28 +67,28 @@
 <text class="row" x="42" y="519">FK RegistrationId : int</text>
 <text class="row" x="42" y="542">FK QuestionId : int</text>
 <text class="row" x="42" y="565">Answer : varchar(500) ?</text>
-<text class="sub" x="42" y="660">8 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="42" y="660">8 columnas</text>
 <rect class="node" x="570" y="430" width="490" height="245" rx="8"/>
 <rect class="cap" x="570" y="430" width="490" height="42" rx="8"/>
 <text class="head" x="582" y="457">ThirdParty_PersonDetails</text>
 <text class="row" x="582" y="496">PK Id : int</text>
 <text class="row" x="582" y="519">FK RegistrationId : int</text>
 <text class="row" x="582" y="542">IdentificationNumber : varchar(50) ?</text>
-<text class="sub" x="582" y="660">26 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="582" y="660">26 columnas</text>
 <rect class="node" x="1110" y="430" width="490" height="245" rx="8"/>
 <rect class="cap" x="1110" y="430" width="490" height="42" rx="8"/>
 <text class="head" x="1122" y="457">ThirdParty_Vehicles</text>
 <text class="row" x="1122" y="496">PK Id : int</text>
 <text class="row" x="1122" y="519">FK RegistrationId : int</text>
 <text class="row" x="1122" y="542">Plate : varchar(20) ?</text>
-<text class="sub" x="1122" y="660">35 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1122" y="660">35 columnas</text>
 <rect class="node" x="1650" y="430" width="490" height="245" rx="8"/>
 <rect class="cap" x="1650" y="430" width="490" height="42" rx="8"/>
 <text class="head" x="1662" y="457">ThirdParty_Trailers</text>
 <text class="row" x="1662" y="496">PK Id : int</text>
 <text class="row" x="1662" y="519">FK VehicleId : int</text>
 <text class="row" x="1662" y="542">Plate : varchar(20) ?</text>
-<text class="sub" x="1662" y="660">21 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1662" y="660">21 columnas</text>
 <rect class="node" x="30" y="760" width="490" height="245" rx="8"/>
 <rect class="cap" x="30" y="760" width="490" height="42" rx="8"/>
 <text class="head" x="42" y="787">ThirdParty_Documents</text>
@@ -97,7 +97,7 @@
 <text class="row" x="42" y="872">FK DocumentTypeId : int</text>
 <text class="row" x="42" y="895">Format : varchar(50) ?</text>
 <text class="row" x="42" y="918">FileName : varchar(255) ?</text>
-<text class="sub" x="42" y="990">10 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="42" y="990">10 columnas</text>
 <rect class="node" x="570" y="760" width="490" height="245" rx="8"/>
 <rect class="cap" x="570" y="760" width="490" height="42" rx="8"/>
 <text class="head" x="582" y="787">ThirdParty_VehicleDocuments</text>
@@ -107,13 +107,13 @@
 <text class="row" x="582" y="895">Plate : varchar(20) ?</text>
 <text class="row" x="582" y="918">Format : varchar(50) ?</text>
 <text class="row" x="582" y="941">FileName : varchar(255) ?</text>
-<text class="sub" x="582" y="990">12 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="582" y="990">12 columnas</text>
 <rect class="node" x="1110" y="760" width="490" height="245" rx="8"/>
 <rect class="cap" x="1110" y="760" width="490" height="42" rx="8"/>
 <text class="head" x="1122" y="787">ThirdParty_LegalRepresentativeInfo</text>
 <text class="row" x="1122" y="826">PK Id : int</text>
 <text class="row" x="1122" y="849">FK RegistrationId : int</text>
-<text class="sub" x="1122" y="990">10 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1122" y="990">10 columnas</text>
 <rect class="node" x="1650" y="760" width="490" height="245" rx="8"/>
 <rect class="cap" x="1650" y="760" width="490" height="42" rx="8"/>
 <text class="head" x="1662" y="787">ThirdParty_LegalRepresentativePersons</text>
@@ -122,7 +122,7 @@
 <text class="row" x="1662" y="872">FK IdentificationTypeId : int ?</text>
 <text class="row" x="1662" y="895">IdentificationNumber : varchar(50) ?</text>
 <text class="row" x="1662" y="918">RoleType : varchar(50) ?</text>
-<text class="sub" x="1662" y="990">15 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1662" y="990">15 columnas</text>
 <rect class="node" x="30" y="1090" width="490" height="245" rx="8"/>
 <rect class="cap" x="30" y="1090" width="490" height="42" rx="8"/>
 <text class="head" x="42" y="1117">ThirdParty_LegalOwners</text>
@@ -131,58 +131,58 @@
 <text class="row" x="42" y="1202">FK IdentificationTypeId : int ?</text>
 <text class="row" x="42" y="1225">IdentificationNumber : varchar(50) ?</text>
 <text class="row" x="42" y="1248">OwnerType : varchar(50) ?</text>
-<text class="sub" x="42" y="1320">15 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="42" y="1320">15 columnas</text>
 <rect class="node" x="570" y="1090" width="490" height="245" rx="8"/>
 <rect class="cap" x="570" y="1090" width="490" height="42" rx="8"/>
 <text class="head" x="582" y="1117">ThirdParty_AdministrativeContacts</text>
 <text class="row" x="582" y="1156">PK Id : int</text>
 <text class="row" x="582" y="1179">FK RegistrationId : int</text>
 <text class="row" x="582" y="1202">RoleType : varchar(50) ?</text>
-<text class="sub" x="582" y="1320">10 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="582" y="1320">10 columnas</text>
 <rect class="node" x="1110" y="1090" width="490" height="245" rx="8"/>
 <rect class="cap" x="1110" y="1090" width="490" height="42" rx="8"/>
 <text class="head" x="1122" y="1117">ThirdParty_FinancialDeclarations</text>
 <text class="row" x="1122" y="1156">PK Id : int</text>
 <text class="row" x="1122" y="1179">FK RegistrationId : int</text>
-<text class="sub" x="1122" y="1320">10 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1122" y="1320">10 columnas</text>
 <rect class="node" x="1650" y="1090" width="490" height="245" rx="8"/>
 <rect class="cap" x="1650" y="1090" width="490" height="42" rx="8"/>
 <text class="head" x="1662" y="1117">ThirdParty_ForeignTradeInfo</text>
 <text class="row" x="1662" y="1156">PK Id : int</text>
 <text class="row" x="1662" y="1179">FK RegistrationId : int</text>
 <text class="row" x="1662" y="1202">FK IntermediaryIdentificationTypeId : int ?</text>
-<text class="sub" x="1662" y="1320">22 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1662" y="1320">22 columnas</text>
 <rect class="node" x="30" y="1420" width="490" height="245" rx="8"/>
 <rect class="cap" x="30" y="1420" width="490" height="42" rx="8"/>
 <text class="head" x="42" y="1447">ThirdParty_ConflictOfInterestDeclarations</text>
 <text class="row" x="42" y="1486">PK Id : int</text>
 <text class="row" x="42" y="1509">FK RegistrationId : int</text>
 <text class="row" x="42" y="1532">Description : varchar(500) ?</text>
-<text class="sub" x="42" y="1650">12 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="42" y="1650">12 columnas</text>
 <rect class="node" x="570" y="1420" width="490" height="245" rx="8"/>
 <rect class="cap" x="570" y="1420" width="490" height="42" rx="8"/>
 <text class="head" x="582" y="1447">ThirdParty_SustainabilityCertifications</text>
 <text class="row" x="582" y="1486">PK Id : int</text>
 <text class="row" x="582" y="1509">FK RegistrationId : int</text>
-<text class="sub" x="582" y="1650">7 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="582" y="1650">7 columnas</text>
 <rect class="node" x="1110" y="1420" width="490" height="245" rx="8"/>
 <rect class="cap" x="1110" y="1420" width="490" height="42" rx="8"/>
 <text class="head" x="1122" y="1447">ThirdParty_BankAccounts</text>
 <text class="row" x="1122" y="1486">PK Id : int</text>
 <text class="row" x="1122" y="1509">FK RegistrationId : int</text>
-<text class="sub" x="1122" y="1650">9 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1122" y="1650">9 columnas</text>
 <rect class="node" x="1650" y="1420" width="490" height="245" rx="8"/>
 <rect class="cap" x="1650" y="1420" width="490" height="42" rx="8"/>
 <text class="head" x="1662" y="1447">ThirdParty_LegalComplianceRequirements</text>
 <text class="row" x="1662" y="1486">PK Id : int</text>
 <text class="row" x="1662" y="1509">FK RegistrationId : int</text>
-<text class="sub" x="1662" y="1650">13 columnas · detalle completo en el diccionario</text>
+<text class="sub" x="1662" y="1650">13 columnas</text>
 <rect class="node" x="30" y="1750" width="490" height="245" rx="8"/>
 <rect class="cap" x="30" y="1750" width="490" height="42" rx="8"/>
 <text class="head" x="42" y="1777">ThirdParty_RegistrationVehicles</text>
 <text class="row" x="42" y="1816">PK Id : int</text>
 <text class="row" x="42" y="1839">FK RegistrationId : int</text>
 <text class="row" x="42" y="1862">Plate : varchar(20) ?</text>
-<text class="sub" x="42" y="1980">8 columnas · detalle completo en el diccionario</text>
-<text class="sub" x="30" y="2101">Flecha FK: tabla hija → tabla padre · ?: nullable · claves y columnas seleccionadas; vínculos externos en el diccionario.</text>
+<text class="sub" x="42" y="1980">8 columnas</text>
+<text class="sub" x="30" y="2101">FK: clave foránea (hija → padre). PK: clave primaria. ?: admite NULL.</text>
 </svg>
