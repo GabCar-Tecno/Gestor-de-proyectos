@@ -89,3 +89,17 @@ $$;
 
 create index if not exists requirements_client_pm_contact_idx
   on public.requirements (client_pm_contact_id);
+
+-- 4. PMs pick and create "PM Entrega" contacts. Mirror the existing dev rule on company_contacts
+--    (role + membership in profile_companies) for the pm role. The pm role lives in profiles.role_id
+--    (profiles.role only allows 'dev' or 'client').
+drop policy if exists company_contacts_pm on public.company_contacts;
+create policy company_contacts_pm on public.company_contacts to authenticated
+using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and coalesce(pr.role_id, pr.role) = 'pm')
+  and exists (select 1 from public.profile_companies pc where pc.company_id = company_contacts.company_id and pc.profile_id = auth.uid())
+)
+with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and coalesce(pr.role_id, pr.role) = 'pm')
+  and exists (select 1 from public.profile_companies pc where pc.company_id = company_contacts.company_id and pc.profile_id = auth.uid())
+);
