@@ -7,7 +7,7 @@
   };
 
   const estimationPhase = { created: 'creada', sent: 'enviada', approved: 'aprobada' };
-  const inputType = { text: 'text', password: 'password', date: 'date', number: 'number', month: 'month' };
+  const inputType = { text: 'text', password: 'password', date: 'date', number: 'number' };
   const deployableKind = { api: 'api', app: 'app', gateway: 'gateway' };
   const reqStatus = {
     estimation: 'estimacion',

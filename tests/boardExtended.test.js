@@ -82,3 +82,18 @@ test('statusLabel uses the company override, else the default label', () => {
   assert.equal(X.statusLabel({}, 'usuarios', 'Usuarios'), 'Usuarios');
   assert.equal(X.statusLabel(null, 'usuarios', 'Usuarios'), 'Usuarios');
 });
+
+test('monthOptions lists months newest first from next year back two years', () => {
+  const opts = X.monthOptions(new Date(2026, 10, 4), '');
+  assert.equal(opts[0].value, '');
+  assert.equal(opts[0].label, 'Selecciona el mes');
+  assert.deepEqual(opts[1], { value: '2027-12', label: 'diciembre 2027' });
+  assert.deepEqual(opts[opts.length - 1], { value: '2024-01', label: 'enero 2024' });
+  assert.equal(opts.length, 1 + 48);
+  assert.ok(opts.some((o) => o.value === '2026-11' && o.label === 'noviembre 2026'));
+});
+
+test('monthOptions keeps a selected month outside the range', () => {
+  const opts = X.monthOptions(new Date(2026, 10, 4), '2020-03');
+  assert.ok(opts.some((o) => o.value === '2020-03' && o.label === 'marzo 2020'));
+});

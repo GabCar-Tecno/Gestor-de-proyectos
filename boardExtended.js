@@ -74,6 +74,22 @@
     return name + ' ' + m[1];
   }
 
+  function monthOptions(today, selected, locale) {
+    const now = today || new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const opts = [];
+    for (let y = now.getFullYear() + 1; y >= now.getFullYear() - 2; y--) {
+      for (let m = 12; m >= 1; m--) {
+        const value = y + '-' + pad(m);
+        opts.push({ value, label: formatMonth(value, locale) });
+      }
+    }
+    if (selected && /^\d{4}-\d{2}$/.test(selected) && !opts.some((o) => o.value === selected)) {
+      opts.push({ value: selected, label: formatMonth(selected, locale) });
+    }
+    return [{ value: '', label: 'Selecciona el mes' }].concat(opts);
+  }
+
   function formatInvoiced(facturado, mesFacturado, locale) {
     if (!facturado) return 'No';
     const month = formatMonth(mesFacturado, locale);
@@ -125,7 +141,7 @@
   const api = Object.freeze({
     CONTACT_ROLE, EXTENDED_EXCEL_COLUMNS, canSeeExtended, emptyExtendedForm, extendedFormFromReq, mapExtendedRow,
     validateExtended, extendedPayload, formatMonth, formatInvoiced, emailableContacts, normalizeName, pmContacts,
-    findPmContactByName, filterPmContacts, extendedExcelValues, statusLabel
+    findPmContactByName, filterPmContacts, extendedExcelValues, statusLabel, monthOptions
   });
 
   if (typeof window !== 'undefined') window.BOARD_EXT = api;

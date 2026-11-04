@@ -5108,7 +5108,7 @@
               {label:'Fecha inicio desarrollo',key:'fechaInicioDesarrollo',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
               {label:'Fecha real entrega a pruebas',key:'fechaEntregaPruebas',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
               {label:'Facturado',key:'facturado',kind:FIELD_KIND.checkbox},
-              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.text,type:INPUT_TYPE.month}]:[]),
+              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.select,options:BOARD_EXT.monthOptions(new Date(),s.form.mesFacturado,LOCALE)}]:[]),
             ]:[];
             const responsibleOptions=(s.devProfiles||[]).map(p=>({value:p.label,label:p.label}));
             (s.form.responsables||[]).filter(name=>!responsibleOptions.some(o=>o.value===name)).forEach(name=>responsibleOptions.push({value:name,label:name+' (ya no aparece como DEV)'}));
