@@ -2899,11 +2899,15 @@
               ['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
               ['Horas estimadas',10],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
             ];
+            const extCompany=this.canSeeExtended(this.empresa())?this.empresa():null;
+            const extContacts={}; ((extCompany&&extCompany.contactos)||[]).forEach(c=>{ extContacts[c.id]=c; });
+            if(extCompany) BOARD_EXT.EXTENDED_EXCEL_COLUMNS.forEach(([header,width,kind])=>cols.push(kind==='date'?[header,width,EXCEL.dateFormat]:[header,width]));
             const rows=items.map(({project,req})=>{
               const codes=this.reqCodesOf(req), code=codes.length>1?codes.join(', '):(codes[0]||''), horas=req.horas===''||req.horas==null?null:Number(req.horas);
               return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
                 (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
-                day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt)];
+                day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt),
+                ...(extCompany?BOARD_EXT.extendedExcelValues(req,extContacts).map((v,i)=>BOARD_EXT.EXTENDED_EXCEL_COLUMNS[i][2]==='date'?day(v):v):[])];
             });
             const ws=XLSX.utils.aoa_to_sheet([cols.map(c=>c[0]),...rows]);
             cols.forEach(([,,fmt],c)=>{ if(fmt) rows.forEach((_,r)=>{ const cell=ws[XLSX.utils.encode_cell({r:r+1,c})]; if(cell&&cell.t===EXCEL.numberCellType) cell.z=fmt; }); });
