@@ -1,0 +1,1720 @@
+{
+  "info": {
+    "title": "WashApi — API Manager Wash",
+    "contact": {
+      "name": "Edwin Julián Gómez Ramírez",
+      "email": "edwin.gomez@coltanques.com.co"
+    },
+    "license": {
+      "url": "https://www.coltanques.co",
+      "name": "Uso interno — Coltanques S.A.S."
+    },
+    "version": "1.0.1",
+    "description": "API de gestión de **lavado de vehículos (Car Wash)** de Coltanques S.A.S.\n\nDocumenta los **procesos** de la aplicación `WashApi`: solicitud y autorización de lavados,\npreórdenes, gestión por parte de proveedores, evidencias, reportes y catálogos de apoyo.\n\n> **Nota:** este contrato describe la API `WashApi` directamente (rutas `/api/*`). En el\n> entorno actual la aplicación no está publicada tras el gateway de seguridad, por lo que\n> las rutas se documentan tal como las expone el microservicio.\n\n## Procesos\n\n| Proceso | Descripción |\n|---------|-------------|\n| **Autenticación** | Emisión del token JWT de acceso. |\n| **Lavados** | Ciclo de vida de la orden de lavado: solicitud, aprobación/rechazo, detalle, historial, evidencias y resumen. |\n| **Preórdenes** | Agrupación de lavados disponibles en preórdenes para su ejecución. |\n| **Proveedores** | Consulta de proveedores, tarifas, servicios y sus órdenes de lavado. |\n| **Reportes** | Generación de reportes de lavados por rango de fechas. |\n| **Usuarios** | Alertas del usuario. |\n| **Catálogos** | Datos maestros: estados, tipos de servicio/carga, ciudades, departamentos, vehículos y tráilers. |\n\n## Autenticación\n\nTodas las operaciones requieren un token **JWT** en `Authorization: Bearer <token>`.\n\n> **Flujo real de autenticación:** en la app de Servicios Complementarios el token JWT lo\n> emite el **gateway corporativo de seguridad** (endpoints `/login` y `/token` de ese servicio),\n> no `WashApi`. `WashApi` únicamente **valida** el token recibido. El endpoint\n> `POST /api/Token/Post` existe en `WashApi` y se documenta por completitud, pero el cliente\n> obtiene sus credenciales a través del gateway de seguridad.\n\n## Convención de respuesta\n\nLas respuestas usan un sobre común (`BaseOut`) con `result`, `message`, `statusCode` y\n`numberRecord`, más un campo `data`. El campo `result` es un enumerado: 0=Error, 1=Success,\n2=NoRecords, 3=UserNoExists, 4=BadRequest, 5=NoContent, 6=NotFound, 7=Unauthorized."
+  },
+  "tags": [
+    {
+      "name": "Diagramas de flujo",
+      "x-traitTag": true,
+      "description": "Diagramas de flujo del proceso de lavado de vehículos (Car Wash).\n\nLink al documento completo de diagramas:\nhttps://drive.google.com/file/d/1HxKEh0xgBP1GFVfP91PBM9B7QEGWa310/view?usp=drive_link\n\n## Diagrama de registro de orden de lavado\n\n**Para iniciar:** proveedores con su NIT propio, servicios y la relación de precios proveedor × servicio parametrizados (`wash_CarWashProviders`, `wash_CarWashServiceTypes`, `wash_ServicesPricing`). No es obligatorio que la placa exista en vehículos, pero sin ella no se obtienen tipos de vehículo en las pantallas que los usan.\n\n**Proceso:** el usuario registra la solicitud; se crean registros en `wash_CarWashOrders` y `wash_CargoManifests` (si se desea asignar manifiesto se agrega con el campo `cargoManifestCode`). Cada acción queda registrada en `wash_CarWashActionsHistory`.\n\n**Tablas:** `wash_CarWashProviders`, `wash_CarWashServiceTypes`, `wash_ServicesPricing`, `wash_CargoManifests`, `wash_CarWashOrders`.\n\n<!-- IMG:Proceso de flujo-Diagrama flujo nuevo registro.drawio.png -->\n[![Diagrama de flujo — nuevo registro de orden de lavado](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20nuevo%20registro.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20nuevo%20registro.drawio.png)\n\n## Diagrama de autorización de órdenes\n\n**Para iniciar:** órdenes en estado **Creado** en `wash_CarWashOrders`.\n\n**Proceso:** se listan las órdenes en estado Creado; se selecciona un lavado y se acepta o rechaza. Las acciones se guardan en `wash_CarWashActionsHistory`.\n\n**Tablas:** `wash_CarWashOrders`, `wash_CarWashActionsHistory`.\n\n<!-- IMG:Proceso de flujo-Diagrama flujo autorización de servicio.drawio.png -->\n[![Diagrama de flujo — autorización de servicio](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20autorizaci%C3%B3n%20de%20servicio.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20autorizaci%C3%B3n%20de%20servicio.drawio.png)\n\n## Diagrama de proceso de lavado\n\n**Para iniciar:** órdenes en estado **Autorizado** en `wash_CarWashOrders`.\n\n**Proceso:** el proveedor selecciona un lavado y lo inicia o lo rechaza. Tras tomar las evidencias pre-lavado se inicia el lavado, y se termina al ingresar las imágenes de finalizado; la orden pasa a estado **Completado**. Las acciones quedan en `wash_CarWashActionsHistory`.\n\n**Tablas:** `wash_CarWashOrders`, `wash_CarWashEvidences`, `wash_CarWashEvidenceTypes`.\n\n<!-- IMG:Proceso de flujo-Diagrama flujo proceso lavado.drawio.png -->\n[![Diagrama de flujo — proceso de lavado](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20proceso%20lavado.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20proceso%20lavado.drawio.png)\n\n## Diagrama de proceso de prefacturado\n\n**Para iniciar:** órdenes en estado **Completado** en `wash_CarWashOrders`.\n\n**Proceso:** se seleccionan varios lavados y se agregan al proceso de prefactura; se crea un registro en `wash_PreOrder` y la relación de órdenes prefacturadas en `wash_PreOrdeByWashOrder`. Al finalizar, los lavados seleccionados pasan a estado **Prefacturado**. Las acciones quedan en `wash_CarWashActionsHistory`.\n\n**Tablas:** `wash_CarWashOrders`, `wash_PreOrder`, `wash_PreOrdeByWashOrder`.\n\n<!-- IMG:Proceso de flujo-Diagrama flujo de prefactura.drawio.png -->\n[![Diagrama de flujo — prefactura](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20de%20prefactura.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20de%20prefactura.drawio.png)\n\n## Diagrama de proceso de reporte\n\n**Para iniciar:** rango de fechas o filtros del reporte.\n\n**Proceso:** se listan las órdenes de `wash_CarWashOrders` según el rango o filtro requerido. Si se solicitan evidencias, se agregan las imágenes del último lavado.\n\n**Tablas:** `wash_CarWashOrders`, `wash_CarWashEvidences`.\n\n<!-- IMG:Proceso de flujo-Diagrama flujo reporte.drawio.png -->\n[![Diagrama de flujo — reporte](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20reporte.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Proceso%20de%20flujo-Diagrama%20flujo%20reporte.drawio.png)\n"
+    },
+    {
+      "name": "Diccionario de datos",
+      "x-traitTag": true,
+      "description": "Estructura física de las tablas del microservicio **WashApi** (API Manager Wash / lavado de vehículos) que consume la app **Coltanques-crew-app** (Flutter) y los clientes web de lavados.\r\n\r\nIncluye las tablas propias del dominio (`wash_*`: órdenes, manifiestos de carga, evidencias, preórdenes, tarifas) y catálogos de apoyo. Las tablas compartidas referenciadas por FK (`Usuario`/`Usuarios`, `Municipio`/`cities`, `Vehiculo`, `Remolque`, `LoadType`) documentan solo las columnas usadas por este microservicio.\r\n\r\n> **Fuente:** Documentación Técnica App Lavados (diccionario de datos). Los nombres físicos en flujos de proceso usan el prefijo `wash_` (p. ej. `wash_CarWashOrders`); en el diccionario se conservan los nombres lógicos de tabla.\r\n\r\n**Convenciones**\r\n\r\n- `Length` con valor `1,1` corresponde a una columna de identidad (`IDENTITY` / `serial`), no a una longitud de dato.\r\n- Se documentan tipografías del PDF técnico (`serial`, `int4`, `varchar`, `datetime2`, `timestamptz`, `decimal`, `bit`).\r\n- Errores tipográficos del documento origen (`CareWashEvidences`, `CareWashActionsHistory`, `PreOrdeByWashOrder`) se normalizan a `CarWashEvidences`, `CarWashActionsHistory`, `PreOrderByWashOrder`, indicando el nombre físico cuando aplica.\r\n- `startedAt` / `finishedAt` en órdenes se documentan como anulables en la práctica operativa (null hasta iniciar/finalizar el lavado), aunque el PDF las marca NO.\r\n\r\n**Índice de tablas** (navegables desde el menú lateral)\r\n\r\n1. `CarWashStates` — estados de la orden de lavado\r\n2. `CarWashServiceTypes` — tipos de servicio de lavado\r\n3. `CarWashEvidenceTypes` — tipos de evidencia (pre/post)\r\n4. `userActionStates` — estados de acción de usuario (historial)\r\n5. `userProfiles` — perfiles de usuario / alertas\r\n6. `CarWashProviders` — proveedores de lavado\r\n7. `ServicePricing` — tarifas proveedor × tipo de servicio\r\n8. `CargoManifest` — manifiesto / datos de carga asociados a la orden\r\n9. `CarWashOrders` — órdenes / solicitudes de lavado\r\n10. `CarWashEvidences` — evidencias fotográficas de la orden\r\n11. `CarWashActionsHistory` — historial de acciones sobre la orden\r\n12. `PreOrder` — preórdenes / prefacturas\r\n13. `PreOrderByWashOrder` — relación preorden ↔ órdenes\r\n14. `TrailerTypes` — tipos de tráiler\r\n15. `IdentificationTypes` — tipos de identificación\r\n16. `LoadTypes` — tipos de carga (catálogo; FK de `CargoManifest`)\r\n\r\n## CarWashStates\r\n\r\n*6 columnas. Catálogo de estados del ciclo de vida del lavado. Endpoint: `GET /api/CarWashStates`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 200 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashServiceTypes\r\n\r\n*6 columnas. Catálogo de tipos de servicio de lavado. Endpoint: `GET /api/ServiceTypes`. Tabla física: `wash_CarWashServiceTypes`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashEvidenceTypes\r\n\r\n*6 columnas. Catálogo de tipos de evidencia (p. ej. frontal, lateral, detalle; pre/post lavado). Tabla física: `wash_CarWashEvidenceTypes`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## userActionStates\r\n\r\n*6 columnas. Catálogo de tipos de acción registrados en el historial (aprobación, rechazo, inicio, etc.).*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## userProfiles\r\n\r\n*7 columnas. Perfiles usados para filtrar alertas de usuario. Endpoint: `GET /api/Users/{userIdentification}/alerts?profileId=`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| ProfileId | integer | 8 | NO |  | Identificador de perfil de negocio |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashProviders\r\n\r\n*8 columnas. Proveedores de lavado (NIT, teléfono). Endpoint: `GET /api/Providers`. Tabla física: `wash_CarWashProviders`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 200 | NO |  | Nombre del proveedor |\r\n| PhoneNumber | varchar | 50 | YES |  |  |\r\n| Nit | bigint | 8 | YES |  | NIT; usado en rutas `/api/Providers/{providerNit}/...` |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## ServicePricing\r\n\r\n*8 columnas. Tarifa vigente por proveedor y tipo de servicio. Endpoints: `GET /api/Providers/{providerId}/services`, `GET /api/Providers/{providerId}/services/{serviceTypeId}/fee`. Tabla física: `wash_ServicesPricing`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| CarWashProviderId | int4 |  | NO |  | FK → CarWashProviders(Id) |\r\n| CarWashServiceTypeId | int4 |  | NO |  | FK → CarWashServiceTypes(Id) |\r\n| CurrentFee | decimal | 9 | NO |  | Tarifa vigente |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CargoManifest\r\n\r\n*14 columnas. Datos de carga / manifiesto asociados a la orden (placa, origen/destino, mercancía). Tabla física: `wash_CargoManifests`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| LoadTypeId | int4 |  | NO |  | FK → LoadTypes(Id) |\r\n| VehiclePlateId | varchar |  | NO |  | Lógico → Vehiculo(placa) |\r\n| TrailerPlateId | varchar |  | YES |  | Lógico → Remolque(placa) |\r\n| OriginCityId | int4 |  | NO |  | Lógico → Municipio/cities |\r\n| DestinationCityId | int4 |  | NO |  | Lógico → Municipio/cities |\r\n| CargoManifestCode | varchar |  | YES |  | Código de manifiesto opcional |\r\n| TransportedGoods | varchar | 255 | NO |  | Mercancía transportada |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashOrders\r\n\r\n*14 columnas. Orden / solicitud de lavado. Ciclo: Creado → Autorizado → Completado → Prefacturado (y rechazos). Endpoints: `/api/CarWashes*`. Tabla física: `wash_CarWashOrders`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| CarWashStateId | int4 |  | NO |  | FK → CarWashStates(Id) |\r\n| CargoManifestId | int4 |  | NO |  | FK → CargoManifest(Id) |\r\n| ServicePricingId | int4 |  | NO |  | FK → ServicePricing(Id) |\r\n| ScheduledDate | timestamptz |  | NO |  | Fecha/hora programada o de generación |\r\n| suggestedFee | number | 15 | NO |  | Tarifa sugerida |\r\n| startedAt | timestamptz |  | YES |  | Inicio real del lavado (null hasta iniciar) |\r\n| finishedAt | timestamptz |  | YES |  | Fin real del lavado (null hasta completar) |\r\n| reason | varchar | 255 | YES |  | Motivo del lavado (`washReason` en detalle) |\r\n| observations | varchar | max | YES |  | Observaciones |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashEvidences\r\n\r\n*10 columnas. Evidencias (rutas de imagen) asociadas a una orden y proveedor. Endpoints: `POST /api/CarWashes/{id}/Evidences/PreWash`, `.../PostWash`. Tabla física: `wash_CarWashEvidences`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| CarWashOrderId | int4 |  | NO |  | FK → CarWashOrders(Id) |\r\n| ProviderId | int4 |  | NO |  | FK → CarWashProviders(Id) |\r\n| EvidenceTypeId | int4 |  | NO |  | FK → CarWashEvidenceTypes(Id) |\r\n| PathEvidence | varchar |  | YES |  | Ruta o referencia del archivo |\r\n| Remarks | varchar | 255 | NO |  | Observaciones de la evidencia |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## CarWashActionsHistory\r\n\r\n*12 columnas. Historial de acciones (solicitud, aprobación, rechazo, evidencias, prefactura). Endpoint: `GET /api/CarWashes/{id}/History`. Tabla física: `wash_CarWashActionsHistory`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| CreatedBy | int4 |  | NO |  | FK → Usuarios(Id) |\r\n| UpdatedBy | int4 |  | YES |  | FK → Usuarios(Id) |\r\n| CarWashId | int4 |  | NO |  | FK → CarWashOrders(Id) |\r\n| userActionStateId | int4 |  | NO |  | FK → userActionStates(Id) |\r\n| description | varchar | 255 | NO |  | Descripción de la acción |\r\n| reason | varchar | 255 | YES |  | Motivo (p. ej. rechazo) |\r\n| observations | varchar | 255 | YES |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## PreOrder\r\n\r\n*7 columnas. Prefactura / preorden que agrupa lavados completados. Endpoint: `POST /api/Preorder`. Tabla física: `wash_PreOrder`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| PathPdf | varchar | max | NO |  | Ruta del PDF de prefactura |\r\n| Description | varchar | 200 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## PreOrderByWashOrder\r\n\r\n*2 columnas. Relación N:M entre preorden y órdenes de lavado. Tabla física: `wash_PreOrdeByWashOrder`.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| WashOrderId | int4 |  | NO |  | PK/FK → CarWashOrders(Id) |\r\n| PreorderId | int4 |  | NO |  | PK/FK → PreOrder(Id) |\r\n\r\n## TrailerTypes\r\n\r\n*6 columnas. Catálogo de tipos de tráiler / remolque.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## IdentificationTypes\r\n\r\n*6 columnas. Catálogo de tipos de identificación.*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 50 | NO |  |  |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n\r\n## LoadTypes\r\n\r\n*Catálogo de tipos de carga referenciado por `CargoManifest.LoadTypeId`. Endpoint: `GET /api/LoadTypes`. Estructura alineada al resto de catálogos del dominio (no detallada columna a columna en el PDF de diccionario).*\r\n\r\n| Column Name | Type | Length | Nullable | Default | Constraints |\r\n|---|---|---|---|---|---|\r\n| Id | serial | 1,1 | NO |  | PK, IDENTITY |\r\n| Description | varchar | 200 | NO |  | Expuesto como `description` en `ListItemDto` |\r\n| IsActive | bit |  | NO | true |  |\r\n| WasDeleted | bit |  | NO | false |  |\r\n| CreatedAt | datetime2 |  | NO | CURRENT_TIMESTAMP |  |\r\n| UpdatedAt | datetime2 |  | YES |  |  |\r\n"
+    },
+    {
+      "name": "Diagramas BD",
+      "x-traitTag": true,
+      "description": "Diagrama de base de datos del dominio WashApi (órdenes, manifiestos, evidencias, preórdenes, tarifas y catálogos).\n\n## Fase 1\n\n<!-- IMG:Diagrama Lavados vehiculares-fase-1.drawio.png -->\n[![Diagrama de base de datos — Lavados vehiculares fase 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Diagrama%20Lavados%20vehiculares-fase-1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Diagrama%20Lavados%20vehiculares-fase-1.drawio.png)\n\n## Fase 2\n\n<!-- IMG:Diagrama Lavados vehiculares-fase-2.drawio.png -->\n[![Diagrama de base de datos — Lavados vehiculares fase 2](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Diagrama%20Lavados%20vehiculares-fase-2.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/lavados/Diagrama%20Lavados%20vehiculares-fase-2.drawio.png)\n"
+    },
+    { "name": "Autenticación", "description": "Emisión de tokens JWT." },
+    {
+      "name": "Lavados",
+      "description": "Ciclo de vida de las órdenes de lavado de vehículos."
+    },
+    {
+      "name": "Preórdenes",
+      "description": "Agrupación de lavados en preórdenes."
+    },
+    {
+      "name": "Proveedores",
+      "description": "Proveedores, tarifas, servicios y sus órdenes."
+    },
+    { "name": "Reportes", "description": "Reportes de lavados." },
+    {
+      "name": "Usuarios",
+      "description": "Alertas y notificaciones del usuario."
+    },
+    { "name": "Catálogos", "description": "Datos maestros de solo lectura." }
+  ],
+  "paths": {
+    "/api/Cities": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Ciudades",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Ciudades."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "departmentId",
+            "schema": { "type": "integer", "example": 5 },
+            "required": true,
+            "description": "Departamento del que se listan las ciudades."
+          }
+        ],
+        "operationId": "getCities"
+      }
+    },
+    "/api/Report": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Reporte de lavados",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/CarWashDto" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Filas del reporte."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "plate",
+            "schema": { "type": "string", "example": "ABC123" },
+            "required": false,
+            "description": "Filtra por placa."
+          },
+          {
+            "in": "query",
+            "name": "RequiresEvidence",
+            "schema": { "type": "boolean", "default": false },
+            "required": false,
+            "description": "Incluir evidencias."
+          },
+          {
+            "in": "query",
+            "name": "StartDate",
+            "schema": { "type": "string", "example": "2026-07-01" },
+            "required": true,
+            "description": "Fecha inicial."
+          },
+          {
+            "in": "query",
+            "name": "EndDate",
+            "schema": { "type": "string", "example": "2026-07-27" },
+            "required": true,
+            "description": "Fecha final."
+          }
+        ],
+        "description": "Genera el reporte de lavados en el rango de fechas indicado.",
+        "operationId": "getCarWashReport"
+      }
+    },
+    "/api/Preorder": {
+      "post": {
+        "tags": ["Preórdenes"],
+        "summary": "Crear preorden",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Preorden creada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "description": "Crea una preorden a partir de una lista de órdenes de lavado.",
+        "operationId": "createPreorder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarWashPreoderRequestDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/Trailers": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tráilers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TrailerResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Tráilers."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "plate",
+            "schema": { "type": "string", "example": "R12345" },
+            "required": false,
+            "description": "Filtra por placa."
+          }
+        ],
+        "operationId": "getTrailers"
+      }
+    },
+    "/api/Vehicles": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Vehículos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/VehicleResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Vehículos."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "plate",
+            "schema": { "type": "string", "example": "ABC123" },
+            "required": false,
+            "description": "Filtra por placa."
+          }
+        ],
+        "operationId": "getVehicles"
+      }
+    },
+    "/api/CarWashes": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Listar órdenes de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/CarWashDto" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de órdenes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "stateIds",
+            "schema": { "type": "array", "items": { "type": "integer" } },
+            "example": [1, 2],
+            "required": false,
+            "description": "Estados a filtrar."
+          },
+          {
+            "in": "query",
+            "name": "loadTypeIds",
+            "schema": { "type": "array", "items": { "type": "integer" } },
+            "example": [3],
+            "required": false,
+            "description": "Tipos de carga a filtrar."
+          },
+          {
+            "in": "query",
+            "name": "providerId",
+            "schema": { "type": "integer", "example": 8 },
+            "required": false,
+            "description": "Proveedor a filtrar."
+          }
+        ],
+        "description": "Lista las órdenes de lavado con filtros opcionales por estado, tipo de carga y proveedor.",
+        "operationId": "getCarWashOrders"
+      }
+    },
+    "/api/LoadTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de carga",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Tipos de carga."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "operationId": "getLoadTypes"
+      }
+    },
+    "/api/Providers": {
+      "get": {
+        "tags": ["Proveedores"],
+        "summary": "Listar proveedores",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de proveedores."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "operationId": "getProviders"
+      }
+    },
+    "/api/Token/Post": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Obtener token JWT",
+        "security": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenOut" }
+              }
+            },
+            "description": "Token generado."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "description": "Valida las credenciales y devuelve un token JWT y un refresh token. **Nota:** en la app de Servicios Complementarios la autenticación se realiza a través del gateway corporativo de seguridad; este endpoint se documenta por completitud de la superficie de WashApi.",
+        "operationId": "postToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TokenIn" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/Departments": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Departamentos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Departamentos."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "operationId": "getDepartments"
+      }
+    },
+    "/api/ServiceTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de servicio",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Tipos de servicio."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "operationId": "getServiceTypes"
+      }
+    },
+    "/api/CarWashStates": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Estados de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Estados de lavado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "operationId": "getCarWashStates"
+      }
+    },
+    "/api/CarWashes/Summary": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Resumen de órdenes de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SummaryWashesDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Resumen de órdenes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "description": "Métricas agregadas: pendientes, en progreso, rechazadas y completadas hoy.",
+        "operationId": "getCarWashOrdersSummary"
+      }
+    },
+    "/api/CarWashes/Requests": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Listar solicitudes de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CarWashRequestedDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de solicitudes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "Plate",
+            "schema": { "type": "string", "example": "ABC123" },
+            "required": false,
+            "description": "Filtra por placa del vehículo."
+          }
+        ],
+        "operationId": "getCarWashRequests"
+      },
+      "post": {
+        "tags": ["Lavados"],
+        "summary": "Crear solicitud de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Solicitud creada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "description": "Registra una nueva solicitud de lavado para un vehículo.",
+        "operationId": "createCarWashRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CarWashRequestDto" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/Preorder/Carwashes": {
+      "get": {
+        "tags": ["Preórdenes"],
+        "summary": "Lavados disponibles para preorden",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CarWashPreorderDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lavados disponibles."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ProviderId",
+            "schema": { "type": "integer", "example": 8 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "ServiceTypeId",
+            "schema": { "type": "integer", "example": 2 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "StartDate",
+            "schema": { "type": "string", "example": "2026-07-01" },
+            "required": false,
+            "description": "Fecha inicial (dd/MM/yyyy o formato del sistema)."
+          },
+          {
+            "in": "query",
+            "name": "EndDate",
+            "schema": { "type": "string", "example": "2026-07-27" },
+            "required": false,
+            "description": "Fecha final."
+          }
+        ],
+        "operationId": "getCarWashesToPreorder"
+      }
+    },
+    "/api/CarWashes/{id}/Reject": {
+      "patch": {
+        "tags": ["Lavados"],
+        "summary": "Rechazar solicitud de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Solicitud rechazada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la solicitud."
+          }
+        ],
+        "operationId": "rejectCarWashRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarwashUpdateStatusDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/CarWashes/{id}/Approve": {
+      "patch": {
+        "tags": ["Lavados"],
+        "summary": "Aprobar solicitud de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Solicitud aprobada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la solicitud."
+          }
+        ],
+        "operationId": "approveCarWashRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarwashUpdateStatusDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/CarWashes/{id}/Details": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Detalle de una orden de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CarWashOrderDetailDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Detalle de la orden."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "getCarWashOrderDetail"
+      }
+    },
+    "/api/CarWashes/{id}/History": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Historial de acciones de la orden",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CarWashActionHistoryDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Historial de acciones."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "getCarWashOrderHistory"
+      }
+    },
+    "/api/CarWashes/{id}/ProviderReject": {
+      "patch": {
+        "tags": ["Lavados"],
+        "summary": "Rechazo de la orden por el proveedor",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Orden rechazada por el proveedor."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "rejectCarWashProviderRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarwashUpdateStatusDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/CarWashes/{id}/RequestDetails": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Detalle de una solicitud de lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CarWashRequestDetailDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Detalle de la solicitud."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la solicitud."
+          }
+        ],
+        "operationId": "getCarWashRequestDetails"
+      }
+    },
+    "/api/CarWashes/{id}/ProviderDetails": {
+      "get": {
+        "tags": ["Lavados"],
+        "summary": "Detalle de la orden para el proveedor",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CarWashProviderDetailDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Detalle para el proveedor."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "getProviderCarWashOrderDetail"
+      }
+    },
+    "/api/Providers/{providerId}/services": {
+      "get": {
+        "tags": ["Proveedores"],
+        "summary": "Servicios del proveedor",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/GetProviderServicesDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Servicios y tarifas del proveedor."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "providerId",
+            "schema": { "type": "integer", "example": 8 },
+            "required": true,
+            "description": "ID del proveedor."
+          }
+        ],
+        "operationId": "getProviderServices"
+      }
+    },
+    "/api/CarWashes/{id}/Evidences/PreWash": {
+      "post": {
+        "tags": ["Lavados"],
+        "summary": "Cargar evidencia pre-lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Evidencia registrada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "uploadPreWashEvidence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceCarWashRequestDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/CarWashes/{id}/Evidences/PostWash": {
+      "post": {
+        "tags": ["Lavados"],
+        "summary": "Cargar evidencia post-lavado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Evidencia registrada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "example": 15 },
+            "required": true,
+            "description": "ID de la orden."
+          }
+        ],
+        "operationId": "uploadPostWashEvidence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceCarWashRequestDto"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/Providers/{providerNit}/CarWashes": {
+      "get": {
+        "tags": ["Proveedores"],
+        "summary": "Órdenes de lavado del proveedor",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CarWashProviderDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Órdenes del proveedor."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "providerNit",
+            "schema": { "type": "string", "example": "900123456" },
+            "required": true,
+            "description": "NIT del proveedor."
+          },
+          {
+            "in": "query",
+            "name": "StateId",
+            "schema": { "type": "integer", "example": 1 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "ServiceTypeId",
+            "schema": { "type": "integer", "example": 2 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "StartDate",
+            "schema": { "type": "string", "example": "2026-07-01" },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "EndDate",
+            "schema": { "type": "string", "example": "2026-07-27" },
+            "required": false,
+            "description": ""
+          }
+        ],
+        "operationId": "getProviderCarWashOrders"
+      }
+    },
+    "/api/Users/{userIdentification}/alerts": {
+      "get": {
+        "tags": ["Usuarios"],
+        "summary": "Alertas del usuario",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Alertas del usuario."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userIdentification",
+            "schema": { "type": "integer", "example": 1032456789 },
+            "required": true,
+            "description": "Identificación del usuario."
+          },
+          {
+            "in": "query",
+            "name": "profileId",
+            "schema": { "type": "integer", "example": 3 },
+            "required": false,
+            "description": "Perfil para filtrar las alertas."
+          }
+        ],
+        "operationId": "getUserAlerts"
+      }
+    },
+    "/api/Providers/{providerNit}/CarWashesHistory": {
+      "get": {
+        "tags": ["Proveedores"],
+        "summary": "Historial de órdenes del proveedor",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CarWashProviderDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Historial de órdenes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "providerNit",
+            "schema": { "type": "string", "example": "900123456" },
+            "required": true,
+            "description": "NIT del proveedor."
+          },
+          {
+            "in": "query",
+            "name": "StateId",
+            "schema": { "type": "integer", "example": 1 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "ServiceTypeId",
+            "schema": { "type": "integer", "example": 2 },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "StartDate",
+            "schema": { "type": "string", "example": "2026-07-01" },
+            "required": false,
+            "description": ""
+          },
+          {
+            "in": "query",
+            "name": "EndDate",
+            "schema": { "type": "string", "example": "2026-07-27" },
+            "required": false,
+            "description": ""
+          }
+        ],
+        "operationId": "getProviderCarWashOrdersHistory"
+      }
+    },
+    "/api/Providers/{providerId}/services/{serviceTypeId}/fee": {
+      "get": {
+        "tags": ["Proveedores"],
+        "summary": "Tarifa por proveedor y tipo de servicio",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/BaseOut" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GetCurrentFeeDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Tarifa vigente."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "providerId",
+            "schema": { "type": "integer", "example": 8 },
+            "required": true,
+            "description": "ID del proveedor."
+          },
+          {
+            "in": "path",
+            "name": "serviceTypeId",
+            "schema": { "type": "integer", "example": 2 },
+            "required": true,
+            "description": "ID del tipo de servicio."
+          }
+        ],
+        "operationId": "getFeeByProviderAndService"
+      }
+    }
+  },
+  "openapi": "3.0.3",
+  "servers": [
+    { "url": "https://www.coltanques.co", "description": "Producción" },
+    { "url": "https://localhost:1004", "description": "Desarrollo local" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "schemas": {
+      "BaseOut": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "integer",
+            "example": 1,
+            "description": "0=Error, 1=Success, 2=NoRecords, 3=UserNoExists, 4=BadRequest, 5=NoContent, 6=NotFound, 7=Unauthorized."
+          },
+          "message": { "type": "string", "example": "Operación exitosa" },
+          "statusCode": { "type": "integer", "example": 200 },
+          "numberRecord": { "type": "integer", "example": 1 }
+        },
+        "description": "Sobre de respuesta común."
+      },
+      "TokenIn": {
+        "type": "object",
+        "required": ["userName", "password"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "secreto"
+          },
+          "userName": { "type": "string", "example": "usuario" },
+          "applicationId": { "type": "integer", "example": 35 }
+        }
+      },
+      "TokenOut": {
+        "allOf": [
+          { "$ref": "#/components/schemas/BaseOut" },
+          {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              },
+              "refreshToken": { "type": "string", "example": "d2hvLWFtLWk..." }
+            }
+          }
+        ]
+      },
+      "CarWashDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "plate": { "type": "string", "example": "ABC123" },
+          "state": { "type": "string", "example": "Pendiente" },
+          "stateId": { "type": "integer", "example": 1 },
+          "provider": { "type": "string", "example": "Lavados del Norte" },
+          "vehicleType": { "type": "string", "example": "Tractocamión" },
+          "wasPreorder": { "type": "boolean", "example": false }
+        }
+      },
+      "ListItemDto": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 1 },
+          "description": { "type": "string", "example": "Descripción" }
+        }
+      },
+      "WashMetricDto": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer", "example": 12 },
+          "percentageChange": {
+            "type": "number",
+            "format": "double",
+            "example": 8.5
+          }
+        }
+      },
+      "GetCurrentFeeDto": {
+        "type": "object",
+        "properties": { "currentFee": { "type": "integer", "example": 120000 } }
+      },
+      "SummaryWashesDto": {
+        "type": "object",
+        "properties": {
+          "rejected": { "$ref": "#/components/schemas/WashMetricDto" },
+          "inProgress": { "$ref": "#/components/schemas/WashMetricDto" },
+          "pendingWashes": { "$ref": "#/components/schemas/WashMetricDto" },
+          "completedToday": { "$ref": "#/components/schemas/WashMetricDto" }
+        }
+      },
+      "CarWashRequestDto": {
+        "type": "object",
+        "required": [
+          "vehiclePlate",
+          "transportedGoods",
+          "reason",
+          "observations",
+          "requesterId",
+          "agencyId"
+        ],
+        "properties": {
+          "reason": { "type": "string", "example": "Cambio de producto" },
+          "agencyId": { "type": "integer", "example": 4 },
+          "loadTypeId": { "type": "integer", "example": 3 },
+          "providerId": { "type": "integer", "example": 8 },
+          "requesterId": { "type": "integer", "example": 250 },
+          "observations": { "type": "string", "example": "Sin novedades" },
+          "originCityId": { "type": "integer", "example": 11001 },
+          "suggestedFee": {
+            "type": "number",
+            "format": "double",
+            "example": 120000
+          },
+          "trailerPlate": {
+            "type": "string",
+            "example": "R12345",
+            "nullable": true
+          },
+          "vehiclePlate": { "type": "string", "example": "ABC123" },
+          "serviceTypeId": { "type": "integer", "example": 2 },
+          "transportedGoods": { "type": "string", "example": "Combustible" },
+          "destinationCityId": { "type": "integer", "example": 5001 }
+        }
+      },
+      "CarWashPreorderDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "date": { "type": "string", "example": "2026-07-27" },
+          "plate": { "type": "string", "example": "ABC123" },
+          "provider": { "type": "string", "example": "Lavados del Norte" },
+          "serviceType": { "type": "string", "example": "Lavado interior" }
+        }
+      },
+      "CarWashProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "date": { "type": "string", "example": "2026-07-27" },
+          "plate": { "type": "string", "example": "ABC123" },
+          "state": { "type": "string", "example": "En progreso" },
+          "stateId": { "type": "integer", "example": 2 },
+          "serviceType": { "type": "string", "example": "Lavado interior" }
+        }
+      },
+      "TrailerResponseDto": {
+        "type": "object",
+        "properties": {
+          "trailerPlate": { "type": "string", "example": "R12345" },
+          "trailerTypeId": { "type": "integer", "example": 4 }
+        }
+      },
+      "VehicleResponseDto": {
+        "type": "object",
+        "properties": {
+          "vehiclePlate": { "type": "string", "example": "ABC123" },
+          "vehicleBodyTypeId": { "type": "integer", "example": 3 }
+        }
+      },
+      "CarWashRequestedDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "fee": { "type": "number", "format": "double", "example": 120000 },
+          "date": { "type": "string", "example": "2026-07-27" },
+          "plate": { "type": "string", "example": "ABC123" },
+          "requestedBy": {
+            "type": "string",
+            "example": "Juan Pérez",
+            "nullable": true
+          },
+          "serviceType": { "type": "string", "example": "Lavado interior" }
+        }
+      },
+      "CarWashOrderDetailDto": {
+        "type": "object",
+        "properties": {
+          "vehicle": {
+            "type": "object",
+            "properties": {
+              "bodyType": { "type": "string", "example": "Cisterna" },
+              "trailerPlate": { "type": "string", "example": "R12345" },
+              "vehiclePlate": { "type": "string", "example": "ABC123" }
+            }
+          },
+          "washData": {
+            "type": "object",
+            "properties": {
+              "provider": { "type": "string", "example": "Lavados del Norte" },
+              "washReason": {
+                "type": "string",
+                "example": "Cambio de producto"
+              },
+              "serviceType": { "type": "string", "example": "Lavado interior" },
+              "observations": { "type": "string", "example": "Sin novedades" },
+              "suggestedFee": {
+                "type": "number",
+                "format": "double",
+                "example": 120000
+              },
+              "generationDate": {
+                "type": "string",
+                "example": "2026-07-27 08:15"
+              }
+            }
+          },
+          "cargoManifest": {
+            "type": "object",
+            "properties": {
+              "route": { "type": "string", "example": "Cartagena - Bogotá" },
+              "loadType": { "type": "string", "example": "Líquidos" },
+              "transportedGoods": {
+                "type": "string",
+                "example": "Combustible"
+              },
+              "cargoManifestCode": { "type": "string", "example": "MC-8891" }
+            }
+          }
+        }
+      },
+      "CarwashUpdateStatusDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Aprobado",
+            "nullable": true
+          },
+          "requesterId": { "type": "integer", "example": 250 }
+        }
+      },
+      "GetProviderServicesDto": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 2 },
+          "currentFee": { "type": "integer", "example": 120000 },
+          "description": { "type": "string", "example": "Lavado interior" }
+        }
+      },
+      "CarWashActionHistoryDto": {
+        "type": "object",
+        "properties": {
+          "action": { "type": "string", "example": "Aprobada" },
+          "actionDate": { "type": "string", "example": "2026-07-27 09:40" }
+        }
+      },
+      "CarWashRequestDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "motive": { "type": "string", "example": "Cambio de producto" },
+          "agencyId": { "type": "integer", "example": 4 },
+          "bodyType": { "type": "string", "example": "Cisterna" },
+          "loadType": { "type": "string", "example": "Líquidos" },
+          "requestedBy": {
+            "type": "string",
+            "example": "Juan Pérez",
+            "nullable": true
+          },
+          "serviceType": { "type": "string", "example": "Lavado interior" },
+          "observations": {
+            "type": "string",
+            "example": "Sin novedades",
+            "nullable": true
+          },
+          "suggestedFee": {
+            "type": "number",
+            "format": "double",
+            "example": 120000
+          },
+          "generationDate": { "type": "string", "example": "2026-07-27 08:15" }
+        }
+      },
+      "CarWashPreoderRequestDto": {
+        "type": "object",
+        "required": ["orderIds", "requestedBy"],
+        "properties": {
+          "orderIds": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "example": [15, 16, 17]
+          },
+          "requestedBy": { "type": "integer", "example": 250 }
+        }
+      },
+      "CarWashProviderDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 15 },
+          "bodyType": { "type": "string", "example": "Cisterna" },
+          "provider": { "type": "string", "example": "Lavados del Norte" },
+          "arrivalTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-27T09:00:00Z",
+            "nullable": true
+          },
+          "serviceType": { "type": "string", "example": "Lavado interior" },
+          "trailerPlate": { "type": "string", "example": "R12345" },
+          "vehiclePlate": { "type": "string", "example": "ABC123" },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-27T10:30:00Z",
+            "nullable": true
+          }
+        }
+      },
+      "EvidenceCarWashRequestDto": {
+        "type": "object",
+        "required": ["frontalView", "sideView"],
+        "properties": {
+          "userId": { "type": "integer", "example": 250 },
+          "sideView": {
+            "type": "string",
+            "example": "data:image/jpeg;base64,/9j/4AAQ...",
+            "description": "Imagen lateral en Base64."
+          },
+          "detailsView": {
+            "type": "string",
+            "nullable": true,
+            "description": "Imagen de detalle en Base64."
+          },
+          "frontalView": {
+            "type": "string",
+            "example": "data:image/jpeg;base64,/9j/4AAQ...",
+            "description": "Imagen frontal en Base64."
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/BaseOut" }
+          }
+        },
+        "description": "La petición es inválida."
+      },
+      "ServerError": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/BaseOut" }
+          }
+        },
+        "description": "Error interno del servidor."
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/BaseOut" }
+          }
+        },
+        "description": "Falta el token JWT o no es válido."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token JWT obtenido en POST /api/Token/Post.",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "x-tagGroups": [
+    {
+      "name": "Documentación",
+      "tags": ["Diagramas de flujo", "Diccionario de datos", "Diagramas BD"]
+    },
+    { "name": "Autenticación y cuenta", "tags": ["Autenticación"] },
+    { "name": "Operación", "tags": ["Lavados", "Preórdenes"] },
+    { "name": "Proveedores", "tags": ["Proveedores"] },
+    { "name": "Consultas", "tags": ["Reportes", "Usuarios"] },
+    { "name": "Datos maestros", "tags": ["Catálogos"] }
+  ]
+}

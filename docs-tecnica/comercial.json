@@ -1,0 +1,3129 @@
+{
+  "info": {
+    "title": "API Comercial Coltanques",
+    "contact": {
+      "name": "Edwin Julián Gómez Ramírez — Developer",
+      "email": "edwin.gomez@coltanques.com.co"
+    },
+    "version": "1.1.0",
+    "description": "**API Comercial** de Coltanques S.A.S.\n\nEste documento describe **únicamente los endpoints que consume la app móvil comercial** (`Coltanques-commercial-app`, Flutter). La app usa `Dio` con un `AuthInterceptor` que añade el token `Authorization: Bearer <token>` a cada petición y lo renueva automáticamente ante un `401`.\n\n```\nApp Comercial (Flutter)\n      │   Authorization: Bearer <token>\n      ▼\n┌───────────────────────────────────────────────┐\n│   API Comercial                                 │  .../webs/apicomercial/api\n│   (prospección, tarifas, sobrecostos, ...)      │\n└───────────────────────────────────────────────┘\n```\n\n## Procesos que expone\n\n| Proceso | Descripción |\n|---------|-------------|\n| **Autenticación** | Login de usuario (`LoginApp`) y obtención del token de servicio (`loginapi`). |\n| **Recuperación de contraseña** | Generación de código, validación y cambio de contraseña. |\n| **Notificaciones** | Consulta de notificaciones y registro del token de dispositivo (push). |\n| **Prospectos** | Alta, edición, listado, dashboard y asignación de clientes potenciales. |\n| **Contactos** | Contactos de un prospecto. |\n| **Reuniones** | Reuniones registradas para un prospecto. |\n| **Cotizaciones (PrizeQuotes)** | Subida y descarga de cotizaciones (archivo en Base64). |\n| **Sobrecostos** | Solicitudes pendientes, detalle, procesos y actualización. |\n| **Tarifas** | Validación de negocio, actualización de tarifas y dashboard de tarifas. |\n| **Autorizaciones** | Gestión y actualización de solicitudes de modificación de margen. |\n| **Historial** | Historial de autorizaciones y de solicitudes. |\n| **Métricas / Dashboards** | Métricas agregadas de la operación comercial. |\n| **Clientes** | Consulta de clientes en Manager Core (`ByCode` / `ByName`). |\n| **Catálogos** | Datos maestros: ciudades, departamentos, tipos de carga, origen, estados, etc. |\n\n## Autenticación\n\nTodas las operaciones viajan con `Authorization: Bearer <token>`, **salvo `POST /loginapi`**, que es el punto de entrada que genera el token de servicio a partir de las credenciales de proveedor. Ante un `401` el cliente vuelve a llamar a `loginapi`, guarda el token nuevo y reintenta la petición original.\n\n## Convenciones de respuesta\n\nLa API usa **dos sobres de respuesta distintos** según el endpoint:\n\n### Sobre A — anidado bajo `Response`\n\nUsado por autenticación, recuperación de contraseña, sobrecostos, tarifas, autorizaciones, historial, traders y dashboards. El JSON raíz contiene la clave `Response` con `Success` (bool), `Message` (string) y un campo de datos que varía por endpoint (`Data`, `businessData`, `dashBoard`, `User`, `History`, `traders`, ...).\n\n```json\n{ \"Response\": { \"Success\": true, \"Message\": \"OK\", \"Data\": [ ] } }\n```\n\n### Sobre B — campos comunes planos (`CommonResponseFields`)\n\nUsado por prospectos, contactos, reuniones, cotizaciones, notificaciones y catálogos. Los campos comunes viajan en la raíz junto a la carga útil:\n\n```json\n{ \"NumberRecord\": 1, \"Result\": 1, \"Message\": \"OK\", \"StatusCode\": 200, \"Cities\": [ ] }\n```\n\n> **Notas de fidelidad al contrato real:**\n> - Algunas claves/rutas conservan el nombre exacto del backend, incluidos typos: `TripFrecuency`, `BussinesTask`, `BussinessTasks` (ruta del catálogo), `Trips` (en `updaterates` corresponde a los días de modificación) y `Commercials` (lista en `CommercialUsers`).\n> - La ruta `modificationhistory` la comparten dos procesos (historial de autorizaciones e historial de solicitudes) con cuerpos distintos; el backend distingue por los campos enviados.\n> - Las cotizaciones (`PrizeQuotes`) NO usan `multipart`: el archivo viaja como string **Base64** dentro del JSON.\n> - `success` es un valor derivado en el cliente y **no** forma parte del JSON.\n"
+  },
+  "tags": [
+    {
+      "name": "Diagramas de flujo",
+      "x-traitTag": true,
+      "description": "Esta sección describe los procesos operativos de la App Comercial (prospección) en su orden de dependencia: la creación de prospectos (que alimenta las tablas operativas), la visualización/gestión del día a día y, por último, el flujo del director comercial, que consulta y asigna sobre la información producida por los flujos anteriores.\n\n## 1. Diagrama de flujo de creación de prospecto\n\n<!-- IMG:01-creacion-de-prospecto -->\n[![Diagrama de flujo de creación de prospecto](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20creaci%C3%B3n%20de%20prospecto.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20creaci%C3%B3n%20de%20prospecto.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Tener las tablas paramétricas con información para llenado y un usuario activo en `Android_Usuarios`.\n2. Catálogos activos (`IsActive = 1`, `IsDelete = 0`): `prosp_LoadTypes`, `prosp_ContactWorkAreas`, `prosp_DecisionActionTypes`, `prosp_BusinessStates`, `prosp_BusinessTasks`, `prosp_MeetingTypes`, `prosp_CustomerDecisionReasons`, `prosp_OriginTypes`, además de `Departamento` y `Municipio` (ciudades).\n\nEl proceso:\n\n1. El alta del prospecto agrega datos en `prosp_Prospects` (incluye `LoadTypeId`, `TripFrecuency`, datos de empresa y `OriginTypeId` obligatorio), `prosp_BusinessProcess` (estado inicial Contactados, `CreatedBy` → `Android_Usuarios.Usu_Id`), `prosp_CargoLocations` (`ProspectId` + `CityId`) y `prosp_ProspectContacts`.\n2. El proceso de creación de reunión agrega datos a `prosp_ProspectMeetings` (ligado al proceso de negocio por `ProspectsBusinessId`) y `prosp_prizeQuotes` (el archivo viaja en Base64 por la API y queda referenciado por URL en BD).\n3. Para orígenes Antiguo/Recuperado/Prospectado, la app consulta el cliente en Manager Core (`GET /Customers/ByCode/{code}` y `GET /Customers/ByName/{name}`) para prellenar los datos.\n\nLas tablas paramétricas son: `prosp_LoadTypes`, `prosp_ContactWorkAreas`, `prosp_DecisionActionTypes`, `prosp_BusinessStates`, `prosp_BusinessTasks`, `prosp_MeetingTypes`, `prosp_CustomerDecisionReasons`, `prosp_OriginTypes`, `Departamento`, `Municipio`.\n\n## 2. Diagrama de flujo de visualización de prospectos\n\n<!-- IMG:02-visualizacion-de-prospectos -->\n[![Diagrama de flujo de visualización de prospectos](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20visualizaci%C3%B3n%20de%20prospectos.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20visualizaci%C3%B3n%20de%20prospectos.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Prospectos previamente creados en `prosp_Prospects` con su proceso de negocio en `prosp_BusinessProcess`.\n\nEl proceso:\n\n1. El listado (`GET /prospects`) y el detalle (`GET /prospects/{prospectId}/ContactInfo`) solo leen las tablas operativas, con filtros por fechas, estado, tipo de carga, tipo de origen (`originTypeId`) y usuario.\n2. La visualización solo agrega contactos y reuniones; esta parte del flujo es igual al de creación (escribe en `prosp_ProspectContacts`, `prosp_ProspectMeetings` y `prosp_prizeQuotes`).\n3. El cambio de estado del negocio (`PATCH /prospects/{prospectBusinessId}/State`) actualiza `BusinessStateId` en `prosp_BusinessProcess`.\n\n## 3. Diagrama de flujo del director comercial\n\n<!-- IMG:03-director-comercial -->\n[![Diagrama de flujo del director comercial](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20director%20comercial.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Proceso%20de%20flujo-Diagrama%20flujo%20director%20comercial.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Prospectos y procesos de negocio existentes, y usuarios comerciales activos.\n\nEl proceso:\n\n1. El dashboard (`GET /prospects/Dashboard`) entrega conteos por estado con desglose por tipo de origen (`OriginTypes`).\n2. El listado de comerciales con prospectos (`GET /CommercialUsers/WithProspects`) agrupa los conteos por tipo de origen para cada comercial.\n3. La asignación (`PATCH /prospects/AssignToUser/{userId}`) vincula procesos de negocio al comercial y registra el historial en `prosp_ProspectBusinessUserHistory` (`UserId` → `Android_Usuarios.Usu_Id`).\n\nLas tablas involucradas son: `prosp_BusinessProcess`, `prosp_ProspectBusinessUserHistory`, `prosp_OriginTypes`, `Android_Usuarios`.\n"
+    },
+    {
+      "name": "Diccionario de datos",
+      "x-traitTag": true,
+      "description": "Estructura física de las **16 tablas `prosp_*`** más las tablas maestras relacionadas (`Departamento`, `Municipio`, `Android_Usuarios`) que utiliza la API Comercial (módulo de prospección en `WebApiComercialApp`, base `Comercial`).\n\n**Convenciones**\n\n- `Length` con valor `1,1` corresponde a una columna de identidad (`IDENTITY(1,1)`), no a una longitud de dato.\n- Tipos alineados al script SQL `prospects_tables.sql` y al modelo EF Database-First.\n- Se conservan nombres exactos del backend, incluidos typos: `TripFrecuency`, `prosp_prizeQuotes`.\n\n**Índice de tablas** (navegables desde el menú lateral)\n\n1. `prosp_BusinessStates` — 4 columnas\n2. `prosp_BusinessTasks` — 4 columnas\n3. `prosp_CustomerDecisionReasons` — 4 columnas\n4. `prosp_LoadTypes` — 4 columnas\n5. `prosp_MeetingTypes` — 4 columnas\n6. `prosp_ContactWorkAreas` — 4 columnas\n7. `prosp_DecisionActionTypes` — 4 columnas\n8. `prosp_OriginTypes` — 4 columnas\n9. `prosp_Prospects` — 13 columnas\n10. `prosp_BusinessProcess` — 7 columnas\n11. `prosp_CargoLocations` — 2 columnas\n12. `prosp_ProspectContacts` — 15 columnas\n13. `prosp_ProspectMeetings` — 14 columnas\n14. `prosp_prizeQuotes` — 8 columnas\n15. `prosp_UserToken` — 3 columnas\n16. `prosp_ProspectBusinessUserHistory` — 4 columnas\n17. `Departamento` — maestro geográfico\n18. `Municipio` — ciudades (`CityId`)\n19. `Android_Usuarios` — usuarios de la app\n\n## prosp_BusinessStates\n\n*4 columnas. Catálogo de estados del proceso de negocio.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_BusinessTasks\n\n*4 columnas. Catálogo de tareas de negocio.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_CustomerDecisionReasons\n\n*4 columnas. Razones de decisión del cliente.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_LoadTypes\n\n*4 columnas. Tipos de carga.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_MeetingTypes\n\n*4 columnas. Tipos de reunión.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_ContactWorkAreas\n\n*4 columnas. Áreas de trabajo del contacto.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_DecisionActionTypes\n\n*4 columnas. Tipos de acción de decisión del contacto.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_OriginTypes\n\n*4 columnas. Tipos de origen del prospecto (Recuperados, Prospectados, Asignados, Antiguos).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n\n## prosp_Prospects\n\n*13 columnas. Cliente potencial / prospecto.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| LoadTypeId | number |  | YES |  | FK → prosp_LoadTypes(Id) |\n| TripFrecuency | number |  | YES |  | Typo conservado del backend |\n| CompanyName | varchar | 250 | YES |  |  |\n| NIT | varchar | 50 | YES |  |  |\n| Address | varchar | 250 | YES |  |  |\n| Phone | varchar | 50 | YES |  |  |\n| Website | varchar | 250 | YES |  |  |\n| Description | varchar | 250 | YES |  |  |\n| CreatedAt | timestamp |  | YES | getdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n| EstimatedMonthlyBilling | number |  | YES |  |  |\n| OriginTypeId | number |  | NO |  | FK → prosp_OriginTypes(Id) |\n\n## prosp_BusinessProcess\n\n*7 columnas. Proceso de negocio del prospecto (equivale al `prospectBusinessId` de la API).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| ProspectId | number |  | NO |  | FK → prosp_Prospects(Id) |\n| BusinessStateId | number |  | YES |  | FK → prosp_BusinessStates(Id) |\n| AcceptedAt | timestamp |  | YES |  | datetime2 |\n| CreatedAt | timestamp |  | YES | getdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n| CreatedBy | number | 18,0 | NO |  | FK → Android_Usuarios(Usu_Id) |\n\n## prosp_CargoLocations\n\n*2 columnas. Ciudades de cargue del prospecto (PK compuesta).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| ProspectId | number |  | NO |  | PK, FK → prosp_Prospects(Id) |\n| CityId | varchar | 6 | NO |  | PK; lógico → Municipio.CodigoReducido |\n\n## prosp_ProspectContacts\n\n*15 columnas. Contactos del prospecto.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| ProspectId | number |  | NO |  | FK → prosp_Prospects(Id) |\n| Name | varchar | 250 | YES |  |  |\n| Role | varchar | 250 | YES |  | Columna `[Role]` |\n| Phone | varchar | 50 | YES |  |  |\n| IsDecisionMaker | bit |  | YES | 0 |  |\n| Address | varchar | 250 | YES |  |  |\n| Email | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n| CreatedAt | timestamp |  | YES | getdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n| ContactWorkAreaId | number |  | YES |  | FK → prosp_ContactWorkAreas(Id) |\n| OtherWorkAreas | varchar | 250 | YES |  |  |\n| DecisionActionTypeId | number |  | YES |  | FK → prosp_DecisionActionTypes(Id) |\n\n## prosp_ProspectMeetings\n\n*14 columnas. Reuniones del proceso de negocio.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| ProspectsBusinessId | number |  | NO |  | FK → prosp_BusinessProcess(Id) |\n| MeetingTypeId | number |  | YES |  | FK → prosp_MeetingTypes(Id) |\n| CustomerDecisionId | number |  | YES |  | FK → prosp_CustomerDecisionReasons(Id) |\n| BusinessTaskId | number |  | YES |  | FK → prosp_BusinessTasks(Id) |\n| Date | timestamp |  | YES |  | Columna `[Date]` |\n| decisionReasonDetails | varchar | 1000 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n| CreatedAt | timestamp |  | YES | getdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n| CreatedBy | number |  | NO | 1 |  |\n| NextMeeting | timestamp | 0 | YES |  | datetime2(0) |\n| ProspectContactId | number |  | YES |  | FK → prosp_ProspectContacts(Id) |\n\n## prosp_prizeQuotes\n\n*8 columnas. Cotizaciones (archivo referenciado por URL; la API móvil usa Base64 en el contrato HTTP).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| ProspectsMeetingId | number |  | YES |  | FK → prosp_ProspectMeetings(Id) |\n| FileName | varchar | 250 | YES |  |  |\n| FileUrl | varchar | 250 | YES |  |  |\n| IsActive | bit |  | YES | 1 |  |\n| IsDelete | bit |  | YES | 0 |  |\n| CreatedAt | timestamp | 0 | NO | getdate() | datetime2(0) |\n| BusinessProcessId | number |  | NO |  | FK → prosp_BusinessProcess(Id) |\n\n## prosp_UserToken\n\n*3 columnas. Token de dispositivo (push/FCM).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| UserId | number |  | NO |  |  |\n| TokenDevice | varchar | 500 | YES |  |  |\n\n## prosp_ProspectBusinessUserHistory\n\n*4 columnas. Historial de asignación de procesos de negocio a comerciales.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| ProspectBusinessId | number |  | NO |  | FK → prosp_BusinessProcess(Id) |\n| UserId | number | 18,0 | NO |  | FK → Android_Usuarios(Usu_Id) |\n| AssignedDate | timestamp |  | NO | getdate() | datetime2 |\n\n## Departamento\n\n*Maestro de departamentos (catálogo `GET /Departments`).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| IdPais | number |  | NO |  | PK compuesto |\n| Codigo | number |  | NO |  | PK compuesto |\n| Nombre | varchar | 50 | NO |  |  |\n| Sigla | varchar | 3 | NO |  |  |\n| Agencia | number |  | YES |  |  |\n| RegTer_Id | number |  | YES |  |  |\n| Cod_Reg_Plan_Comercial | number |  | YES |  |  |\n\n## Municipio\n\n*Maestro de ciudades (`GET /cities?departmentId=`). `CodigoReducido` es el valor usado en `prosp_CargoLocations.CityId`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| CodigoReducido | varchar | 6 | NO |  | PK |\n| IdPais | number |  | NO |  |  |\n| IdDepartamento | number |  | NO |  |  |\n| Codigo | number |  | NO |  |  |\n| Nombre | varchar | 50 | NO |  |  |\n\n## Android_Usuarios\n\n*Usuarios de la app. Referenciado por `prosp_BusinessProcess.CreatedBy` y `prosp_ProspectBusinessUserHistory.UserId`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Usu_Id | number | 18,0 | NO |  | PK, IDENTITY |\n| Usu_Username | varchar | 50 | NO |  |  |\n| Usu_Nombres | varchar | 100 | NO |  |  |\n| Usu_Apellidos | varchar | 100 | YES |  |  |\n| Usu_Email | varchar | 200 | YES |  |  |\n| Usu_IdAgencia | number |  | NO |  |  |\n| Est_IdEstado | number |  | NO |  |  |\n"
+    },
+    {
+      "name": "Diagramas BD",
+      "x-traitTag": true,
+      "description": "Modelo entidad-relación del módulo de prospección (base `Comercial`), en dos etapas.\n\n## Etapa 1 — Modelo conceptual\n\nVista de alto nivel de las entidades y sus relaciones: prospectos, contactos, ubicaciones de cargue, proceso de negocio, reuniones, cotizaciones y catálogos.\n\n<!-- IMG:bd-01-etapa-1 -->\n[![Diagrama de prospectos — Etapa 1 (modelo conceptual)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Diagrama%20prospectos-Etapa%201.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Diagrama%20prospectos-Etapa%201.drawio.png)\n\n## Etapa 2 — Modelo detallado\n\nModelo físico con columnas, PK y FK de las tablas `prosp_*` y las tablas maestras relacionadas (`Android_Usuarios`, ciudades). Incluye `prosp_OriginTypes`, `prosp_ProspectBusinessUserHistory` y `prosp_UserToken`.\n\n<!-- IMG:bd-02-etapa-2 -->\n[![Diagrama de prospectos — Etapa 2 (modelo detallado)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Diagrama%20prospectos-Etapa%202.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/commercial/Diagrama%20prospectos-Etapa%202.drawio.png)\n"
+    },
+    {
+      "name": "Autenticación",
+      "description": "Login de usuario y emisión del token de servicio."
+    },
+    {
+      "name": "Recuperación de contraseña",
+      "description": "Generación de código, validación y cambio de contraseña."
+    },
+    {
+      "name": "Notificaciones",
+      "description": "Consulta de notificaciones y registro del token de dispositivo."
+    },
+    {
+      "name": "Prospectos",
+      "description": "Alta, edición, listado, dashboard, asignación y cambio de estado de clientes potenciales."
+    },
+    {
+      "name": "Contactos",
+      "description": "Contactos asociados a un prospecto."
+    },
+    {
+      "name": "Reuniones",
+      "description": "Reuniones registradas para un prospecto."
+    },
+    {
+      "name": "Cotizaciones",
+      "description": "Subida y descarga de cotizaciones (PrizeQuotes) en Base64."
+    },
+    {
+      "name": "Sobrecostos",
+      "description": "Solicitudes de sobrecostos: pendientes, detalle, procesos y actualización."
+    },
+    {
+      "name": "Tarifas",
+      "description": "Validación de negocio, actualización de tarifas y dashboard de tarifas."
+    },
+    {
+      "name": "Autorizaciones",
+      "description": "Gestión y actualización de solicitudes de modificación de margen."
+    },
+    {
+      "name": "Historial",
+      "description": "Historial de autorizaciones y de solicitudes."
+    },
+    {
+      "name": "Métricas",
+      "description": "Métricas agregadas de la operación comercial."
+    },
+    {
+      "name": "Clientes",
+      "description": "Consulta de clientes en Manager Core (por código o por nombre)."
+    },
+    {
+      "name": "Catálogos",
+      "description": "Datos maestros del dominio comercial (incluye tipos de origen)."
+    }
+  ],
+  "paths": {
+    "/cities": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Ciudades por departamento",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "Cities": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de ciudades."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "departmentId",
+            "schema": { "type": "integer", "example": 5 },
+            "required": true,
+            "description": "Identificador del departamento."
+          }
+        ],
+        "description": "Lista las ciudades pertenecientes a un departamento dado.",
+        "operationId": "getCities"
+      }
+    },
+    "/LoginApp": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Login de usuario de la app",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            },
+            "description": "Perfil del usuario autenticado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "includeId",
+            "schema": { "type": "boolean", "default": true, "example": true },
+            "required": true,
+            "description": "La app siempre lo envía como `true` para incluir los identificadores del usuario."
+          }
+        ],
+        "description": "Autentica al usuario final de la app comercial y devuelve su perfil (nombres, agencia, ciudad, tipo y formularios/permisos).",
+        "operationId": "loginApp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginAppRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/loginapi": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Obtener token de servicio",
+        "security": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            },
+            "description": "Token de servicio emitido."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Autenticación máquina-a-máquina con credenciales de proveedor. Devuelve el token de servicio que se persiste y se reenvía como `Authorization: Bearer` en el resto de peticiones. **Es la única operación que no requiere token previo.**",
+        "operationId": "loginApi",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginApiRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/LoadTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de carga",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "LoadTypes": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de tipos de carga."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los tipos de carga disponibles.",
+        "operationId": "getLoadTypes"
+      }
+    },
+    "/prospects": {
+      "get": {
+        "tags": ["Prospectos"],
+        "summary": "Listar prospectos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProspectsResponse" }
+              }
+            },
+            "description": "Lista de prospectos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filterOptions.startDate",
+            "schema": { "type": "string", "example": "2026-01-01" },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.endDate",
+            "schema": { "type": "string", "example": "2026-06-30" },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.prospectStatusId",
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "example": [1, 2]
+            },
+            "explode": true,
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.loadTypeId",
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "example": [3]
+            },
+            "explode": true,
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.originTypeId",
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "example": [2, 3]
+            },
+            "explode": true,
+            "required": false,
+            "description": "Filtrar por uno o varios tipos de origen (`prosp_OriginTypes`)."
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.userId",
+            "schema": { "type": "integer", "example": 45 },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "filterOptions.isAssignedToUser",
+            "schema": { "type": "boolean", "example": true },
+            "required": false
+          }
+        ],
+        "description": "Lista prospectos con múltiples filtros opcionales. Los parámetros de lista (`prospectStatusId`, `loadTypeId`, `originTypeId`) se envían como parámetros repetidos con el prefijo `filterOptions.` (como los envía la app Flutter).",
+        "operationId": "listProspects"
+      },
+      "put": {
+        "tags": ["Prospectos"],
+        "summary": "Actualizar prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseB" }
+              }
+            },
+            "description": "Prospecto actualizado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Actualiza un prospecto existente (mismo esquema que la creación más el campo `Id`).",
+        "operationId": "updateProspect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProspectRequest" }
+            }
+          },
+          "required": true
+        }
+      },
+      "post": {
+        "tags": ["Prospectos"],
+        "summary": "Crear prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProspectResponse"
+                }
+              }
+            },
+            "description": "Prospecto creado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Crea un nuevo prospecto/cliente potencial. `OriginTypeId` es obligatorio; el proceso de negocio inicia en estado Contactados (3).",
+        "operationId": "createProspect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateProspectRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gettraders": {
+      "post": {
+        "tags": ["Autorizaciones"],
+        "summary": "Listar traders/comerciales",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CommercialResponse" }
+              }
+            },
+            "description": "Lista de traders."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los comerciales/traders disponibles (para filtros o selección).",
+        "operationId": "getTraders",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserIdentityRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/Departments": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Departamentos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "Departments": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de departamentos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista todos los departamentos.",
+        "operationId": "getDepartments"
+      }
+    },
+    "/OriginTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de origen del prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "OriginTypes": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Tipos de origen del prospecto."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los tipos de origen activos (Recuperados, Prospectados, Asignados, Antiguos). Fuente: `prosp_OriginTypes` (`Code` = Id, `Name` = Description).",
+        "operationId": "getOriginTypes"
+      }
+    },
+    "/setpassword": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Establecer nueva contraseña",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado del cambio de contraseña."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Establece la nueva contraseña del usuario tras validar el código.",
+        "operationId": "setPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SetPasswordRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/updaterates": {
+      "post": {
+        "tags": ["Tarifas"],
+        "summary": "Actualizar tarifas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado de la actualización."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Envía la solicitud de actualización de tarifas de un negocio (valores facturados/a pagar, cargue/descargue, tipo de modificación, viajes y horas).",
+        "operationId": "updateRates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateRatesRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/MeetingTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de reunión",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "MeetingTypes": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de tipos de reunión."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los tipos de reunión.",
+        "operationId": "getMeetingTypes"
+      }
+    },
+    "/generatecode": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Generar código de recuperación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado de la solicitud."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Solicita el envío de un código de verificación para el flujo de recuperación de contraseña del usuario indicado.",
+        "operationId": "generateCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateCodeRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/infodashboard": {
+      "post": {
+        "tags": ["Métricas"],
+        "summary": "Métricas de la operación comercial",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DashboardResponse" }
+              }
+            },
+            "description": "Métricas del dashboard."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Obtiene métricas agregadas del dashboard (total de solicitudes, modificadas, clientes con más/menos modificaciones).\n\n> **Nota:** la ruta proviene de la variable `source`; el único valor usado por la app es `infodashboard`. La app hace la llamada pero actualmente muestra datos simulados; el contrato documentado proviene del modelo.",
+        "operationId": "getInfoDashboard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserIdentityRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notificaciones"],
+        "summary": "Obtener notificaciones del usuario",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsResponse"
+                }
+              }
+            },
+            "description": "Lista de notificaciones."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": { "type": "integer", "example": 123 },
+            "required": true,
+            "description": "Identificador del usuario."
+          }
+        ],
+        "description": "Recupera la lista de notificaciones (mensajes de texto) del usuario identificado por `userId`.",
+        "operationId": "getNotifications"
+      }
+    },
+    "/updaterequest": {
+      "post": {
+        "tags": ["Sobrecostos"],
+        "summary": "Actualizar solicitud de sobrecosto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado de la actualización."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Envía la actualización/aprobación de una solicitud de sobrecosto (concepto, excedente y proceso asignado).",
+        "operationId": "updateRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateRequestRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/BusinessStates": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Estados de negocio",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "BusinessStates": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de estados de negocio."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los estados posibles de un negocio/oportunidad.",
+        "operationId": "getBusinessStates"
+      }
+    },
+    "/BussinessTasks": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tareas de negocio",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "BusinessTasks": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de tareas de negocio."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista las tareas asociables a un negocio. **Ruta real del backend:** `/BussinessTasks` (typo conservado).",
+        "operationId": "getBusinessTasks"
+      }
+    },
+    "/ratesDashboard": {
+      "post": {
+        "tags": ["Tarifas"],
+        "summary": "Dashboard de tarifas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatesDashboardResponse"
+                }
+              }
+            },
+            "description": "Métricas de tarifas."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Recupera métricas agregadas de cambios de tarifas para un periodo año/mes.\n\n> **Nota:** la app realiza la llamada, pero actualmente descarta la respuesta y muestra datos simulados. El contrato documentado proviene del modelo de respuesta.",
+        "operationId": "getRatesDashboard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RatesDashboardRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/requestdetails": {
+      "post": {
+        "tags": ["Sobrecostos"],
+        "summary": "Detalle de una solicitud",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingRequestFormResponse"
+                }
+              }
+            },
+            "description": "Detalle de la solicitud."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Obtiene el detalle (datos del formulario) de una solicitud de sobrecosto, identificada por `RequestId` + `Concept`.",
+        "operationId": "getRequestDetails",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestDetailsRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/requestprocess": {
+      "post": {
+        "tags": ["Sobrecostos"],
+        "summary": "Tipos de proceso de solicitud",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestProcessResponse"
+                }
+              }
+            },
+            "description": "Tipos de proceso."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Obtiene los tipos de proceso disponibles para tramitar una solicitud.",
+        "operationId": "getRequestProcess",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserIdentityRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/validationcode": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Validar código de recuperación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado de la validación."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Valida el código de verificación recibido por el usuario para autorizar el cambio de contraseña.",
+        "operationId": "validationCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ValidationCodeRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/CommercialUsers": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Usuarios comerciales",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "Commercials": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de usuarios comerciales."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los usuarios comerciales. **La lista viaja bajo la clave `Commercials`.**",
+        "operationId": "getCommercialUsers"
+      }
+    },
+    "/pendingrequests": {
+      "post": {
+        "tags": ["Sobrecostos"],
+        "summary": "Solicitudes de sobrecostos pendientes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingRequestsResponse"
+                }
+              }
+            },
+            "description": "Lista de solicitudes pendientes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Obtiene la lista de solicitudes de sobrecostos pendientes para el usuario indicado.",
+        "operationId": "getPendingRequests",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserIdentityRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/ContactWorkAreas": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Áreas de trabajo del contacto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ContactWorkAreas": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de áreas de trabajo."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista las áreas de trabajo/departamentos funcionales de un contacto.",
+        "operationId": "getContactWorkAreas"
+      }
+    },
+    "/validatebusiness": {
+      "post": {
+        "tags": ["Tarifas"],
+        "summary": "Validar negocio / tarifa vigente",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BusinessResponse" }
+              }
+            },
+            "description": "Datos del negocio."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Valida un código de negocio y devuelve sus datos tarifarios vigentes (fletes, valores de cargue/descargue, margen actual y alertas) para prellenar la pantalla de actualización de tarifa.",
+        "operationId": "validateBusiness",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateBusinessRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/PrizeQuotes/Upload": {
+      "post": {
+        "tags": ["Cotizaciones"],
+        "summary": "Subir cotización",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrizeQuoteUploadResponse"
+                }
+              }
+            },
+            "description": "Cotización creada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Sube un archivo de cotización (codificado en **Base64**) asociado a un negocio prospecto y devuelve el id generado. El envío es JSON, no `multipart/form-data`.",
+        "operationId": "uploadPrizeQuote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPrizeQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/Contacts": {
+      "put": {
+        "tags": ["Contactos"],
+        "summary": "Actualizar contacto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseB" }
+              }
+            },
+            "description": "Contacto actualizado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Actualiza un contacto existente (mismo esquema que la creación más el campo `Id`).",
+        "operationId": "updateContact",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateContactRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/DecisionActionTypes": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de acción de decisión",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "DecisionActionTypes": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de tipos de acción de decisión."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los tipos de acción de decisión.",
+        "operationId": "getDecisionActionTypes"
+      }
+    },
+    "/modificationhistory": {
+      "post": {
+        "tags": ["Historial"],
+        "summary": "Historial de autorizaciones / de solicitudes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AuthorizationHistoryResponse"
+                    },
+                    { "$ref": "#/components/schemas/RequestHistoryResponse" }
+                  ]
+                }
+              }
+            },
+            "description": "Historial solicitado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Ruta compartida por dos procesos, según el rol y los campos enviados:\n\n- **Historial de autorizaciones** (autorizador): filtra por `traderName`; devuelve `History` con `Trader`, `Date`, `Customer`, `status`.\n- **Historial de solicitudes** (comercial): filtra por `customer`; devuelve `History` con `Customer`, `Date`, `initialMargin`, `requestedMargin`, `status`.",
+        "operationId": "getModificationHistory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AuthorizationsHistoryRequest"
+                  },
+                  { "$ref": "#/components/schemas/RequestHistoryRequest" }
+                ]
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/Dashboard": {
+      "get": {
+        "tags": ["Prospectos"],
+        "summary": "Dashboard de prospectos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProspectsDashboardResponse"
+                }
+              }
+            },
+            "description": "Conteos del dashboard de prospectos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": { "type": "integer", "example": 45 },
+            "required": false,
+            "description": "Filtra el dashboard por usuario. Solo se envía si no es nulo."
+          }
+        ],
+        "description": "Obtiene el resumen/dashboard de prospectos (conteos por estado), opcionalmente filtrado por usuario. Cada ítem incluye `OriginTypes` con el desglose por tipo de origen.",
+        "operationId": "getProspectsDashboard"
+      }
+    },
+    "/authorizationsmanage": {
+      "post": {
+        "tags": ["Autorizaciones"],
+        "summary": "Autorizaciones a gestionar",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationsToManageResponse"
+                }
+              }
+            },
+            "description": "Lista de autorizaciones a gestionar."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Obtiene la lista de solicitudes de modificación de margen/tarifa pendientes de autorizar, filtrables por rango de fechas, estado, trader y negocio.",
+        "operationId": "getAuthorizationsToManage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizationsToManageRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/updateauthorizations": {
+      "post": {
+        "tags": ["Autorizaciones"],
+        "summary": "Actualizar estado de autorización",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            },
+            "description": "Resultado de la actualización."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Aprueba o rechaza una solicitud de modificación (el estado se envía como código entero).",
+        "operationId": "updateAuthorizations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizeModificationsRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/CustomerDecisionReasons": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Razones de decisión del cliente",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/CommonResponseFields" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "CustomerDecisionReasons": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CatalogItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Lista de razones de decisión."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista las razones de decisión del cliente (motivos de aceptación/rechazo).",
+        "operationId": "getCustomerDecisionReasons"
+      }
+    },
+    "/Customers/ByCode/{code}": {
+      "get": {
+        "tags": ["Clientes"],
+        "summary": "Cliente por código",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerByCodeResponse"
+                }
+              }
+            },
+            "description": "Detalle del cliente."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "schema": { "type": "string", "example": "0001234" },
+            "required": true,
+            "description": "Código del cliente (p. ej. NIT / código Manager Core)."
+          }
+        ],
+        "description": "Obtiene la información de un cliente en Manager Core a partir de su código. Usado por la app al crear/editar prospectos de origen Antiguo/Recuperado/Prospectado.",
+        "operationId": "getCustomerByCode"
+      }
+    },
+    "/Customers/ByName/{name}": {
+      "get": {
+        "tags": ["Clientes"],
+        "summary": "Clientes por nombre",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomersByNameResponse"
+                }
+              }
+            },
+            "description": "Lista de coincidencias (código y nombre)."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "schema": { "type": "string", "example": "Transportes" },
+            "required": true,
+            "description": "Texto a buscar dentro del nombre del cliente."
+          }
+        ],
+        "description": "Busca clientes por coincidencia parcial de nombre (sin distinguir mayúsculas) en Manager Core.",
+        "operationId": "getCustomersByName"
+      }
+    },
+    "/CommercialUsers/WithProspects": {
+      "get": {
+        "tags": ["Catálogos", "Prospectos"],
+        "summary": "Comerciales con conteo de prospectos por origen",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialUsersWithProspectsResponse"
+                }
+              }
+            },
+            "description": "Lista de comerciales con conteos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": { "type": "integer", "example": 15 },
+            "required": false,
+            "description": "Id del usuario comercial a filtrar."
+          }
+        ],
+        "description": "Lista usuarios comerciales con el conteo de prospectos agrupados por tipo de origen. El parámetro `userId` es opcional; si se envía, filtra a un solo comercial.",
+        "operationId": "getCommercialUsersWithProspects"
+      }
+    },
+    "/notifications/updateusertoken": {
+      "post": {
+        "tags": ["Notificaciones"],
+        "summary": "Registrar/actualizar token de dispositivo",
+        "responses": {
+          "200": {
+            "description": "Token registrado (el cliente ignora el cuerpo de la respuesta)."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Registra o actualiza el token de notificaciones push (FCM) del dispositivo para el usuario indicado.",
+        "operationId": "updateUserToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterTokenRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/AssignToUser/{userId}": {
+      "patch": {
+        "tags": ["Prospectos"],
+        "summary": "Asignar prospectos a un usuario",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseB" }
+              }
+            },
+            "description": "Prospectos asignados."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "example": 45 },
+            "required": true,
+            "description": "Identificador del usuario comercial."
+          }
+        ],
+        "description": "Asigna uno o varios prospectos (por sus IDs de proceso de negocio) a un usuario comercial.",
+        "operationId": "assignProspectsToUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssignToUserRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/{prospectId}/ContactInfo": {
+      "get": {
+        "tags": ["Prospectos"],
+        "summary": "Detalle del prospecto y sus contactos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContactInfoResponse" }
+              }
+            },
+            "description": "Detalle del prospecto y contactos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectId",
+            "schema": { "type": "integer", "example": 1001 },
+            "required": true,
+            "description": "Identificador del prospecto."
+          }
+        ],
+        "description": "Detalle de un prospecto junto con su lista de contactos.",
+        "operationId": "getProspectContactInfo"
+      }
+    },
+    "/PrizeQuotes/{prizeQuoteId}/download": {
+      "get": {
+        "tags": ["Cotizaciones"],
+        "summary": "Descargar cotización",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrizeQuoteDownloadResponse"
+                }
+              }
+            },
+            "description": "Archivo de la cotización en Base64."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prizeQuoteId",
+            "schema": { "type": "integer", "example": 5001 },
+            "required": true,
+            "description": "Identificador de la cotización."
+          }
+        ],
+        "description": "Descarga el archivo de una cotización por su id. El archivo llega **codificado en Base64** dentro del campo `File` del JSON (no es descarga binaria directa).",
+        "operationId": "downloadPrizeQuote"
+      }
+    },
+    "/prospects/{prospectBusinessId}/State": {
+      "patch": {
+        "tags": ["Prospectos"],
+        "summary": "Actualizar estado del proceso de negocio",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseB" }
+              }
+            },
+            "description": "Estado actualizado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Message": {
+                      "type": "string",
+                      "example": "No se encontró el prospecto."
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Proceso de negocio no encontrado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Id del proceso de negocio (`prosp_BusinessProcess.Id`), no el Id del prospecto."
+          }
+        ],
+        "description": "Actualiza el `BusinessStateId` de un proceso de negocio (`prosp_BusinessProcess`). Si el id no existe responde HTTP 400 con mensaje «No se encontró el prospecto.» Estados válidos típicos: 3 Contactados, 4 Visitados, 5 CotizacionAceptada, 6 CotizacionRechazada, 7 CreacionDeCliente, 8 AcuerdoDeServicio, 9 EnvioDeOperacion.",
+        "operationId": "updateProspectState",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProspectStateRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/{prospectBusinessId}/Contacts": {
+      "get": {
+        "tags": ["Contactos"],
+        "summary": "Listar contactos del prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContactsResponse" }
+              }
+            },
+            "description": "Lista de contactos."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Identificador del proceso de negocio del prospecto."
+          }
+        ],
+        "description": "Lista los contactos (código y nombre) de un prospecto.",
+        "operationId": "getProspectContacts"
+      },
+      "post": {
+        "tags": ["Contactos"],
+        "summary": "Crear contacto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateContactResponse"
+                }
+              }
+            },
+            "description": "Contacto creado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Identificador del proceso de negocio del prospecto."
+          }
+        ],
+        "description": "Crea un nuevo contacto para el proceso de negocio/prospecto indicado.",
+        "operationId": "createProspectContact",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateContactRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/{prospectBusinessId}/Meetings": {
+      "get": {
+        "tags": ["Reuniones"],
+        "summary": "Listar reuniones del prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MeetingsResponse" }
+              }
+            },
+            "description": "Lista de reuniones."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Identificador del proceso de negocio del prospecto."
+          }
+        ],
+        "description": "Lista las reuniones asociadas a un proceso de negocio/prospecto.",
+        "operationId": "getProspectMeetings"
+      },
+      "post": {
+        "tags": ["Reuniones"],
+        "summary": "Registrar reunión",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponseB" }
+              }
+            },
+            "description": "Reunión registrada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Identificador del proceso de negocio del prospecto."
+          }
+        ],
+        "description": "Registra una reunión para el prospecto, con la decisión del cliente, tarea/estado del negocio y cotizaciones asociadas.",
+        "operationId": "createProspectMeeting",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateMeetingRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/prospects/{prospectBusinessId}/PrizeQuotes": {
+      "get": {
+        "tags": ["Cotizaciones"],
+        "summary": "Listar cotizaciones del prospecto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuotesResponse" }
+              }
+            },
+            "description": "Lista de cotizaciones."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prospectBusinessId",
+            "schema": { "type": "integer", "example": 2001 },
+            "required": true,
+            "description": "Identificador del proceso de negocio del prospecto."
+          }
+        ],
+        "description": "Lista las cotizaciones (PrizeQuotes) enviadas al prospecto.",
+        "operationId": "getProspectPrizeQuotes"
+      }
+    }
+  },
+  "openapi": "3.0.3",
+  "servers": [
+    {
+      "url": "https://www.coltanques.com.co:1000/webs/apicomercial/api",
+      "description": "Producción"
+    },
+    {
+      "url": "https://www.coltanques.co:1000/webs/apicomercial/api",
+      "description": "Desarrollo / Pruebas"
+    }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "Id": { "type": "integer", "example": 45, "nullable": true },
+          "City": { "type": "string", "example": "Bogotá" },
+          "Forms": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserForm" }
+          },
+          "UserID": { "type": "string", "example": "1024" },
+          "AgencyId": { "type": "integer", "example": 3 },
+          "StatusId": { "type": "integer", "example": 1, "nullable": true },
+          "UserType": { "type": "string", "example": "Comercial" },
+          "LastNames": { "type": "string", "example": "Gómez Ramírez" },
+          "FirstNames": { "type": "string", "example": "Edwin Julián" }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 5001 },
+          "Date": { "type": "string", "example": "2026-02-01" },
+          "FileName": { "type": "string", "example": "cotizacion-xyz.pdf" }
+        }
+      },
+      "Meeting": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 3001 },
+          "Date": { "type": "string", "example": "2026-02-01" },
+          "Summary": {
+            "type": "string",
+            "example": "Presentación de propuesta"
+          },
+          "ContactName": { "type": "string", "example": "María Pérez" },
+          "MeetingType": { "type": "string", "example": "Presencial" },
+          "NextMeeting": { "type": "string", "example": "2026-02-15" },
+          "PrizeQuotesSent": { "type": "integer", "example": 1 },
+          "CustomerDecision": { "type": "string", "example": "En evaluación" },
+          "DecisionReasonDetails": {
+            "type": "string",
+            "example": "Comparando con competencia"
+          }
+        }
+      },
+      "Business": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "alert": {
+            "type": "string",
+            "example": "Margen por debajo del mínimo",
+            "nullable": true
+          },
+          "Client": { "type": "string", "example": "Cliente ABC" },
+          "Origin": { "type": "string", "example": "Bogotá" },
+          "Business": { "type": "string", "example": "NEG-00123" },
+          "freightPay": {
+            "type": "number",
+            "format": "double",
+            "example": 1700000
+          },
+          "Destination": { "type": "string", "example": "Medellín" },
+          "vehicleType": { "type": "string", "example": "Tractocamión" },
+          "LoadingHours": { "type": "integer", "example": 2, "nullable": true },
+          "CurrentMargin": {
+            "type": "number",
+            "format": "double",
+            "example": 15,
+            "nullable": true
+          },
+          "UnloadingHours": {
+            "type": "integer",
+            "example": 3,
+            "nullable": true
+          },
+          "freightInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 2000000
+          },
+          "valueUploadPay": {
+            "type": "number",
+            "format": "double",
+            "example": 40000
+          },
+          "valueDownloadPay": {
+            "type": "number",
+            "format": "double",
+            "example": 40000
+          },
+          "valueLoadInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 50000
+          },
+          "valueDownloadInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 50000
+          }
+        }
+      },
+      "Prospect": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 1001 },
+          "Name": { "type": "string", "example": "Transportes XYZ S.A.S." },
+          "Status": { "type": "string", "example": "En gestión" },
+          "EndDate": { "type": "string", "example": "2026-02-20" },
+          "StartDate": { "type": "string", "example": "2026-01-15" },
+          "OriginType": {
+            "type": "string",
+            "example": "Asignados",
+            "description": "Descripción del tipo de origen (`prosp_OriginTypes.Description`)."
+          },
+          "EndFullDate": {
+            "type": "string",
+            "example": "2026-02-20 17:00",
+            "nullable": true
+          },
+          "MainContact": { "$ref": "#/components/schemas/MainContact" },
+          "AssignedDate": {
+            "type": "string",
+            "example": "2026-01-10",
+            "nullable": true
+          },
+          "BussinesTask": {
+            "type": "string",
+            "example": "Seguimiento",
+            "description": "Nombre exacto del backend (con typo)."
+          },
+          "StartFullDate": {
+            "type": "string",
+            "example": "2026-01-15 09:30",
+            "nullable": true
+          },
+          "CommercialUser": {
+            "type": "string",
+            "example": "Edwin Gómez",
+            "nullable": true
+          },
+          "PrizeQuotesSent": { "type": "integer", "example": 2 }
+        }
+      },
+      "UserForm": {
+        "type": "object",
+        "properties": {
+          "FormId": { "type": "integer", "example": 10 },
+          "FormName": { "type": "string", "example": "Prospección" }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "totalRequests": { "type": "integer", "example": 120 },
+          "modifiedRequests": { "type": "integer", "example": 45 },
+          "customerMaximumQuantity": { "type": "integer", "example": 30 },
+          "customerMinimumQuantity": { "type": "integer", "example": 1 },
+          "customerLessModifications": {
+            "type": "string",
+            "example": "Cliente XYZ"
+          },
+          "customerMoreModifications": {
+            "type": "string",
+            "example": "Cliente ABC"
+          }
+        }
+      },
+      "Commercial": {
+        "type": "object",
+        "properties": {
+          "City": { "type": "string", "example": "Bogotá" },
+          "UserID": { "type": "string", "example": "1024" },
+          "UserType": { "type": "string", "example": "Comercial" },
+          "Username": {
+            "type": "string",
+            "example": "edwin.gomez@coltanques.com.co"
+          },
+          "LastNames": { "type": "string", "example": "Gómez Ramírez" },
+          "FirstNames": { "type": "string", "example": "Edwin Julián" }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "Response": { "$ref": "#/components/schemas/ResponseBase" }
+        },
+        "description": "Sobre A básico, sin carga útil adicional."
+      },
+      "CatalogItem": {
+        "type": "object",
+        "properties": {
+          "Code": { "type": "integer", "example": 1 },
+          "Name": { "type": "string", "example": "Bogotá" }
+        },
+        "description": "Ítem de catálogo estándar (código y nombre)."
+      },
+      "MainContact": {
+        "type": "object",
+        "properties": {
+          "Name": { "type": "string", "example": "María Pérez" },
+          "Role": { "type": "string", "example": "Gerente de logística" },
+          "Email": { "type": "string", "example": "maria.perez@xyz.com" },
+          "Phone": { "type": "string", "example": "3001234567" },
+          "Address": { "type": "string", "example": "Calle 100 #10-20" }
+        }
+      },
+      "ContactsData": {
+        "type": "object",
+        "properties": {
+          "Contacts": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ContactDetail" }
+          },
+          "Prospect": { "$ref": "#/components/schemas/ProspectDetail" }
+        }
+      },
+      "CostOverruns": {
+        "type": "object",
+        "properties": {
+          "Date": { "type": "string", "example": "2026-02-10" },
+          "Plate": { "type": "string", "example": "ABC123" },
+          "Concept": { "type": "string", "example": "Peajes" },
+          "Customer": { "type": "string", "example": "Cliente ABC" },
+          "RequestId": { "type": "integer", "example": 7001 }
+        }
+      },
+      "ResponseBase": {
+        "type": "object",
+        "properties": {
+          "Message": {
+            "type": "string",
+            "example": "Operación exitosa",
+            "nullable": true
+          },
+          "Success": { "type": "boolean", "example": true }
+        },
+        "description": "Contenido común del sobre A (anidado bajo `Response`)."
+      },
+      "BaseResponseB": {
+        "allOf": [{ "$ref": "#/components/schemas/CommonResponseFields" }],
+        "description": "Sobre B sin carga útil adicional (solo confirmación)."
+      },
+      "ContactDetail": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 1 },
+          "Name": { "type": "string", "example": "María Pérez" },
+          "Role": { "type": "string", "example": "Gerente de logística" },
+          "Email": { "type": "string", "example": "maria.perez@xyz.com" },
+          "Phone": { "type": "string", "example": "3001234567" },
+          "Address": { "type": "string", "example": "Calle 100 #10-20" },
+          "ContactWorkArea": {
+            "type": "string",
+            "example": "Logística",
+            "nullable": true
+          },
+          "IsDecisionMaker": { "type": "boolean", "example": true },
+          "DecisionActionType": {
+            "type": "string",
+            "example": "Aprueba",
+            "nullable": true
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "User": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "Token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "nullable": true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ProspectDetail": {
+        "type": "object",
+        "properties": {
+          "Nit": { "type": "string", "example": "900123456-7" },
+          "Name": { "type": "string", "example": "Transportes XYZ S.A.S." },
+          "Phone": { "type": "string", "example": "6017654321" },
+          "Cities": {
+            "type": "string",
+            "example": "Bogotá, Medellín",
+            "nullable": true
+          },
+          "Address": { "type": "string", "example": "Calle 100 #10-20" },
+          "Website": {
+            "type": "string",
+            "example": "https://xyz.com",
+            "nullable": true
+          },
+          "LoadType": { "type": "string", "example": "Carga seca" },
+          "LoadTypeId": { "type": "integer", "example": 3 },
+          "Description": {
+            "type": "string",
+            "example": "Cliente potencial de carga seca"
+          },
+          "OriginTypeId": {
+            "type": "integer",
+            "example": 3,
+            "description": "Id del tipo de origen (`prosp_OriginTypes`)."
+          },
+          "TripFrecuency": {
+            "type": "integer",
+            "example": 8,
+            "description": "Nombre exacto del backend (con typo); el cliente admite `TripFrequency` como alternativa."
+          },
+          "EstimatedMonthlyBilling": { "type": "integer", "example": 50000000 }
+        }
+      },
+      "QuotesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "PrizeQuotes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Quote" }
+              }
+            }
+          }
+        ]
+      },
+      "RatesDashboard": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "totalChanges": { "type": "integer", "example": 42 },
+          "activeChanges": { "type": "integer", "example": 5 },
+          "mobileChanges": { "type": "integer", "example": 30 },
+          "desktopChanges": { "type": "integer", "example": 12 },
+          "rejectedChanges": { "type": "integer", "example": 12 },
+          "authorizedChanges": { "type": "integer", "example": 25 }
+        }
+      },
+      "RequestHistory": {
+        "type": "object",
+        "properties": {
+          "Date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-10T14:30:00"
+          },
+          "status": { "type": "string", "example": "Aprobado" },
+          "Customer": { "type": "string", "example": "Cliente ABC" },
+          "initialMargin": {
+            "type": "string",
+            "example": "15.0",
+            "description": "El cliente lo normaliza a string."
+          },
+          "requestedMargin": {
+            "type": "string",
+            "example": "12.0",
+            "description": "El cliente lo normaliza a string."
+          }
+        }
+      },
+      "RequestProcess": {
+        "type": "object",
+        "properties": {
+          "ProcessId": {
+            "type": "string",
+            "example": "1",
+            "description": "El cliente lo normaliza a string aunque el backend pueda enviarlo numérico."
+          },
+          "ProcessName": { "type": "string", "example": "Aprobación directa" }
+        }
+      },
+      "LoginApiRequest": {
+        "type": "object",
+        "required": ["Username", "Password"],
+        "properties": {
+          "Password": {
+            "type": "string",
+            "format": "password",
+            "example": "********"
+          },
+          "Username": { "type": "string", "example": "AppComercial" }
+        },
+        "description": "Credenciales de proveedor (variables de entorno de la app)."
+      },
+      "LoginAppRequest": {
+        "type": "object",
+        "required": ["Username", "Password"],
+        "properties": {
+          "Password": {
+            "type": "string",
+            "format": "password",
+            "example": "secreto"
+          },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "ManagerCustomer": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 10 },
+          "City": { "type": "string", "example": "Medellín", "nullable": true },
+          "Code": { "type": "string", "example": "0001234" },
+          "Name": { "type": "string", "example": "Transportes ABC" },
+          "Email": {
+            "type": "string",
+            "example": "contacto@abc.com",
+            "nullable": true
+          },
+          "Active": { "type": "boolean", "example": true },
+          "Agency": {
+            "type": "string",
+            "example": "Medellín",
+            "nullable": true
+          },
+          "Address": {
+            "type": "string",
+            "example": "Calle 10 # 5-23",
+            "nullable": true
+          },
+          "CellPhone": {
+            "type": "string",
+            "example": "3001234567",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "example": "Cliente de carga seca",
+            "nullable": true
+          },
+          "CreationDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-05-10T00:00:00",
+            "nullable": true
+          },
+          "TypeDocument": {
+            "type": "string",
+            "example": "NIT",
+            "nullable": true
+          }
+        }
+      },
+      "BusinessResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "businessData": { "$ref": "#/components/schemas/Business" }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ContactsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Contacts": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CatalogItem" }
+              }
+            }
+          }
+        ]
+      },
+      "CustomerNameItem": {
+        "type": "object",
+        "properties": {
+          "Code": { "type": "string", "example": "0001234" },
+          "Name": { "type": "string", "example": "Transportes ABC" }
+        }
+      },
+      "MeetingsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Meetings": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Meeting" }
+              }
+            }
+          }
+        ]
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "dashBoard": { "$ref": "#/components/schemas/Dashboard" }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ProspectsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Prospects": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Prospect" }
+              }
+            }
+          }
+        ]
+      },
+      "CommercialResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "traders": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Commercial" }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "DashboardCountItem": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 1 },
+          "Name": { "type": "string", "example": "En gestión" },
+          "OriginTypes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProspectOriginTypeCount" },
+            "description": "Conteo de prospectos por tipo de origen dentro de este estado."
+          },
+          "CurrentNumber": { "type": "integer", "example": 12 }
+        }
+      },
+      "PendingRequestForm": {
+        "type": "object",
+        "properties": {
+          "Plate": { "type": "string", "example": "ABC123" },
+          "Origin": { "type": "string", "example": "Bogotá" },
+          "Concept": { "type": "string", "example": "Peajes" },
+          "Surplus": {
+            "type": "number",
+            "format": "double",
+            "example": 100000
+          },
+          "Customer": { "type": "string", "example": "Cliente ABC" },
+          "Manifest": { "type": "integer", "example": 123456 },
+          "RequestId": { "type": "integer", "example": 7001 },
+          "OriginSite": { "type": "string", "example": "Planta Norte" },
+          "Remittance": { "type": "integer", "example": 654321 },
+          "Destination": { "type": "string", "example": "Medellín" },
+          "ServiceValue": {
+            "type": "number",
+            "format": "double",
+            "example": 1500000
+          },
+          "BusinessValue": {
+            "type": "number",
+            "format": "double",
+            "example": 1400000
+          },
+          "DestinationSite": { "type": "string", "example": "Bodega Sur" }
+        }
+      },
+      "SetPasswordRequest": {
+        "type": "object",
+        "required": ["Username", "Password", "Code"],
+        "properties": {
+          "Code": { "type": "string", "example": "123456" },
+          "Password": {
+            "type": "string",
+            "format": "password",
+            "example": "nuevaClave"
+          },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "UpdateRatesRequest": {
+        "type": "object",
+        "required": [
+          "Business",
+          "invoiceValue",
+          "payValue",
+          "valueLoadInvoice",
+          "valueDownloadInvoice",
+          "valueUploadPay",
+          "valueDownloadPay",
+          "modificationType",
+          "Trips",
+          "Username",
+          "LoadingHours",
+          "UnloadingHours"
+        ],
+        "properties": {
+          "Trips": {
+            "type": "integer",
+            "example": 30,
+            "description": "En el cliente proviene de `modificationDays` (días de modificación)."
+          },
+          "Business": { "type": "string", "example": "NEG-00123" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "payValue": {
+            "type": "number",
+            "format": "double",
+            "example": 1750000
+          },
+          "LoadingHours": { "type": "integer", "example": 2 },
+          "invoiceValue": {
+            "type": "number",
+            "format": "double",
+            "example": 2100000
+          },
+          "UnloadingHours": { "type": "integer", "example": 3 },
+          "valueUploadPay": {
+            "type": "number",
+            "format": "double",
+            "example": 40000
+          },
+          "modificationType": { "type": "integer", "example": 1 },
+          "valueDownloadPay": {
+            "type": "number",
+            "format": "double",
+            "example": 40000
+          },
+          "valueLoadInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 50000
+          },
+          "valueDownloadInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 50000
+          }
+        }
+      },
+      "AssignToUserRequest": {
+        "type": "object",
+        "required": ["ProspectBusinessIds"],
+        "properties": {
+          "ProspectBusinessIds": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "example": [2001, 2002]
+          }
+        }
+      },
+      "ContactInfoResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Contacts": { "$ref": "#/components/schemas/ContactsData" }
+            }
+          }
+        ]
+      },
+      "GenerateCodeRequest": {
+        "type": "object",
+        "required": ["Username"],
+        "properties": {
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "OriginTypeCountItem": {
+        "type": "object",
+        "properties": {
+          "Count": { "type": "integer", "example": 5 },
+          "OriginType": { "type": "string", "example": "Prospectados" }
+        }
+      },
+      "UserIdentityRequest": {
+        "type": "object",
+        "required": ["Username", "UserID"],
+        "properties": {
+          "UserID": { "type": "string", "example": "1024" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        },
+        "description": "Identidad del usuario en sesión."
+      },
+      "AuthorizationHistory": {
+        "type": "object",
+        "properties": {
+          "Date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-10T14:30:00"
+          },
+          "Trader": { "type": "string", "example": "Edwin Gómez" },
+          "status": { "type": "string", "example": "Aprobado" },
+          "Customer": { "type": "string", "example": "Cliente ABC" }
+        }
+      },
+      "CommonResponseFields": {
+        "type": "object",
+        "properties": {
+          "Result": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código de resultado del backend."
+          },
+          "Message": { "type": "string", "example": "OK", "nullable": true },
+          "StatusCode": {
+            "type": "integer",
+            "example": 200,
+            "description": "Código HTTP interno equivalente."
+          },
+          "NumberRecord": {
+            "type": "integer",
+            "example": 1,
+            "description": "Cantidad de registros devueltos."
+          }
+        },
+        "description": "Sobre B: campos comunes en la raíz del JSON. `success` es derivado en el cliente (statusCode 200/204) y no viaja en la respuesta."
+      },
+      "CreateContactRequest": {
+        "type": "object",
+        "required": ["Name", "Role", "Phone", "Email", "Address"],
+        "properties": {
+          "Name": { "type": "string", "example": "María Pérez" },
+          "Role": { "type": "string", "example": "Gerente de logística" },
+          "Email": { "type": "string", "example": "maria.perez@xyz.com" },
+          "Phone": { "type": "string", "example": "3001234567" },
+          "Address": { "type": "string", "example": "Calle 100 #10-20" },
+          "OtherWorkAreas": { "type": "string", "default": "", "example": "" },
+          "ContactWorkAreaId": {
+            "type": "integer",
+            "default": 0,
+            "example": 2
+          },
+          "DecisionActionTypeId": {
+            "type": "integer",
+            "default": 0,
+            "example": 1
+          }
+        }
+      },
+      "CreateMeetingRequest": {
+        "type": "object",
+        "required": [
+          "Date",
+          "MeetingTypeId",
+          "ContactId",
+          "Summary",
+          "CustomerDecisionId",
+          "DecisionReasonDetailsId",
+          "BusinessStateId",
+          "BusinessTaskId",
+          "NextDate",
+          "IsAccepted",
+          "PriceQuoteIds"
+        ],
+        "properties": {
+          "Date": { "type": "string", "example": "2026-02-01" },
+          "Summary": {
+            "type": "string",
+            "example": "Presentación de propuesta"
+          },
+          "NextDate": { "type": "string", "example": "2026-02-15" },
+          "ContactId": { "type": "integer", "example": 1 },
+          "IsAccepted": { "type": "boolean", "example": false },
+          "MeetingTypeId": { "type": "integer", "example": 1 },
+          "PriceQuoteIds": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "example": [5001]
+          },
+          "BusinessTaskId": { "type": "integer", "example": 4 },
+          "BusinessStateId": { "type": "integer", "example": 1 },
+          "CustomerDecisionId": { "type": "integer", "example": 2 },
+          "DecisionReasonDetailsId": { "type": "integer", "example": 3 }
+        }
+      },
+      "RegisterTokenRequest": {
+        "type": "object",
+        "required": ["token", "userId"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "fcm-token-abc123",
+            "description": "Token FCM/push del dispositivo."
+          },
+          "userId": { "type": "integer", "example": 123 }
+        },
+        "description": "Registro del token de dispositivo. **Este cuerpo usa camelCase** (a diferencia del resto)."
+      },
+      "UpdateContactRequest": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CreateContactRequest" },
+          {
+            "type": "object",
+            "required": ["Id"],
+            "properties": { "Id": { "type": "integer", "example": 1 } }
+          }
+        ]
+      },
+      "UpdateRequestRequest": {
+        "type": "object",
+        "required": [
+          "RequestId",
+          "Concept",
+          "Surplus",
+          "ProcessId",
+          "Username"
+        ],
+        "properties": {
+          "Concept": { "type": "string", "example": "Peajes" },
+          "Surplus": {
+            "type": "number",
+            "format": "double",
+            "example": 100000
+          },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "ProcessId": { "type": "integer", "example": 1 },
+          "RequestId": { "type": "integer", "example": 7001 }
+        }
+      },
+      "AuthorizationToManage": {
+        "type": "object",
+        "properties": {
+          "Route": { "type": "string", "example": "Bogotá - Medellín" },
+          "Trader": { "type": "string", "example": "Edwin Gómez" },
+          "Business": { "type": "string", "example": "NEG-00123" },
+          "Customer": { "type": "string", "example": "Cliente ABC" },
+          "RequestId": {
+            "type": "number",
+            "format": "double",
+            "example": 8001
+          },
+          "freightPay": {
+            "type": "number",
+            "format": "double",
+            "example": 1700000
+          },
+          "VehicleType": { "type": "string", "example": "Tractocamión" },
+          "InitialMargin": {
+            "type": "number",
+            "format": "double",
+            "example": 15
+          },
+          "freightInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 2000000
+          },
+          "InitialValuePay": {
+            "type": "number",
+            "format": "double",
+            "example": 1700000
+          },
+          "RequestedMargin": {
+            "type": "number",
+            "format": "double",
+            "example": 12
+          },
+          "RequestedValuePay": {
+            "type": "number",
+            "format": "double",
+            "example": 1800000
+          },
+          "InitialValueInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 2000000
+          },
+          "RequestedValueInvoice": {
+            "type": "number",
+            "format": "double",
+            "example": 2100000
+          }
+        }
+      },
+      "CreateContactResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": { "Id": { "type": "integer", "example": 1 } }
+          }
+        ]
+      },
+      "CreateProspectRequest": {
+        "type": "object",
+        "required": [
+          "Name",
+          "Nit",
+          "Address",
+          "Phone",
+          "Website",
+          "Description",
+          "LoadTypeId",
+          "TripFrecuency",
+          "EstimatedMonthlyBilling",
+          "CitiesIds",
+          "CreatedByUserId",
+          "OriginTypeId"
+        ],
+        "properties": {
+          "Nit": { "type": "string", "example": "900123456-7" },
+          "Name": { "type": "string", "example": "Transportes XYZ S.A.S." },
+          "Phone": { "type": "string", "example": "6017654321" },
+          "Address": { "type": "string", "example": "Calle 100 #10-20" },
+          "Website": { "type": "string", "example": "https://xyz.com" },
+          "CitiesIds": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["11001", "5001"]
+          },
+          "LoadTypeId": { "type": "integer", "example": 3 },
+          "Description": {
+            "type": "string",
+            "example": "Cliente potencial de carga seca"
+          },
+          "OriginTypeId": {
+            "type": "integer",
+            "example": 3,
+            "description": "Tipo de origen obligatorio (ver `GET /OriginTypes`). Al crear, el proceso de negocio inicia en Contactados (3)."
+          },
+          "TripFrecuency": {
+            "type": "integer",
+            "example": 8,
+            "description": "Nombre exacto del backend (con typo)."
+          },
+          "CreatedByUserId": { "type": "integer", "example": 45 },
+          "EstimatedMonthlyBilling": { "type": "integer", "example": 50000000 }
+        }
+      },
+      "NotificationsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Notifications": {
+                "type": "array",
+                "items": { "type": "string" },
+                "example": ["Tienes una nueva asignación"]
+              }
+            }
+          }
+        ]
+      },
+      "RatesDashboardRequest": {
+        "type": "object",
+        "required": ["Username", "UserID", "Year", "Month"],
+        "properties": {
+          "Year": { "type": "integer", "example": 2026 },
+          "Month": { "type": "integer", "example": 7 },
+          "UserID": { "type": "string", "example": "1024" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "RequestDetailsRequest": {
+        "type": "object",
+        "required": ["RequestId", "Concept"],
+        "properties": {
+          "Concept": { "type": "string", "example": "Peajes" },
+          "RequestId": { "type": "integer", "example": 7001 }
+        }
+      },
+      "RequestHistoryRequest": {
+        "type": "object",
+        "required": ["Username", "UserID", "startDate", "endDate"],
+        "properties": {
+          "UserID": { "type": "string", "example": "1024" },
+          "endDate": { "type": "string", "example": "2026-06-30" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "customer": {
+            "type": "string",
+            "example": "Cliente ABC",
+            "nullable": true
+          },
+          "startDate": { "type": "string", "example": "2026-01-01" },
+          "statusDescription": {
+            "type": "string",
+            "example": "Aprobado",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateProspectRequest": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CreateProspectRequest" },
+          {
+            "type": "object",
+            "required": ["Id"],
+            "properties": { "Id": { "type": "integer", "example": 1001 } }
+          }
+        ]
+      },
+      "ValidationCodeRequest": {
+        "type": "object",
+        "required": ["Username", "Code"],
+        "properties": {
+          "Code": { "type": "string", "example": "123456" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "CreateProspectResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "ProspectId": { "type": "integer", "example": 1001 }
+            }
+          }
+        ]
+      },
+      "CustomerByCodeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Customer": { "$ref": "#/components/schemas/ManagerCustomer" }
+            }
+          }
+        ]
+      },
+      "RatesDashboardResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "dashBoard": { "$ref": "#/components/schemas/RatesDashboard" }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "RequestHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "History": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/RequestHistory" },
+                    "nullable": true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "RequestProcessResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "Data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/RequestProcess" }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "CustomersByNameResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Customers": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CustomerNameItem" }
+              }
+            }
+          }
+        ]
+      },
+      "PendingRequestsResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "Data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/CostOverruns" },
+                    "nullable": true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ProspectOriginTypeCount": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "example": 2 },
+          "Name": { "type": "string", "example": "Prospectados" },
+          "Count": { "type": "integer", "example": 7 }
+        }
+      },
+      "UploadPrizeQuoteRequest": {
+        "type": "object",
+        "required": ["Base64", "FileName", "Format", "prospectBusinessId"],
+        "properties": {
+          "Base64": {
+            "type": "string",
+            "format": "byte",
+            "example": "JVBERi0xLjQK...",
+            "description": "Contenido del archivo codificado en Base64."
+          },
+          "Format": { "type": "string", "example": "pdf" },
+          "FileName": { "type": "string", "example": "cotizacion-xyz" },
+          "prospectBusinessId": { "type": "integer", "example": 2001 }
+        }
+      },
+      "ValidateBusinessRequest": {
+        "type": "object",
+        "required": ["Username", "Business"],
+        "properties": {
+          "Business": { "type": "string", "example": "NEG-00123" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          }
+        }
+      },
+      "PrizeQuoteUploadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "PrizeQuoteId": {
+                "type": "integer",
+                "example": 5001,
+                "nullable": true,
+                "description": "Id de la cotización creada (el cliente admite `Id` como alternativa)."
+              }
+            }
+          }
+        ]
+      },
+      "PendingRequestFormResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "Data": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PendingRequestForm"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "PrizeQuoteDownloadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "File": {
+                "type": "string",
+                "format": "byte",
+                "example": "JVBERi0xLjQK...",
+                "description": "Contenido del archivo en Base64."
+              }
+            }
+          }
+        ]
+      },
+      "ProspectsDashboardResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Dashboard": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/DashboardCountItem" }
+              }
+            }
+          }
+        ]
+      },
+      "UpdateProspectStateRequest": {
+        "type": "object",
+        "required": ["BusinessStateId"],
+        "properties": {
+          "BusinessStateId": {
+            "type": "integer",
+            "example": 4,
+            "description": "Nuevo estado del proceso de negocio."
+          }
+        }
+      },
+      "CommercialUserWithProspects": {
+        "type": "object",
+        "properties": {
+          "Code": { "type": "integer", "example": 15 },
+          "Name": { "type": "string", "example": "Juan Pérez" },
+          "Prospects": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OriginTypeCountItem" }
+          }
+        }
+      },
+      "AuthorizationHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "History": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AuthorizationHistory"
+                    },
+                    "nullable": true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "AuthorizationsHistoryRequest": {
+        "type": "object",
+        "required": ["Username", "UserID", "startDate", "endDate"],
+        "properties": {
+          "UserID": { "type": "string", "example": "1024" },
+          "endDate": { "type": "string", "example": "2026-06-30" },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "startDate": { "type": "string", "example": "2026-01-01" },
+          "traderName": {
+            "type": "string",
+            "example": "Edwin Gómez",
+            "nullable": true
+          },
+          "statusDescription": {
+            "type": "string",
+            "example": "Aprobado",
+            "nullable": true
+          }
+        }
+      },
+      "AuthorizationsToManageRequest": {
+        "type": "object",
+        "required": ["Username", "UserID", "startDate", "endDate"],
+        "properties": {
+          "UserID": { "type": "string", "example": "1024" },
+          "endDate": { "type": "string", "example": "2026-06-30" },
+          "Business": {
+            "type": "string",
+            "example": "NEG-00123",
+            "nullable": true
+          },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "startDate": { "type": "string", "example": "2026-01-01" },
+          "traderName": {
+            "type": "string",
+            "example": "Edwin Gómez",
+            "nullable": true
+          },
+          "statusDescription": {
+            "type": "string",
+            "example": "Pendiente",
+            "nullable": true
+          }
+        }
+      },
+      "AuthorizeModificationsRequest": {
+        "type": "object",
+        "required": ["RequestId", "status", "Username", "UserID"],
+        "properties": {
+          "UserID": { "type": "string", "example": "1024" },
+          "status": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código de estado (aprobar/rechazar)."
+          },
+          "Username": {
+            "type": "string",
+            "example": "usuario@coltanques.com.co"
+          },
+          "RequestId": { "type": "number", "format": "double", "example": 8001 }
+        }
+      },
+      "AuthorizationsToManageResponse": {
+        "type": "object",
+        "properties": {
+          "Response": {
+            "allOf": [
+              { "$ref": "#/components/schemas/ResponseBase" },
+              {
+                "type": "object",
+                "properties": {
+                  "Data": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AuthorizationToManage"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "CommercialUsersWithProspectsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "Commercials": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CommercialUserWithProspects"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "NoContent": {
+        "description": "Sin contenido. En peticiones GET el cliente lo trata como `NoContentException`."
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApiResponse" }
+          }
+        },
+        "description": "Falta el token o no es válido (el cliente lanza `UnauthorizedException`)."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token de servicio obtenido en `POST /loginapi`. El cliente lo añade en cada petición y lo renueva ante un 401.",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

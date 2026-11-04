@@ -1,0 +1,1796 @@
+{
+  "info": {
+    "title": "FuelManagementApi",
+    "contact": {
+      "url": "https://www.coltanques.co",
+      "name": "Juan Camilo Posso",
+      "email": "camilo.posso@tecno.co"
+    },
+    "license": { "url": "https://www.coltanques.co", "name": "License" },
+    "version": "1.0.1.2026.05131",
+    "description": "1038 : FuelManagementApi - API Combustibles  \n**Log Level:** 🔴 **Error**",
+    "termsOfService": "https://www.coltanques.co"
+  },
+  "tags": [
+    {
+      "name": "Diagramas de flujo",
+      "x-traitTag": true,
+      "description": "Esta sección describe los procesos operativos del sistema Gestión de Combustible en su orden de dependencia: primero la parametrización inicial, sobre la cual se apoyan los flujos del día a día (autorización de tanqueos, gestión de novedades de estación y errores de registro) y, por último, las consultas y exportaciones, que solo leen la información producida por los flujos anteriores.\n\n## 1. Diagrama de parametrización inicial\n\n<!-- IMG:01-parametrizacion-inicial -->\n[![Diagrama de parametrización inicial](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Parametrizaci%C3%B3n%20inicial.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Parametrizaci%C3%B3n%20inicial.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Usuarios cargados en `Usuario` (gestores y coordinadores de combustible).\n2. Catálogo de estaciones de servicio cargado en `Comb_EstacionServicio`.\n\nEl proceso:\n\n1. La relación jerárquica gestor-coordinador queda registrada en `FuelCoordinator`, donde cada fila asocia un `FuelManagerId` con un `FuelCoordinatorId`.\n2. La asignación de flota queda registrada en `AsignacionFlota_cordCombustible`, donde cada placa (`Placa`) se vincula al usuario coordinador (`Usuario`).\n3. El catálogo de estados de novedad queda registrado en `IssueStatus` y el catálogo de tipos de error queda registrado en `IncidentUpdatesTypes`.\n4. El alcance de placas de cada usuario se deriva de `FuelCoordinator` y `AsignacionFlota_cordCombustible`: si el usuario existe en `FuelCoordinator` como `FuelManagerId` opera como gestor y accede a las placas de todos sus coordinadores; en caso contrario opera como coordinador y accede únicamente a las placas asociadas a su propio usuario.\n5. Sin registros en `FuelCoordinator` ni en `AsignacionFlota_cordCombustible` el usuario no obtiene placas en alcance y los flujos y consultas posteriores no retornan datos.\n\nLas tablas parametricas son: `Usuario`, `Comb_EstacionServicio`, `FuelCoordinator`, `AsignacionFlota_cordCombustible`, `IssueStatus`, `IncidentUpdatesTypes`.\n\n## 2. Diagrama de autorización de solicitud de tanqueo\n\n<!-- IMG:02-autorizacion-de-solicitud-de-tanqueo -->\n[![Diagrama de autorización de solicitud de tanqueo](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Autorizaci%C3%B3n%20de%20solicitud%20de%20tanqueo.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Autorizaci%C3%B3n%20de%20solicitud%20de%20tanqueo.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Parametrización cargada en `FuelCoordinator` y `AsignacionFlota_cordCombustible` que defina el alcance de placas del usuario que autoriza.\n2. Solicitud de tanqueo existente en `Solicitudes_Conductor_LogiVim` con `TipoSolicitud` igual a Tanqueo.\n3. Catálogo de estaciones en `Comb_EstacionServicio` que contenga las estaciones a autorizar.\n\nEl proceso:\n\n1. El estado de autorización de la solicitud queda registrado en `FuelingRequestState`, identificado por `FuelRequestLogivimId` (el `Id` de la solicitud en `Solicitudes_Conductor_LogiVim`); si no existía registro previo se inserta, en caso contrario se actualiza.\n2. Cuando el cuerpo incluye estaciones el proceso autoriza: marca `IsAuthorized` e `IsActive` en verdadero y las estaciones autorizadas quedan registradas en `FuelingRequestStations`, con la cantidad tomada del manifiesto.\n3. Cuando el cuerpo no incluye estaciones el proceso rechaza: marca `IsAuthorized` e `IsActive` en falso y no se insertan filas en `FuelingRequestStations`.\n4. En una reautorización sobre un estado existente las filas anteriores de `FuelingRequestStations` se marcan como eliminadas (`WasDeleted`) antes de insertar las nuevas.\n5. La solicitud origen en `Solicitudes_Conductor_LogiVim` queda con `Estado` igual a Gestionada, `BandAprobacion` según autorización o rechazo y `FechaGestionColtanques` con la fecha de gestión.\n6. Si alguna estación del cuerpo no existe en `Comb_EstacionServicio` el proceso retorna error y no persiste la autorización.\n\nLas tablas parametricas son: `FuelCoordinator`, `AsignacionFlota_cordCombustible`, `Comb_EstacionServicio`.\n\n## 3. Diagrama de gestión de novedades de estación\n\n<!-- IMG:03-gestion-de-novedades-de-estacion -->\n[![Diagrama de gestión de novedades de estación](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Gesti%C3%B3n%20de%20novedades%20de%20estaci%C3%B3n.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Gesti%C3%B3n%20de%20novedades%20de%20estaci%C3%B3n.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Novedad existente en `Solicitudes_Conductor_LogiVim` con `TipoSolicitud` igual a Novedad.\n2. Catálogo de estados cargado en `IssueStatus`.\n\nEl proceso:\n\n1. El cambio de estado queda registrado como nueva fila en `IssueStatusHistory`, con el estado (`IssueStatusId`), el usuario que gestiona (`CreatedBy`), la observación y la fecha.\n2. La novedad en `Solicitudes_Conductor_LogiVim` queda con `Estado` igual a la descripción del estado seleccionado en `IssueStatus` y con `FechaGestionColtanques` actualizada.\n3. Solo se procesan solicitudes cuyo `TipoSolicitud` sea Novedad; cualquier otro tipo se trata como no encontrado.\n4. Si el estado recibido no existe en `IssueStatus` el proceso retorna solicitud inválida y no registra historial.\n\nLas tablas parametricas son: `IssueStatus`.\n\n## 4. Diagrama de registro y respuesta de errores de registro\n\n<!-- IMG:04-registro-y-respuesta-de-errores-de-registro -->\n[![Diagrama de registro y respuesta de errores de registro](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Registro%20y%20respuesta%20de%20errores%20de%20registro.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Registro%20y%20respuesta%20de%20errores%20de%20registro.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Catálogo de tipos de error cargado en `IncidentUpdatesTypes`.\n2. Estado Pendiente existente en `IssueStatus`.\n3. Estación identificable en `Comb_EstacionServicio` a partir de la agencia del error.\n\nEl proceso:\n\n1. El error queda registrado en `RegistrationError` con tipo (`NoveltyTypeId`), agencia, manifiesto y descripción, marcado como activo y no eliminado.\n2. El estado inicial queda registrado como primera fila en `RegistrationErrorStatusHistory` con el estado Pendiente tomado de `IssueStatus`.\n3. Los adjuntos, si se envían, se cargan en el servidor de archivos y cada uno queda referenciado en `RegistrationErrorAttachments`.\n4. El código de negocio se compone con el prefijo REG y el identificador del error a tres dígitos.\n5. Cada respuesta o cambio de estado posterior agrega una nueva fila en `RegistrationErrorStatusHistory`; el estado vigente del error es el de la fila más reciente por fecha.\n6. Si no existe el estado Pendiente en `IssueStatus` el proceso retorna error y no crea el error; en el cambio de estado, si el estado recibido no existe en `IssueStatus` el proceso retorna solicitud inválida.\n\nLas tablas parametricas son: `IncidentUpdatesTypes`, `IssueStatus`, `Comb_EstacionServicio`.\n\n## 5. Diagrama de consultas y exportaciones\n\n<!-- IMG:05-consultas-y-exportaciones -->\n[![Diagrama de consultas y exportaciones](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Consultas%20y%20exportaciones.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20flujo%20combustibles-Consultas%20y%20exportaciones.drawio.png)\n\nPara iniciar el proceso se necesita:\n\n1. Alcance de placas resuelto a partir de `FuelCoordinator` y `AsignacionFlota_cordCombustible`.\n2. Datos operativos previamente generados en `Solicitudes_Conductor_LogiVim`, `FuelingRequestState`, `FuelingRequestStations`, `RegistrationError` y sus historiales.\n3. Catálogos cargados en `Comb_EstacionServicio`, `IssueStatus` e `IncidentUpdatesTypes`.\n\nEl proceso:\n\n1. La consulta de solicitudes de tanqueo lee `Solicitudes_Conductor_LogiVim` filtrando por las placas en alcance; una solicitud se considera pendiente cuando no tiene fila en `FuelingRequestState` y gestionada cuando sí la tiene.\n2. El resumen de solicitudes reporta los totales pendiente, gestionada y total a partir del cruce entre `Solicitudes_Conductor_LogiVim` y `FuelingRequestState`.\n3. El detalle de una solicitud combina la solicitud en `Solicitudes_Conductor_LogiVim`, su estado en `FuelingRequestState`, las estaciones autorizadas en `FuelingRequestStations` y las estaciones del manifiesto.\n4. La disponibilidad de estaciones lee `Comb_EstacionServicio` separando propias y de terceros (`IndPropia`) y marca con novedad las que tengan solicitudes de tipo Novedad en estado Pendiente en `Solicitudes_Conductor_LogiVim`.\n5. La bandeja unificada de novedades agrega en un solo listado las novedades de estación y los tanqueos de `Solicitudes_Conductor_LogiVim` y los errores de `RegistrationError`, resolviendo estado y responsable contra `FuelingRequestState`, `RegistrationErrorStatusHistory`, `IssueStatus` y `Usuario`.\n6. Todas las operaciones de esta sección son de solo lectura y no modifican las tablas consultadas.\n\nLas tablas parametricas son: `FuelCoordinator`, `AsignacionFlota_cordCombustible`, `Comb_EstacionServicio`, `IssueStatus`, `IncidentUpdatesTypes`, `Usuario`."
+    },
+    {
+      "name": "Diccionario de datos",
+      "x-traitTag": true,
+      "description": "Estructura física de las 14 tablas de base de datos que utiliza el API.\n\n**Convenciones**\n\n- `Length` con valor `1,1` corresponde a una columna de identidad (`IDENTITY(1,1)`), no a una longitud de dato.\n- La columna `Default` se documenta vacía en todas las tablas: el origen no especifica valores por omisión.\n\n**Índice de tablas** (navegables desde el menú lateral)\n\n1. `AsignacionFlota_cordCombustible` — 3 columnas\n2. `Comb_EstacionServicio` — 14 columnas\n3. `FuelCoordinator` — 3 columnas\n4. `FuelingRequestState` — 7 columnas\n5. `FuelingRequestStations` — 8 columnas\n6. `IncidentUpdatesTypes` — 6 columnas\n7. `IssueStatus` — 6 columnas\n8. `IssueStatusHistory` — 6 columnas\n9. `ManifiestoFuel` — 9 columnas\n10. `RegistrationError` — 9 columnas\n11. `RegistrationErrorAttachments` — 7 columnas\n12. `RegistrationErrorStatusHistory` — 6 columnas\n13. `Solicitudes_Conductor_LogiVim` — 27 columnas\n14. `Usuario` — 14 columnas\n\n## AsignacionFlota_cordCombustible\n\n*3 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Placa | varchar | 1,1 | NO |  | PK |\n| Nombre | varchar | 200 | YES |  |  |\n| Usuario | varchar |  | YES |  |  |\n\n## Comb_EstacionServicio\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| IdEDS | number | 1,1 | NO |  | PK |\n| NitProveedor | varchar | 12 | YES |  |  |\n| IdAgencia | number |  | YES |  |  |\n| Descripcion | varchar | 50 | YES |  |  |\n| Estado | number |  | YES |  |  |\n| UsuCrea | varchar | 30 | YES |  |  |\n| FechaCrea | timestamp |  | YES |  |  |\n| UsuModifica | varchar | 30 | YES |  |  |\n| FechaModifica | timestamp |  | YES |  |  |\n| IndPropia | bit |  | YES |  |  |\n| Equiv_Terpel | number |  | YES |  |  |\n| IndEnvioRestriccion | bit |  | YES |  |  |\n| Ubicacion | varchar | 300 | YES |  |  |\n| IndDispensaUrea | bit |  | YES |  |  |\n\n## FuelCoordinator\n\n*3 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| FuelCoordinatorId | number |  | NO |  |  |\n| FuelManagerId | number |  | NO |  |  |\n\n## FuelingRequestState\n\n*7 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| FuelRequestLogivimId | number | 1,1 | NO |  | PK |\n| IsAuthorized | bit |  | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n| AutorizedBy | number |  | NO |  |  |\n\n## FuelingRequestStations\n\n*8 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| FuelRequestId | number |  | NO |  |  |\n| StationId | number |  | NO |  |  |\n| StationQuantity | number |  | NO |  |  |\n| StationName | varchar | 200 | YES |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n\n## IncidentUpdatesTypes\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 500 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n\n## IssueStatus\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Description | varchar | 500 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n\n## IssueStatusHistory\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| IssueStatusId | number |  | NO |  |  |\n| FuelRequestLogivimId | number |  | NO |  |  |\n| CreatedBy | number |  | NO |  |  |\n| Observation | varchar | 500 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n\n## ManifiestoFuel\n\n*9 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| IDEstacion1 | number |  | YES |  |  |\n| NombreEstacion1 | varchar |  | YES |  |  |\n| CantEstacion1 | number |  | NO |  |  |\n| IDEstacion2 | number |  | YES |  |  |\n| NombreEstacion2 | varchar |  | YES |  |  |\n| CantEstacion2 | number |  | NO |  |  |\n| IDEstacion3 | number |  | YES |  |  |\n| NombreEstacion3 | varchar |  | YES |  |  |\n| CantEstacion3 | number |  | NO |  |  |\n\n## RegistrationError\n\n*9 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| NoveltyTypeId | number |  | NO |  |  |\n| AgencyId | number |  | NO |  |  |\n| ManifestId | number |  | YES |  |  |\n| Description | varchar | 500 | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n| UpdatedAt | timestamp |  | YES |  |  |\n\n## RegistrationErrorAttachments\n\n*7 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| RegistrationErrorId | number |  | NO |  |  |\n| Path | varchar | 500 | NO |  |  |\n| AttachmentType | number |  | NO |  |  |\n| IsActive | bit |  | NO |  |  |\n| WasDeleted | bit |  | NO |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n\n## RegistrationErrorStatusHistory\n\n*6 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| IssueStatusId | number |  | NO |  |  |\n| CreatedBy | number |  | NO |  |  |\n| RegistrationErrorId | number |  | NO |  |  |\n| Observation | varchar | 500 | YES |  |  |\n| CreatedAt | timestamp |  | NO |  |  |\n\n## Solicitudes_Conductor_LogiVim\n\n*27 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| NumeroSolicitud | varchar | 100 | YES |  |  |\n| TipoSolicitud | varchar | 100 | YES |  |  |\n| IdConductor | number |  | NO |  |  |\n| NombreConductor | varchar | 200 | YES |  |  |\n| CedulaConductor | varchar | 50 | YES |  |  |\n| Placa | varchar | 20 | YES |  |  |\n| Trailer | varchar | 20 | YES |  |  |\n| IdEmpresa | number |  | NO |  |  |\n| Manifiesto | varchar | 100 | YES |  |  |\n| TipoEstacion | varchar | 100 | YES |  |  |\n| Estacion | varchar | 200 | YES |  |  |\n| IdNovedad | number |  | YES |  |  |\n| Novedad | varchar | 500 | YES |  |  |\n| Mensaje | varchar | 500 | YES |  |  |\n| Valor | number |  | YES |  |  |\n| Latitud | number |  | YES |  |  |\n| Longitud | number |  | YES |  |  |\n| BandAprobacion | number |  | YES |  |  |\n| MensajeCierre | varchar | 500 | YES |  |  |\n| Estado | varchar | 50 | YES |  |  |\n| FechaSolicitud | timestamp |  | YES |  |  |\n| FechaConsultaColtanques | timestamp |  | YES |  |  |\n| FechaGestionColtanques | timestamp |  | YES |  |  |\n| FechaNotificacionLogivim | timestamp |  | YES |  |  |\n| FechaCreacion | timestamp |  | YES |  |  |\n| CelularConductor | varchar |  | YES |  |  |\n\n## Usuario\n\n*14 columnas.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK |\n| Codigo | varchar |  | NO |  |  |\n| NombreUsuario | varchar |  | NO |  |  |\n| Apellido1 | varchar |  | NO |  |  |\n| Apellido2 | varchar |  | NO |  |  |\n| Nombre1 | varchar |  | NO |  |  |\n| Nombre2 | varchar |  | NO |  |  |\n| Celular | varchar |  | NO |  |  |\n| Correo | varchar |  | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  |  |\n| FechaCreacion | timestamp |  | NO |  |  |\n| ModificacionUsuarioId | number |  | YES |  |  |\n| FechaModificacion | timestamp |  | YES |  |  |\n| Activo | bit |  | NO |  |  |"
+    },
+    { "name": "Requests", "x-displayName": "1. Solicitudes de Combustible" },
+    { "name": "Stations", "x-displayName": "2. Catálogo de Estaciones" },
+    { "name": "StationIssues", "x-displayName": "3. Novedades de Estación" },
+    {
+      "name": "RegistrationErrors",
+      "x-displayName": "4. Errores de Registro de Combustible"
+    },
+    {
+      "name": "Issues",
+      "x-displayName": "5. Listado Unificado de Incidencias"
+    },
+    { "name": "LoginApp", "x-displayName": "6. Inicio de Sesión (App)" },
+    {
+      "name": "LoginApi",
+      "description": "Get Token JWT",
+      "x-displayName": "7. Inicio de Sesión (API)"
+    },
+    {
+      "name": "PasswordRecovery",
+      "x-displayName": "8. Recuperación de Contraseña"
+    },
+    {
+      "name": "Diagramas BD",
+      "x-traitTag": true,
+      "description": "Modelo entidad-relación de la base de datos.\n\n<!-- IMG:bd-01-modelo-general -->\n[![Diagrama entidad-relación](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20combustibles-DB.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/Diagrama%20combustibles-DB.png)"
+    }
+  ],
+  "paths": {
+    "/api/Issues": {
+      "post": {
+        "tags": ["Issues"],
+        "summary": "Obtiene el listado unificado de incidencias agregando novedades de estación, errores de registro y solicitudes de tanqueo, aplicando los filtros opcionales indicados",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 15,
+                      "code": "ER-015",
+                      "source": "registration_error",
+                      "status": { "id": 2, "description": "Autorizado" },
+                      "createdAt": "2026-07-08T09:15:00",
+                      "issueType": "Diferencia en galones",
+                      "managedAt": "2026-07-10T14:32:00",
+                      "managedBy": "Juan Pérez",
+                      "stationId": "900123456",
+                      "stationName": "EDS Central Bogotá"
+                    }
+                  ],
+                  "result": 1,
+                  "message": "Operación exitosa",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el listado unificado de incidencias agregando novedades de estación, errores de registro y solicitudes de tanqueo, aplicando los filtros opcionales indicados.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación: el controlador está anotado con [Authorize].\n2. El cuerpo de la petición (IssueListFilter) es obligatorio y se recibe como [FromBody].\n3. La fuente (Source) determina qué orígenes se incluyen: si viene vacío o nulo se incluyen los tres orígenes (estación, error de registro y solicitud); si tiene un valor solo se incluye el origen correspondiente ('station', 'registration_error' o 'request').\n4. Origen estación: toma las solicitudes de tipo Novedad y resuelve el NIT de la estación por su nombre desde el catálogo de estaciones.\n5. Origen error de registro: solo considera errores activos y no eliminados (IsActive y !WasDeleted); el estado y el gestor se obtienen del último registro del historial de estados; el código se genera con el prefijo configurado más el Id a 3 dígitos.\n6. Origen solicitud (tanqueo): el estado se deriva del estado de la solicitud de combustible: sin registro = Pendiente, IsAuthorized = Autorizado, en caso contrario = No Autorizado.\n7. Filtro Station: filtra por coincidencia parcial (contains, sin distinción de mayúsculas) sobre el nombre de la estación.\n8. Filtro Manifest: filtra por coincidencia parcial (contains, sin distinción de mayúsculas) sobre el código de la incidencia.\n9. Filtro StatusId: filtra las incidencias cuyo estado coincide con el Id indicado.\n10. Filtro DateFrom/DateTo: filtra por fecha de creación (CreatedAt) desde el inicio del día DateFrom y hasta el fin del día DateTo.\n11. Si tras aplicar los filtros no hay registros, la respuesta se marca como NoRecords (sin datos).\n12. Si el servicio produce un error (Result.Error) se devuelve un 500 (Problem) con el mensaje del resultado; en caso contrario se devuelve 200 (Ok) con el resultado.\n\n**Ruta en el gateway:** `/gateway/api/Issues`",
+        "operationId": "Issues_List",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IssueListFilter" },
+              "example": {
+                "dateTo": "string",
+                "source": "string",
+                "userId": 0,
+                "station": "string",
+                "dateFrom": "string",
+                "manifest": "string",
+                "statusId": 0
+              }
+            }
+          },
+          "description": "Filter criteria including userId and optional source, status and date filters."
+        }
+      }
+    },
+    "/api/LoginApi": {
+      "post": {
+        "tags": ["LoginApi"],
+        "summary": "Autentica las credenciales del usuario y genera un token JWT junto con su token de actualización",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenOut" },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0In0.dQw4w9WgXcQ",
+                  "result": 1,
+                  "message": "Autenticación exitosa",
+                  "statusCode": 200,
+                  "numberRecord": 0,
+                  "refreshToken": "b7f3c9e2-4a1d-4f8b-9c2e-1a2b3c4d5e6f"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": { "description": "Returns the newly created item" },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "If the item is null"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Oops! Can't lookup your query right now"
+          }
+        },
+        "description": "Autentica las credenciales del usuario y genera un token JWT junto con su token de actualización.\n\n**Reglas de Negocio**\n\n1. No requiere autenticación previa; es el endpoint utilizado para obtener el token JWT.\n2. Recibe las credenciales (usuario y contraseña) en el cuerpo de la solicitud en formato JSON.\n3. Los campos UserName y Password son obligatorios según las validaciones del modelo.\n4. Si el servicio devuelve un resultado distinto de Error, responde con código 200 (OK) e incluye el token generado.\n5. Si el servicio devuelve un resultado de tipo Error, responde con código 500 (Internal Server Error) incluyendo el mensaje de error.\n6. Si ocurre una excepción criptográfica (CryptographicException) durante el proceso, responde con código 500 (Internal Server Error).\n\n**Ruta en el gateway:** `/gateway/api/LoginApi`",
+        "operationId": "LoginApi_LoginApi",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequestDto" },
+              "example": {
+                "password": "string",
+                "userName": "string",
+                "applicationId": 0
+              }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/api/LoginApp": {
+      "post": {
+        "tags": ["LoginApp"],
+        "summary": "Autentica a un usuario de la aplicación móvil con sus credenciales y genera el token de sesión",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "user": {
+                    "code": "USR-001",
+                    "userId": 101,
+                    "profile": "Operador",
+                    "statusId": 1,
+                    "userType": "Conductor",
+                    "lastNames": "Pérez Gómez",
+                    "firstNames": "Juan Carlos"
+                  },
+                  "result": 1,
+                  "message": "Inicio de sesión exitoso",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": { "description": "Returns the newly created item" },
+          "400": { "description": "If the item is null" },
+          "500": { "description": "Oops! Can't lookup your query right now" }
+        },
+        "description": "Autentica a un usuario de la aplicación móvil con sus credenciales y genera el token de sesión.\n\n**Reglas de Negocio**\n\n1. El controlador requiere autenticación ([Authorize]) para acceder al endpoint.\n2. Se extrae el token del encabezado Authorization (formato 'Bearer {token}') y se envía al servicio junto con las credenciales.\n3. Si el resultado del servicio es diferente de Error, se retorna 200 OK con la información del usuario.\n4. Si el resultado del servicio es Error, se retorna 500 Internal Server Error con el mensaje del servicio.\n5. Si ocurre una CryptographicException al procesar la solicitud, se retorna 500 Internal Server Error con el mensaje de la excepción.\n\n**Ruta en el gateway:** `/gateway/api/LoginApp`",
+        "operationId": "LoginApp_LoginApp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginAppRequestDto" },
+              "example": { "password": "string", "userName": "string" }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/api/Requests": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Obtiene la lista completa de solicitudes de combustible con filtros opcionales por estado, coordinador, placa, manifiesto, estacion, indicador de novedad y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 101,
+                      "code": "SOL-2026-101",
+                      "plate": "ABC123",
+                      "manifest": "MF-4521",
+                      "coordinator": {
+                        "userId": 12,
+                        "userName": "Maria Gomez"
+                      },
+                      "requestDate": "2026-07-10T08:30:00",
+                      "authorization": {
+                        "userId": 4,
+                        "accepted": true,
+                        "userName": "Carlos Ruiz",
+                        "authorizedAt": "2026-07-11T10:00:00"
+                      }
+                    }
+                  ],
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene la lista completa de solicitudes de combustible con filtros opcionales por estado, coordinador, placa, manifiesto, estacion, indicador de novedad y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. Las solicitudes se filtran por el UserId enviado en el cuerpo.\n3. Se pueden aplicar filtros opcionales por estado, coordinador, placa, agencia, manifiesto, conductor, estacion, indicador de novedad (HasIssue) y rango de fechas.\n4. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n5. En caso de exito se responde con codigo 200 (OK) y la lista de solicitudes.\n\n**Ruta en el gateway:** `/gateway/api/Requests`",
+        "operationId": "Requests_List",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestListFilter" },
+              "example": {
+                "plate": "string",
+                "agency": "string",
+                "dateTo": "string",
+                "driver": "string",
+                "userId": 0,
+                "dateFrom": "string",
+                "hasIssue": true,
+                "manifest": "string",
+                "statusId": 0,
+                "stationId": 0,
+                "coordinatorId": 0
+              }
+            }
+          },
+          "description": "Filter criteria including userId and optional filters."
+        }
+      }
+    },
+    "/api/Stations": {
+      "post": {
+        "tags": ["Stations"],
+        "summary": "Busca estaciones de combustible por nombre (filtro opcional); devuelve todas las estaciones cuando no se envía filtro",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    { "id": 1, "name": "Estación Central" },
+                    { "id": 2, "name": "Estación Norte" }
+                  ],
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 2
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Busca estaciones de combustible por nombre (filtro opcional); devuelve todas las estaciones cuando no se envía filtro.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación (el controlador tiene el atributo [Authorize]).\n2. El cuerpo de la petición es opcional; si llega nulo se utiliza un StationSearchFilter vacío que retorna todas las estaciones.\n3. El campo Search es opcional; cuando es nulo o vacío se devuelven todas las estaciones.\n4. Si el resultado del servicio es Result.Error se responde con estado HTTP 500 (Problem) usando el mensaje de error.\n5. Cualquier resultado distinto de Error se responde con estado HTTP 200 (Ok).\n\n**Ruta en el gateway:** `/gateway/api/Stations`",
+        "operationId": "Stations_Search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/StationSearchFilter" },
+              "example": { "search": "string" }
+            }
+          },
+          "description": "Optional filter body with an optional Search string."
+        }
+      }
+    },
+    "/api/Requests/{id}": {
+      "get": {
+        "tags": ["Requests"],
+        "summary": "Obtiene el detalle completo de una solicitud de combustible especifica, incluyendo estaciones asignadas, estaciones autorizadas e informacion de autorizacion",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "id": 101,
+                    "code": "SOL-2026-101",
+                    "plate": "ABC123",
+                    "manifest": "MF-4521",
+                    "stations": [
+                      {
+                        "name": "Estacion Norte",
+                        "slot": 1,
+                        "unit": "Galones",
+                        "quantity": 100
+                      }
+                    ],
+                    "driverPhone": "3001234567",
+                    "requestDate": "2026-07-10T08:30:00",
+                    "stationName": "Estacion Norte",
+                    "authorization": {
+                      "userId": 4,
+                      "accepted": true,
+                      "userName": "Carlos Ruiz",
+                      "authorizedAt": "2026-07-11T10:00:00"
+                    },
+                    "authorizedStations": [
+                      {
+                        "name": "Estacion Norte",
+                        "slot": 1,
+                        "unit": "Galones",
+                        "quantity": 80
+                      }
+                    ]
+                  },
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Identifier of the fuel request."
+          }
+        ],
+        "description": "Obtiene el detalle completo de una solicitud de combustible especifica, incluyendo estaciones asignadas, estaciones autorizadas e informacion de autorizacion.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. El identificador de la solicitud se recibe como parametro de ruta y debe ser un entero.\n3. Si la solicitud no existe el servicio puede retornar sin datos (condicion de no encontrado).\n4. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n5. En caso de exito se responde con codigo 200 (OK) y el detalle de la solicitud.\n\n**Ruta en el gateway:** `/gateway/api/Requests/{id}`",
+        "operationId": "Requests_GetById"
+      }
+    },
+    "/api/station-issues": {
+      "post": {
+        "tags": ["StationIssues"],
+        "summary": "Obtiene el listado de novedades de estación con filtros opcionales por estado de gestión, texto de búsqueda y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 1024,
+                      "code": "SOL-2026-000123",
+                      "status": { "id": 1, "description": "Pendiente" },
+                      "createdAt": "2026-07-10T08:35:00",
+                      "issueType": "Diferencia de volumen",
+                      "manifestId": "MF-88123",
+                      "stationName": "Estación Norte"
+                    }
+                  ],
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el listado de novedades de estación con filtros opcionales por estado de gestión, texto de búsqueda y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación (el controlador tiene el atributo [Authorize]).\n2. Solo se consideran solicitudes cuyo TipoSolicitud es 'Novedad'.\n3. Se filtran las novedades según las placas asociadas al UserId enviado; si el usuario no tiene placas restringidas se devuelven todas.\n4. El texto de búsqueda (Search) se aplica sin distinción de mayúsculas sobre número de solicitud, estación y tipo de novedad.\n5. El filtro WasManaged en true devuelve solo novedades en estado 'Gestionada'; en false devuelve las que no están 'Gestionada'.\n6. Si no existen registros que cumplan los filtros, se responde con Result NoRecords (2) y Data vacío.\n7. En caso de error interno se devuelve 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/station-issues`",
+        "operationId": "StationIssues_List",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationIssueListFilter"
+              },
+              "example": {
+                "dateTo": "string",
+                "search": "string",
+                "userId": 0,
+                "dateFrom": "string",
+                "wasManaged": true
+              }
+            }
+          },
+          "description": "Filter criteria including optional status, search text and date range."
+        }
+      }
+    },
+    "/api/Requests/managed": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Obtiene las solicitudes gestionadas (autorizadas o rechazadas) del coordinador, con filtros opcionales por coordinador, autorizador, texto y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 88,
+                      "code": "SOL-2026-088",
+                      "plate": "XYZ789",
+                      "manifest": "MF-3300",
+                      "coordinator": {
+                        "userId": 12,
+                        "userName": "Maria Gomez"
+                      },
+                      "requestDate": "2026-07-05T14:00:00",
+                      "authorization": {
+                        "userId": 4,
+                        "accepted": true,
+                        "userName": "Carlos Ruiz",
+                        "authorizedAt": "2026-07-06T09:15:00"
+                      }
+                    }
+                  ],
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene las solicitudes gestionadas (autorizadas o rechazadas) del coordinador, con filtros opcionales por coordinador, autorizador, texto y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. Las solicitudes se filtran por el UserId enviado en el cuerpo.\n3. Se pueden aplicar filtros opcionales por coordinador (CoordinatorId), por autorizador (AuthorizedById), texto de busqueda y rango de fechas.\n4. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n5. En caso de exito se responde con codigo 200 (OK) y la lista de solicitudes gestionadas.\n\n**Ruta en el gateway:** `/gateway/api/Requests/managed`",
+        "operationId": "Requests_GetManaged",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestManagedFilter" },
+              "example": {
+                "dateTo": "string",
+                "search": "string",
+                "userId": 0,
+                "dateFrom": "string",
+                "coordinatorId": 0,
+                "authorizedById": 0
+              }
+            }
+          },
+          "description": "Request body containing the user ID and optional filters."
+        }
+      }
+    },
+    "/api/Requests/pending": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Obtiene las solicitudes pendientes del usuario, con filtros opcionales de texto de busqueda y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 101,
+                      "code": "SOL-2026-101",
+                      "plate": "ABC123",
+                      "manifest": "MF-4521",
+                      "assignedTo": "Juan Perez",
+                      "requestDate": "2026-07-10T08:30:00"
+                    }
+                  ],
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene las solicitudes pendientes del usuario, con filtros opcionales de texto de busqueda y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. Las solicitudes se filtran por el UserId enviado en el cuerpo.\n3. Los filtros de busqueda y rango de fechas son opcionales.\n4. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n5. En caso de exito se responde con codigo 200 (OK) y la lista de solicitudes pendientes.\n\n**Ruta en el gateway:** `/gateway/api/Requests/pending`",
+        "operationId": "Requests_GetPending",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestPendingFilter" },
+              "example": {
+                "dateTo": "string",
+                "search": "string",
+                "userId": 0,
+                "dateFrom": "string"
+              }
+            }
+          },
+          "description": "Request body containing the user ID and optional filters."
+        }
+      }
+    },
+    "/api/Requests/summary": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Obtiene un resumen de las solicitudes de combustible del coordinador con los totales de pendientes, gestionadas y total",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": { "total": 17, "managed": 12, "pending": 5 },
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene un resumen de las solicitudes de combustible del coordinador con los totales de pendientes, gestionadas y total.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. El resumen se calcula para el coordinador identificado por el UserId enviado en el cuerpo.\n3. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n4. En caso de exito se responde con codigo 200 (OK) y el objeto de resumen.\n\n**Ruta en el gateway:** `/gateway/api/Requests/summary`",
+        "operationId": "Requests_GetSummary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestSummaryRequest"
+              },
+              "example": { "userId": 0 }
+            }
+          },
+          "description": "Request body containing the coordinator's user ID."
+        }
+      }
+    },
+    "/api/Requests/statuses": {
+      "get": {
+        "tags": ["Requests"],
+        "summary": "Obtiene el catalogo completo de estados disponibles para las solicitudes, sin requerir filtros",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    { "id": 1, "description": "Pendiente" },
+                    { "id": 2, "description": "Autorizada" },
+                    { "id": 3, "description": "Rechazada" }
+                  ],
+                  "result": 0,
+                  "message": null
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el catalogo completo de estados disponibles para las solicitudes, sin requerir filtros.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. No requiere parametros ni filtros de entrada.\n3. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n4. En caso de exito se responde con codigo 200 (OK) y la lista de estados.\n\n**Ruta en el gateway:** `/gateway/api/Requests/statuses`",
+        "operationId": "Requests_GetStatuses"
+      }
+    },
+    "/api/registration-errors": {
+      "post": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Registra un nuevo error de registro de combustible con archivos adjuntos opcionales y devuelve el código generado en formato REGxxx",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": { "code": "REG001" },
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Registra un nuevo error de registro de combustible con archivos adjuntos opcionales y devuelve el código generado en formato REGxxx.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. El token JWT se extrae del encabezado Authorization y se envía al servicio para operar sobre el servidor de archivos.\n3. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n4. En caso de éxito se retorna el código de error de registro generado.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors`",
+        "operationId": "RegistrationErrors_Create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationErrorCreate"
+              },
+              "example": {
+                "userId": 0,
+                "agencyId": 0,
+                "manifestId": 0,
+                "attachments": [
+                  { "name": "string", "type": "string", "base64": "string" }
+                ],
+                "description": "string",
+                "errorTypeId": 0
+              }
+            }
+          },
+          "description": "Payload containing the error type, agency, manifest, description, and optional attachments."
+        }
+      }
+    },
+    "/api/station-issues/{id}": {
+      "get": {
+        "tags": ["StationIssues"],
+        "summary": "Obtiene el detalle completo de una novedad de estación por su identificador, incluyendo información de quien la reportó y el historial de estados",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "id": 1024,
+                    "code": "SOL-2026-000123",
+                    "createdAt": "2026-07-10T08:35:00",
+                    "issueType": "Diferencia de volumen",
+                    "manifestId": "MF-88123",
+                    "reportedBy": {
+                      "role": "Administrador de Estaciones",
+                      "userId": 45,
+                      "userName": "Juan Pérez"
+                    },
+                    "stationName": "Estación Norte",
+                    "statusHistory": [
+                      {
+                        "at": "2026-07-10T08:35:00",
+                        "status": { "id": 1, "description": "Pendiente" },
+                        "observation": "Novedad registrada"
+                      },
+                      {
+                        "at": "2026-07-11T10:00:00",
+                        "status": { "id": 2, "description": "En Proceso" },
+                        "observation": "Revisión iniciada"
+                      }
+                    ]
+                  },
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int64" },
+            "required": true,
+            "description": "Identifier of the station issue."
+          }
+        ],
+        "description": "Obtiene el detalle completo de una novedad de estación por su identificador, incluyendo información de quien la reportó y el historial de estados.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación (el controlador tiene el atributo [Authorize]).\n2. Si no existe una solicitud con el id indicado, se devuelve Result NotFound (6).\n3. Si la solicitud existe pero su TipoSolicitud no es 'Novedad', también se devuelve NotFound (6).\n4. El historial de estados se ordena de forma ascendente por fecha de creación.\n5. El rol de quien reporta se asigna como 'Administrador de Estaciones'.\n6. En caso de error interno se devuelve 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/station-issues/{id}`",
+        "operationId": "StationIssues_GetById"
+      }
+    },
+    "/api/Requests/{id}/status": {
+      "patch": {
+        "tags": ["Requests"],
+        "summary": "Autoriza o rechaza una solicitud de combustible; enviar una lista de estaciones no vacia autoriza la solicitud, omitirla la rechaza",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": null,
+                  "result": 0,
+                  "message": "Solicitud actualizada correctamente"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Identifier of the fuel request."
+          }
+        ],
+        "description": "Autoriza o rechaza una solicitud de combustible; enviar una lista de estaciones no vacia autoriza la solicitud, omitirla la rechaza.\n\n**Reglas de Negocio**\n\n1. Requiere autenticacion (el controlador tiene el atributo [Authorize]).\n2. El identificador de la solicitud se recibe como parametro de ruta.\n3. Proporcionar una lista de estaciones (Stations) no vacia dispara la autorizacion de la solicitud.\n4. Omitir la lista de estaciones dispara el rechazo de la solicitud.\n5. Si la solicitud no existe se retorna la condicion de no encontrado (404).\n6. Si el servicio retorna un resultado de error se responde con codigo 500 (Internal Server Error) incluyendo el mensaje del error.\n7. En caso de exito se responde con codigo 200 (OK).\n\n**Ruta en el gateway:** `/gateway/api/Requests/{id}/status`",
+        "operationId": "Requests_UpdateStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestStatusUpdate" },
+              "example": {
+                "userId": 0,
+                "stations": [{ "slot": 0, "stationId": 0 }],
+                "statusId": 0,
+                "observation": "string"
+              }
+            }
+          },
+          "description": "Payload with new status, acting user, optional observation, and stations to authorize."
+        }
+      }
+    },
+    "/api/Stations/availability": {
+      "get": {
+        "tags": ["Stations"],
+        "summary": "Obtiene el resumen de disponibilidad de estaciones propias y de terceros, separadas entre disponibles y con novedades activas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "own": { "available": 12, "withIssue": 3 },
+                    "third": { "available": 8, "withIssue": 1 }
+                  },
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 0
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el resumen de disponibilidad de estaciones propias y de terceros, separadas entre disponibles y con novedades activas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación (el controlador tiene el atributo [Authorize]).\n2. Si el resultado del servicio es Result.Error se responde con estado HTTP 500 (Problem) usando el mensaje de error.\n3. Cualquier resultado distinto de Error se responde con estado HTTP 200 (Ok).\n4. La respuesta agrupa los conteos en estaciones propias (Own) y de terceros (Third).\n\n**Ruta en el gateway:** `/gateway/api/Stations/availability`",
+        "operationId": "Stations_GetAvailability"
+      }
+    },
+    "/api/registration-errors/list": {
+      "post": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene la lista de errores de registro aplicando filtros opcionales por solicitud, tipo de error, gestión y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 10,
+                      "code": "REG001",
+                      "status": { "id": 1, "description": "Pendiente" },
+                      "manifest": "MAN-2026-001",
+                      "createdAt": "2026-07-13T10:30:00",
+                      "errorType": {
+                        "id": 2,
+                        "description": "Error de cantidad"
+                      },
+                      "lastObservation": "Reportado por el operador"
+                    }
+                  ],
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene la lista de errores de registro aplicando filtros opcionales por solicitud, tipo de error, gestión y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. Los filtros de solicitud, tipos de error, estado de gestión y rango de fechas son opcionales.\n3. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/list`",
+        "operationId": "RegistrationErrors_List",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationErrorListFilter"
+              },
+              "example": {
+                "dateTo": "string",
+                "userId": 0,
+                "dateFrom": "string",
+                "requestId": 0,
+                "wasManaged": true,
+                "errorTypeIds": []
+              }
+            }
+          },
+          "description": "Filter criteria including optional requestId, errorTypeId, statusId, and date range."
+        }
+      }
+    },
+    "/api/registration-errors/{id}": {
+      "get": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene el detalle completo de un error de registro por su identificador, incluyendo adjuntos e historial de estados",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "id": 10,
+                    "code": "REG001",
+                    "status": { "id": 1, "description": "Pendiente" },
+                    "manifest": "MAN-2026-001",
+                    "createdAt": "2026-07-13T10:30:00",
+                    "errorType": { "id": 2, "description": "Error de placa" },
+                    "attachments": [{ "id": 5, "name": "evidencia.jpg" }],
+                    "description": "La placa registrada no coincide",
+                    "statusHistory": [
+                      {
+                        "status": { "id": 1, "description": "Pendiente" },
+                        "createdAt": "2026-07-13T10:30:00",
+                        "createdBy": "Operador Sur",
+                        "observation": "Reportado por el operador"
+                      }
+                    ],
+                    "lastObservation": "Reportado por el operador"
+                  },
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Identifier of the registration error."
+          }
+        ],
+        "description": "Obtiene el detalle completo de un error de registro por su identificador, incluyendo adjuntos e historial de estados.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. El identificador se recibe como parámetro de ruta con restricción de tipo entero.\n3. Incluye adjuntos e historial de cambios de estado del error.\n4. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/{id}`",
+        "operationId": "RegistrationErrors_GetById"
+      }
+    },
+    "/api/registration-errors/types": {
+      "get": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene el catálogo completo de tipos de error de registro sin aplicar ningún filtro",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    { "id": 1, "description": "Error de cantidad" },
+                    { "id": 2, "description": "Error de placa" }
+                  ],
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 2
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el catálogo completo de tipos de error de registro sin aplicar ningún filtro.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. Devuelve únicamente los tipos de error activos y no eliminados.\n3. Si no existen registros se retorna la respuesta con indicador de sin registros.\n4. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/types`",
+        "operationId": "RegistrationErrors_GetTypes"
+      }
+    },
+    "/api/station-issues/{id}/status": {
+      "patch": {
+        "tags": ["StationIssues"],
+        "summary": "Actualiza el estado de una novedad de estación, registrando el cambio y la observación en el historial",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 0
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int64" },
+            "required": true,
+            "description": "Identifier of the station issue."
+          }
+        ],
+        "description": "Actualiza el estado de una novedad de estación, registrando el cambio y la observación en el historial.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación (el controlador tiene el atributo [Authorize]).\n2. Si no existe una solicitud con el id indicado, se devuelve Result NotFound (6).\n3. Si la solicitud existe pero su TipoSolicitud no es 'Novedad', también se devuelve NotFound (6).\n4. Si el StatusId enviado no corresponde a un estado válido y no eliminado, se devuelve Result BadRequest (4) con el mensaje 'Estado no válido.'.\n5. Al actualizar, se guarda la nueva descripción de estado en la solicitud y se registra la fecha de gestión (hora de Bogotá).\n6. Se agrega un registro al historial de estados con el estado, usuario, observación y fecha del cambio.\n7. En caso de error interno se devuelve 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/station-issues/{id}/status`",
+        "operationId": "StationIssues_UpdateStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationIssueStatusUpdate"
+              },
+              "example": { "userId": 0, "statusId": 0, "observation": "string" }
+            }
+          },
+          "description": "Payload with the new status and acting user information."
+        }
+      }
+    },
+    "/api/registration-errors/statuses": {
+      "get": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene el catálogo completo de estados de error de registro sin aplicar ningún filtro",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    { "id": 1, "description": "Pendiente" },
+                    { "id": 2, "description": "Gestionado" }
+                  ],
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 2
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene el catálogo completo de estados de error de registro sin aplicar ningún filtro.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. Devuelve únicamente los estados no eliminados.\n3. Si no existen registros se retorna la respuesta con indicador de sin registros.\n4. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/statuses`",
+        "operationId": "RegistrationErrors_GetStatuses"
+      }
+    },
+    "/api/PasswordRecovery/GenerateCode": {
+      "post": {
+        "tags": ["PasswordRecovery"],
+        "summary": "Genera un código de verificación para el usuario y lo envía por correo electrónico a través del servicio de notificaciones",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 0
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Genera un código de verificación para el usuario y lo envía por correo electrónico a través del servicio de notificaciones.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token JWT (Bearer) enviado en el encabezado Authorization.\n2. El token del encabezado se extrae y se reenvía a los servicios externos de seguridad y notificación.\n3. Se solicita el código de recuperación al servicio externo de seguridad para el usuario indicado.\n4. Si el servicio externo devuelve un código no vacío, se arma el correo con el código y el nombre del usuario y se envía mediante el servicio de notificación (Result = Success).\n5. Si el servicio externo no devuelve código, la operación se marca sin registros (Result = NoRecords).\n6. Si ocurre un error interno se responde con código HTTP 500 (Internal Server Error) incluyendo el mensaje del error.\n\n**Ruta en el gateway:** `/gateway/api/PasswordRecovery/GenerateCode`",
+        "operationId": "PasswordRecovery_GenerateCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCodeRequestDto"
+              },
+              "example": { "user": "string" }
+            }
+          }
+        }
+      }
+    },
+    "/api/registration-errors/responses": {
+      "post": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene la lista de respuestas de errores de registro aplicando filtros opcionales por manifiesto, tipo de error y rango de fechas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "id": 10,
+                      "code": "REG001",
+                      "manifest": "MAN-2026-001",
+                      "response": "Se corrigió la placa en el sistema",
+                      "createdAt": "2026-07-13T10:30:00",
+                      "errorType": { "id": 2, "description": "Error de placa" }
+                    }
+                  ],
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Obtiene la lista de respuestas de errores de registro aplicando filtros opcionales por manifiesto, tipo de error y rango de fechas.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. Los filtros de manifiesto, tipos de error y rango de fechas son opcionales.\n3. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/responses`",
+        "operationId": "RegistrationErrors_ListResponses",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseListFilter"
+              },
+              "example": {
+                "dateTo": "string",
+                "userId": 0,
+                "dateFrom": "string",
+                "manifest": "string",
+                "errorTypeIds": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/PasswordRecovery/ResetPassword": {
+      "post": {
+        "tags": ["PasswordRecovery"],
+        "summary": "Restablece la contraseña del usuario validando el código de verificación mediante el servicio externo de seguridad",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "result": 1,
+                  "message": null,
+                  "statusCode": 200,
+                  "numberRecord": 0
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "description": "Restablece la contraseña del usuario validando el código de verificación mediante el servicio externo de seguridad.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token JWT (Bearer) enviado en el encabezado Authorization.\n2. El token del encabezado se extrae y se reenvía al servicio externo de seguridad.\n3. Se envía al servicio externo el usuario, la nueva contraseña y el código de actualización para establecer la nueva contraseña.\n4. Si el servicio externo responde con estado HTTP 200 (OK), la operación se marca como exitosa (Result = Success).\n5. Si el servicio externo responde con un estado distinto de OK, se retorna Result = NoRecords con estado HTTP 400 (BadRequest) y el mensaje 'Usuario o código incorrecto'.\n6. Si ocurre un error interno se responde con código HTTP 500 (Internal Server Error) incluyendo el mensaje del error.\n\n**Ruta en el gateway:** `/gateway/api/PasswordRecovery/ResetPassword`",
+        "operationId": "PasswordRecovery_ResetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequestDto"
+              },
+              "example": {
+                "user": "string",
+                "codeUpdate": "string",
+                "newPassword": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/registration-errors/{id}/status": {
+      "patch": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Actualiza el estado de un error de registro y opcionalmente agrega una observación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Identifier of the registration error."
+          }
+        ],
+        "description": "Actualiza el estado de un error de registro y opcionalmente agrega una observación.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. El identificador del error se recibe como parámetro de ruta con restricción de tipo entero.\n3. La observación es opcional; el nuevo estado y el usuario que ejecuta la acción son obligatorios.\n4. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/{id}/status`",
+        "operationId": "RegistrationErrors_UpdateStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationErrorStatusUpdate"
+              },
+              "example": { "userId": 0, "statusId": 0, "observation": "string" }
+            }
+          },
+          "description": "Payload with new status, acting user, and optional observation."
+        }
+      }
+    },
+    "/api/registration-errors/responses/{id}": {
+      "get": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Obtiene el detalle completo de la respuesta de un error de registro por su identificador",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "id": 10,
+                    "code": "REG001",
+                    "status": { "id": 2, "description": "Gestionado" },
+                    "response": "Se corrigió la placa en el sistema",
+                    "createdAt": "2026-07-13T10:30:00",
+                    "errorType": { "id": 2, "description": "Error de placa" },
+                    "managedAt": "2026-07-13T14:00:00",
+                    "stationId": "EST-001",
+                    "attachments": [{ "id": 5, "name": "evidencia.jpg" }],
+                    "description": "La placa registrada no coincide",
+                    "respondedBy": {
+                      "role": "Coordinador",
+                      "userId": 3,
+                      "userName": "Juan Pérez"
+                    },
+                    "stationName": "Estación Norte"
+                  },
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Obtiene el detalle completo de la respuesta de un error de registro por su identificador.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. El identificador se recibe como parámetro de ruta.\n3. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/responses/{id}`",
+        "operationId": "RegistrationErrors_GetResponseById"
+      }
+    },
+    "/api/registration-errors/attachments/{attachmentId}": {
+      "get": {
+        "tags": ["RegistrationErrors"],
+        "summary": "Descarga el contenido de un archivo adjunto de un error de registro desde el servidor de archivos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                  "result": 1,
+                  "message": "Operación exitosa.",
+                  "statusCode": 200,
+                  "numberRecord": 1
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Identifier of the attachment to download."
+          }
+        ],
+        "description": "Descarga el contenido de un archivo adjunto de un error de registro desde el servidor de archivos.\n\n**Reglas de Negocio**\n\n1. Requiere autenticación mediante token Bearer (el controlador tiene el atributo [Authorize]).\n2. El token JWT se extrae del encabezado Authorization y se envía al servidor de archivos para obtener el contenido.\n3. El identificador del adjunto se recibe como parámetro de ruta con restricción de tipo entero.\n4. Solo se recupera el adjunto si está activo y no eliminado; si no existe se marca como no encontrado.\n5. El contenido del archivo se devuelve codificado en base64 dentro del campo data.\n6. Si el resultado del servicio es Error se devuelve un HTTP 500 con el mensaje del proceso.\n\n**Ruta en el gateway:** `/gateway/api/registration-errors/attachments/{attachmentId}`",
+        "operationId": "RegistrationErrors_GetAttachment"
+      }
+    }
+  },
+  "openapi": "3.0.4",
+  "servers": [
+    { "url": "/gateway", "description": "Gateway (prefijo real de invocación)" }
+  ],
+  "security": [{ "Bearer": [] }],
+  "components": {
+    "schemas": {
+      "Result": {
+        "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        "type": "integer",
+        "format": "int32"
+      },
+      "TokenOut": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "nullable": true },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" },
+          "refreshToken": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "AttachmentIn": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nombre del archivo adjunto."
+          },
+          "type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tipo o extensión del archivo adjunto."
+          },
+          "base64": {
+            "type": "string",
+            "nullable": true,
+            "description": "Contenido del archivo adjunto codificado en base64."
+          }
+        },
+        "additionalProperties": false
+      },
+      "HttpStatusCode": {
+        "enum": [
+          100, 101, 102, 103, 200, 201, 202, 203, 204, 205, 206, 207, 208, 226,
+          300, 301, 302, 303, 304, 305, 306, 307, 308, 400, 401, 402, 403, 404,
+          405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 421,
+          422, 423, 424, 426, 428, 429, 431, 451, 500, 501, 502, 503, 504, 505,
+          506, 507, 508, 510, 511
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "detail": { "type": "string", "nullable": true },
+          "status": { "type": "integer", "format": "int32", "nullable": true },
+          "instance": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": {}
+      },
+      "IssueListFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final del rango de creación a filtrar (inclusive)."
+          },
+          "source": {
+            "type": "string",
+            "nullable": true,
+            "description": "Origen de la incidencia a filtrar ('station', 'registration_error' o 'request'). Si es nulo o vacío se incluyen todos los orígenes."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que consulta el listado."
+          },
+          "station": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto para filtrar por nombre de estación (coincidencia parcial)."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial del rango de creación a filtrar (inclusive)."
+          },
+          "manifest": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto para filtrar por código de la incidencia (coincidencia parcial)."
+          },
+          "statusId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador del estado por el cual filtrar las incidencias."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginRequestDto": {
+        "type": "object",
+        "required": ["password", "userName"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Contraseña del usuario."
+          },
+          "userName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nombre de usuario con el que se realiza la autenticación."
+          },
+          "applicationId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador de la aplicación desde la que se inicia sesión. Valor por defecto 0."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestListFilter": {
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Placa del vehiculo para filtrar las solicitudes."
+          },
+          "agency": {
+            "type": "string",
+            "nullable": true,
+            "description": "Agencia para filtrar las solicitudes."
+          },
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final opcional del rango de filtrado."
+          },
+          "driver": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nombre del conductor para filtrar las solicitudes."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario del que se obtienen las solicitudes."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial opcional del rango de filtrado."
+          },
+          "hasIssue": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Indicador opcional para filtrar solicitudes que tienen o no novedades."
+          },
+          "manifest": {
+            "type": "string",
+            "nullable": true,
+            "description": "Numero de manifiesto para filtrar las solicitudes."
+          },
+          "statusId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador opcional del estado para filtrar las solicitudes."
+          },
+          "stationId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador opcional de la estacion para filtrar las solicitudes."
+          },
+          "coordinatorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador opcional del coordinador para filtrar las solicitudes."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginAppRequestDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "nullable": true,
+            "description": "Contraseña del usuario."
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nombre de usuario con el que se inicia sesión."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestStationInput": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Numero de posicion (slot) de la estacion dentro de la solicitud."
+          },
+          "stationId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador de la estacion que se autoriza para el slot indicado."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestStatusUpdate": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que ejecuta la accion de autorizar o rechazar."
+          },
+          "stations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RequestStationInput" },
+            "nullable": true,
+            "description": "Lista opcional de estaciones a autorizar; si es no vacia autoriza la solicitud, si se omite la rechaza."
+          },
+          "statusId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del nuevo estado que se asignara a la solicitud."
+          },
+          "observation": {
+            "type": "string",
+            "nullable": true,
+            "description": "Observacion opcional asociada a la gestion de la solicitud."
+          }
+        },
+        "additionalProperties": false
+      },
+      "StationSearchFilter": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto de búsqueda para filtrar las estaciones por nombre. Si es nulo o vacío se devuelven todas las estaciones."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestManagedFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final opcional del rango de filtrado."
+          },
+          "search": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto opcional para filtrar las solicitudes por coincidencia."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario del que se obtienen las solicitudes gestionadas."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial opcional del rango de filtrado."
+          },
+          "coordinatorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador opcional del coordinador para filtrar las solicitudes."
+          },
+          "authorizedById": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador opcional del usuario que autorizo las solicitudes para filtrar."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestPendingFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final opcional del rango de filtrado de solicitudes."
+          },
+          "search": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto opcional para filtrar las solicitudes por coincidencia (codigo, placa, manifiesto, etc.)."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario del que se obtienen las solicitudes pendientes."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial opcional del rango de filtrado de solicitudes."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RequestSummaryRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario coordinador del que se desea obtener el resumen de solicitudes."
+          }
+        },
+        "additionalProperties": false
+      },
+      "GenerateCodeRequestDto": {
+        "type": "object",
+        "required": ["user"],
+        "properties": {
+          "user": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identificador o nombre del usuario para el cual se solicita el código de recuperación de contraseña."
+          }
+        },
+        "additionalProperties": false
+      },
+      "StationIssueListFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final del rango de la fecha de solicitud."
+          },
+          "search": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto de búsqueda sobre número de solicitud, estación o tipo de novedad."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que consulta; determina las placas/estaciones visibles."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial del rango de la fecha de solicitud."
+          },
+          "wasManaged": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Filtra por estado de gestión: true solo gestionadas, false solo no gestionadas, nulo todas."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponseListFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final del rango de búsqueda."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que consulta las respuestas."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial del rango de búsqueda."
+          },
+          "manifest": {
+            "type": "string",
+            "nullable": true,
+            "description": "Número de manifiesto para filtrar las respuestas."
+          },
+          "errorTypeIds": {
+            "type": "array",
+            "items": { "type": "integer", "format": "int32" },
+            "nullable": true,
+            "description": "Lista de identificadores de tipos de error para filtrar."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegistrationErrorCreate": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que reporta el error."
+          },
+          "agencyId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador de la agencia asociada al error."
+          },
+          "manifestId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del manifiesto asociado al error."
+          },
+          "attachments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AttachmentIn" },
+            "nullable": true,
+            "description": "Lista de archivos adjuntos opcionales asociados al error."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del error reportado."
+          },
+          "errorTypeId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del tipo de error de registro."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetPasswordRequestDto": {
+        "type": "object",
+        "required": ["codeUpdate", "newPassword", "user"],
+        "properties": {
+          "user": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identificador o nombre del usuario cuya contraseña se desea restablecer."
+          },
+          "codeUpdate": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Código de verificación previamente generado y enviado al usuario, requerido para validar el restablecimiento."
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nueva contraseña que se asignará al usuario."
+          }
+        },
+        "additionalProperties": false
+      },
+      "StationIssueStatusUpdate": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que realiza el cambio de estado."
+          },
+          "statusId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del nuevo estado a asignar a la novedad."
+          },
+          "observation": {
+            "type": "string",
+            "nullable": true,
+            "description": "Observación o comentario asociado al cambio de estado."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "detail": { "type": "string", "nullable": true },
+          "errors": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "status": { "type": "integer", "format": "int32", "nullable": true },
+          "instance": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": {}
+      },
+      "RegistrationErrorListFilter": {
+        "type": "object",
+        "properties": {
+          "dateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha final del rango de búsqueda."
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que consulta la lista."
+          },
+          "dateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha inicial del rango de búsqueda."
+          },
+          "requestId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Identificador de la solicitud para filtrar los errores."
+          },
+          "wasManaged": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Indica si se filtran los errores ya gestionados o no gestionados."
+          },
+          "errorTypeIds": {
+            "type": "array",
+            "items": { "type": "integer", "format": "int32" },
+            "nullable": true,
+            "description": "Lista de identificadores de tipos de error para filtrar."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegistrationErrorStatusUpdate": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del usuario que ejecuta la acción."
+          },
+          "statusId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Identificador del nuevo estado a asignar al error."
+          },
+          "observation": {
+            "type": "string",
+            "nullable": true,
+            "description": "Observación opcional asociada al cambio de estado."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Introduce un token JWT válido. Ejemplo: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

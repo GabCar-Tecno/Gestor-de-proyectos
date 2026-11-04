@@ -1,0 +1,1446 @@
+{
+  "info": {
+    "title": "API Inspector Coltanques",
+    "contact": {
+      "name": "Edwin Julián Gómez Ramírez — Developer",
+      "email": "edwin.gomez@coltanques.com.co"
+    },
+    "version": "1.0.0",
+    "description": "**API Inspector** de Coltanques S.A.S.\n\nEste documento describe **los endpoints que consume la aplicación móvil Inspector**, usada por los inspectores de patio para registrar la inspección de contenedores en operaciones de exportación e importación: cargue, precintado (sellos), evidencia fotográfica, firma del responsable y sincronización con el servidor central.\n\n```\nApp Inspector (móvil)\n      │   Authorization: Bearer <token>\n      ▼\n┌───────────────────────────────────────────────┐\n│   API Inspector                                 │  .../webs/apiinspector/api\n│   (inspección, cargue, checklist, sellos, ...)  │\n└───────────────────────────────────────────────┘\n```\n\nBase documental: *Manual Técnico — Aplicación Inspector, versión -001* (diccionario de datos y diagrama de base de datos).\n\n## Procesos que expone\n\n| Proceso | Descripción |\n|---------|-------------|\n| **Inspección** | Creación, consulta y avance del registro raíz del proceso. |\n| **Inspector** | Contexto comercial y logístico: cliente, agencia, puerto, tipo de contenedor. |\n| **Conductor** | Conductor y equipo de transporte que moviliza el contenedor. |\n| **Checklist** | Lista de verificación del contenedor por partes y sus respuestas. |\n| **Cargue de exportación** | Orden de cargue, sellos, booking, EIR y evidencia fotográfica. |\n| **Cargue de importación** | Recepción del contenedor, autorización DIAN y sellos de llegada. |\n| **Cierre de exportación** | Verificación de salida y conciliación de sellos contra el cargue. |\n| **Firma y sincronización** | Firma manuscrita y envío del paquete capturado sin conexión. |\n| **Catálogos** | Datos maestros: grupos de preguntas, preguntas y sellos. |\n\n## Modelo de datos\n\nToda la operación gira alrededor de una única entidad raíz: **`container_inspection`**. Cada vez que un inspector inicia una inspección se crea un registro en esa tabla y **todas las pantallas posteriores escriben registros hijos** que apuntan a ella mediante `container_inspection_id`.\n\n```\n                       container_inspection  (raíz del proceso)\n                                 │\n     ┌───────────┬───────────────┼────────────────┬──────────────┐\n     │           │               │                │              │\n  inspector   driver          answer         lifting_exports  lifting_imports\n                                 │\n                        question / question_group\n                             (catálogo)\n```\n\n`closing_exports` es la única tabla que **no** cuelga de `container_inspection`: se diligencia en el patio de cierre y se relaciona por `lifting_order_code` + `container_number`.\n\n## Orden de las pantallas\n\n| Orden | Pantalla | Tabla que escribe | Aplica a |\n|-------|----------|-------------------|----------|\n| 1 | Inspección | `container_inspection` | Ambos |\n| 2 | Inspector | `inspector` | Ambos |\n| 3 | Conductor | `driver` | Ambos |\n| 4 | Checklist | `answer` | Ambos |\n| 5 | Cargue de exportación | `lifting_exports` | Exportación |\n| 5 | Cargue de importación | `lifting_imports` | Importación |\n| 6 | Cierre de exportación | `closing_exports` | Exportación |\n| 7 | Firma y sincronización | `container_inspection` | Ambos |\n\nEl campo **`process_type`** decide la rama (exportación / importación) y **`process_step`** guarda en qué pantalla quedó el usuario, de modo que la app pueda **reanudar** una inspección interrumpida.\n\n## Autenticación\n\nTodas las operaciones viajan con `Authorization: Bearer <token>`, obtenido en el login del inspector. Ante un `401` el cliente renueva el token y reintenta la petición original.\n\n## Trabajo offline y sincronización\n\nLas tablas `container_inspection` y `driver` incluyen el flag **`to_synchronize`**. La app guarda todo en la base de datos local del dispositivo y marca los registros pendientes; cuando hay conectividad, un proceso en segundo plano los envía y baja el flag. El campo `error_status` almacena el detalle del último error de sincronización.\n\n> **Notas de fidelidad al contrato real:**\n> - Se detectaron inconsistencias entre el diccionario de datos y el diagrama ER. Están señaladas en cada esquema con la extensión `x-observacion`.\n> - Algunas columnas conservan el nombre exacto de la base de datos, incluidos typos: `port_of_depature_or_arrival` (por `departure`).\n> - Las rutas de los endpoints no aparecen en el manual técnico: se derivaron del modelo de datos y deben confirmarse contra la implementación."
+  },
+  "tags": [
+    {
+      "name": "Diagramas de flujo",
+      "x-traitTag": true,
+      "description": "## Cargue Evidencias Contenedor\n\n**Para iniciar** se requiere una inspección activa (`container_inspection` con `process_type` definido), el contenedor seleccionado desde la orden de cargue y un token vigente (la pantalla lo renueva al abrirse). El permiso de cámara se solicita al tocar el primer ítem.\n\n**Qué hace:** la app presenta la lista de evidencias requeridas por tipo de proceso (puertas cerradas, sellos, piso, dados, contraluz, comodato, etc.; el sello de naviera es opcional en exportación). Por cada ítem el inspector toma la foto con la cámara o la elige de la galería; la imagen se comprime, se valida su tamaño y se guarda en el almacenamiento del dispositivo con el prefijo del contenedor, lo que permite retomar evidencias ya capturadas. Al guardar, cada foto se codifica en Base64 (`imageBits`, `extensionType`, `weight`) y se envía al backend: en exportación actualiza el cargue (`updateLiftingExport`) y en importación envía el paquete de actualización con número de contenedor, autorización DIAN y observaciones. Sin conexión (modo offline), el flujo continúa y la evidencia queda pendiente de sincronizar.\n\n**Tablas que usa:** `lifting_exports` (evidencia y datos del cargue de exportación; en el modelo corresponde a `photo_evidence_1_uri` / `photo_evidence_2_uri`), `lifting_imports` (recepción de importación), ambas cacheadas en la base local del dispositivo, y `container_inspection` como registro raíz del proceso.\n\n<!-- IMG:Cargue Evidencias Contenedor.drawio.png -->\n[![Diagrama de flujo — Cargue Evidencias Contenedor](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Cargue%20Evidencias%20Contenedor.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Cargue%20Evidencias%20Contenedor.drawio.png)"
+    },
+    {
+      "name": "Diccionario de datos",
+      "x-traitTag": true,
+      "description": "Estructura física de las **10 tablas** del dominio de inspección documentadas en el *Manual Técnico — Aplicación Inspector, versión -001* (sección Diccionario de datos).\n\n**Convenciones**\n\n- `serial` equivale a identidad autoincremental (`PK`).\n- `Length` vacío cuando el manual no declara longitud.\n- Se conservan nombres y tipos exactos del diccionario, incluidos typos e inconsistencias respecto al diagrama ER (`port_of_depature_or_arrival`, `trailer_plate` tipificado como `Timestampz`, `container_number` como `int4` en `container_inspection`, `answer.question_id` declarado como `FK(container_inspection)`).\n- El diagrama ER añade `driver.inspection_date` (datetime), ausente en el diccionario.\n\n**Índice de tablas** (orden del manual)\n\n1. `lifting_exports` — 16 columnas\n2. `lifting_imports` — 12 columnas\n3. `closing_exports` — 12 columnas\n4. `driver` — 6 columnas\n5. `inspector` — 7 columnas\n6. `answer` — 6 columnas\n7. `question` — 5 columnas\n8. `question_group` — 4 columnas\n9. `stamps` — 3 columnas\n10. `container_inspection` — 12 columnas\n\n## lifting_exports\n\n*16 columnas. Cargue de exportación (orden, sellos, booking, EIR y evidencia fotográfica).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| container_inspection_id | int4 |  | NO |  | FK(container_inspection) |\n| agency_id | int4 |  | NO |  |  |\n| lifting_order_code | double |  | NO |  |  |\n| plate | varchar |  | NO |  |  |\n| container_number | varchar |  | NO |  |  |\n| load_stamp_1 | varchar |  | NO |  |  |\n| load_stamp_2 | varchar |  | NO |  |  |\n| load_stamp_3 | varchar |  | NO |  |  |\n| empty_load_stamp | varchar |  | NO |  |  |\n| booking | varchar |  | NO |  |  |\n| strip_number | varchar |  | NO |  |  |\n| eir_number | varchar |  | NO |  |  |\n| modification_description | varchar |  | YES |  |  |\n| photo_evidence_1_uri | varchar |  | YES |  |  |\n| photo_evidence_2_uri | varchar |  | YES |  |  |\n\n## lifting_imports\n\n*12 columnas. Cargue / recepción de importación (autorización DIAN y sellos de llegada).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| container_inspection_id | int4 |  | NO |  | FK(container_inspection) |\n| agency_id | int4 |  | NO |  |  |\n| container_number | varchar |  | NO |  |  |\n| load_date | varchar |  | NO |  |  |\n| eir_number | varchar |  | NO |  |  |\n| dian_authorization | varchar |  | NO |  |  |\n| observations | varchar |  | YES |  |  |\n| load_stamp_1 | varchar |  | NO |  |  |\n| load_stamp_2 | varchar |  | NO |  |  |\n| load_stamp_3 | varchar |  | NO |  |  |\n| empty_load_stamp | varchar |  | NO |  |  |\n\n## closing_exports\n\n*12 columnas. Cierre de exportación. No cuelga de `container_inspection`; se concilia por `lifting_order_code` + `container_number`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| agency_id | int4 |  | NO |  |  |\n| lifting_order_code | double |  | NO |  |  |\n| plate | varchar |  | NO |  |  |\n| container_number | varchar |  | NO |  |  |\n| load_stamp_1 | varchar |  | NO |  |  |\n| load_stamp_2 | varchar |  | NO |  |  |\n| load_stamp_3 | varchar |  | NO |  |  |\n| empty_load_stamp | varchar |  | NO |  |  |\n| booking | varchar |  | NO |  |  |\n| strip_number | varchar |  | NO |  |  |\n| eir_number | varchar |  | NO |  |  |\n\n## driver\n\n*6 columnas. Conductor y equipo de transporte. El diagrama ER añade `inspection_date` (datetime), no listada aquí.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| container_inspection_id | int4 |  | NO |  | FK(container_inspection) |\n| driver_name | varchar |  | NO |  |  |\n| vehicle_plate | varchar |  | NO |  |  |\n| trailer_plate | Timestampz |  | NO |  | Inconsistencia: en el diagrama ER es varchar |\n| to_synchronize | bool |  | NO |  |  |\n\n## inspector\n\n*7 columnas. Contexto comercial y logístico de la inspección.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| container_inspection_id | int4 |  | NO |  | FK(container_inspection) |\n| client | varchar |  | NO |  |  |\n| charge_type | varchar |  | NO |  |  |\n| maritime_agency | varchar |  | NO |  |  |\n| port_of_depature_or_arrival | varchar |  | NO |  | Typo conservado (depature) |\n| container_type | varchar |  | NO |  |  |\n\n## answer\n\n*6 columnas. Respuesta del inspector a una pregunta del checklist.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| container_inspection_id | int4 |  | NO |  | FK(container_inspection) |\n| question_id | int4 |  | NO |  | Diccionario: FK(container_inspection); correcto: FK(question) |\n| answer_option | enum |  | NO |  |  |\n| client | varchar |  | NO |  |  |\n| observation | varchar |  | NO |  |  |\n\n## question\n\n*5 columnas. Pregunta concreta del checklist, asociada a un grupo.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| question_group_id | int4 |  | NO |  | FK(question_group) |\n| question_id | int4 |  | NO |  | Diccionario: FK(container_inspection); columna heredada |\n| description | varchar |  | NO |  |  |\n| id | int4 |  | NO |  |  |\n\n## question_group\n\n*4 columnas. Grupo de preguntas (parte física del contenedor).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| id | serial |  | NO |  | PK |\n| description | varchar |  | NO |  |  |\n| for_empty_container | bool |  | NO |  |  |\n| id_part | Int4 |  | NO |  |  |\n\n## stamps\n\n*3 columnas. Inventario de sellos / precintos.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| stamp_id | int4 |  | NO |  |  |\n| stamp_type | varchar |  | NO |  |  |\n\n## container_inspection\n\n*12 columnas. Registro raíz del proceso de inspección.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| uid | serial |  | NO |  | PK |\n| process_type | int4 |  | NO |  |  |\n| container_number | int4 |  | NO |  | Inconsistencia: debería ser varchar (ISO 6346) |\n| sign_path | varchar |  | NO |  |  |\n| created_at | datetime2 |  | NO |  |  |\n| sender_client | varchar |  | NO |  |  |\n| receiver_client | varchar |  | NO |  |  |\n| container_seals | varchar |  | NO |  |  |\n| receiver_inspection_date | varchar |  | NO |  |  |\n| process_step | int4 |  | NO |  |  |\n| error_status | varchar |  | NO |  |  |\n| to_synchronize | bool |  | NO |  |  |"
+    },
+    {
+      "name": "Diagramas BD",
+      "x-traitTag": true,
+      "description": "## Diagrama ER — Etapa 1\n\n<!-- IMG:Diagrama Proceso inspeccion de Contenedor-Diagrama ER Etapa1.drawio.png -->\n[![Diagrama ER — Proceso inspección de contenedor, Etapa 1](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Diagrama%20Proceso%20inspeccion%20de%20Contenedor-Diagrama%20ER%20Etapa1.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Diagrama%20Proceso%20inspeccion%20de%20Contenedor-Diagrama%20ER%20Etapa1.drawio.png)\n\n## Diagrama ER — Etapa 2\n\n<!-- IMG:Diagrama Proceso inspeccion de Contenedor-Diagrama ER Etapa 2.drawio.png -->\n[![Diagrama ER — Proceso inspección de contenedor, Etapa 2](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Diagrama%20Proceso%20inspeccion%20de%20Contenedor-Diagrama%20ER%20Etapa%202.drawio.png)](https://gabcar-tecno.github.io/Gestor-de-proyectos/assets/inspector/Diagrama%20Proceso%20inspeccion%20de%20Contenedor-Diagrama%20ER%20Etapa%202.drawio.png)"
+    },
+    {
+      "name": "Inspección",
+      "description": "Registro raíz del proceso. Es la pantalla de arranque de la aplicación.\n\n### Propósito\nEl inspector elige el **tipo de proceso** (exportación o importación) y digita o escanea el **número de contenedor**. Al confirmar, la app crea el registro `container_inspection` en la base local y habilita el resto del asistente.\n\n### Cuándo aparece\nInmediatamente después del login, al pulsar **Nueva inspección**. También es la pantalla a la que regresa la app cuando el usuario retoma una inspección pendiente: se lee `process_step` para saltar a la pantalla donde quedó.\n\n### Campos de la pantalla\n\n| Campo en pantalla | Columna | Notas |\n|---|---|---|\n| Tipo de proceso | `process_type` | Selector: 1 = Exportación, 2 = Importación |\n| Número de contenedor | `container_number` | 4 letras + 7 dígitos (ISO 6346) |\n| Cliente remitente | `sender_client` | Autocompletado desde catálogo de clientes |\n| Cliente destinatario | `receiver_client` | Autocompletado desde catálogo de clientes |\n| Sellos del contenedor | `container_seals` | Lista de sellos separados por coma |\n| Fecha de inspección del destinatario | `receiver_inspection_date` | Selector de fecha |\n\nCampos que la app llena sola: `uid`, `created_at`, `process_step` (inicia en 0), `to_synchronize` (inicia en `true`) y `error_status` (vacío).\n\n### Validaciones\n- `container_number` debe cumplir el patrón ISO 6346 y no puede repetirse en una inspección abierta del mismo día.\n- No se puede avanzar sin `process_type`.\n\n### Siguiente pantalla\nInspector."
+    },
+    {
+      "name": "Inspector",
+      "description": "Contexto comercial y logístico de la inspección.\n\n### Propósito\nRegistrar para qué cliente se hace la inspección, qué tipo de carga es, qué agencia marítima interviene, cuál es el puerto de origen o destino y qué tipo de contenedor se está inspeccionando. Es la información que encabeza el informe impreso.\n\n### Cuándo aparece\nJusto después de crear la inspección. Es obligatoria en **ambos** procesos (exportación e importación).\n\n### Campos de la pantalla\n\n| Campo en pantalla | Columna | Tipo de control |\n|---|---|---|\n| Cliente | `client` | Lista desplegable |\n| Tipo de carga | `charge_type` | Lista desplegable (seca, refrigerada, peligrosa, granel) |\n| Agencia marítima | `maritime_agency` | Lista desplegable |\n| Puerto de salida / llegada | `port_of_depature_or_arrival` | Lista desplegable |\n| Tipo de contenedor | `container_type` | Lista desplegable (20', 40', 40' HC, Reefer, Tank) |\n\n### Validaciones\nLos cinco campos son obligatorios (`NOT NULL`). La app bloquea el botón *Siguiente* hasta que todos estén diligenciados.\n\n### Notas técnicas\n- La columna se llama `port_of_depature_or_arrival`: hay un error ortográfico heredado (`depature` en vez de `departure`). Se mantiene en la API por retrocompatibilidad.\n- La relación con `container_inspection` es **1 a 1** en la práctica, aunque el modelo permita varios registros.\n\n### Siguiente pantalla\nConductor."
+    },
+    {
+      "name": "Conductor",
+      "description": "Conductor y equipo de transporte.\n\n### Propósito\nIdentificar **quién** transporta el contenedor y **en qué equipo**. Estos datos se cruzan después con la orden de cargue y quedan en el acta firmada.\n\n### Cuándo aparece\nTercera pantalla del asistente, antes del checklist.\n\n### Campos de la pantalla\n\n| Campo en pantalla | Columna | Notas |\n|---|---|---|\n| Nombre del conductor | `driver_name` | Texto libre o búsqueda en el maestro de conductores |\n| Placa del vehículo (cabezote) | `vehicle_plate` | Formato `AAA123` |\n| Placa del tráiler | `trailer_plate` | Formato `R12345` |\n| Fecha de inspección | `inspection_date` | Solo presente en el diagrama ER |\n\n### Validaciones\n- Ambas placas se normalizan a mayúsculas y sin espacios.\n- `driver_name` con mínimo 5 caracteres.\n\n### Inconsistencia detectada\nEn el diccionario de datos `trailer_plate` aparece con tipo `Timestampz`, mientras que en el diagrama ER aparece como `varchar` y existe además una columna `inspection_date` (datetime) que el diccionario no lista. La interpretación correcta, y la que usa esta API, es: `trailer_plate` = `varchar`, `inspection_date` = `date-time`.\n\n### Siguiente pantalla\nChecklist."
+    },
+    {
+      "name": "Checklist",
+      "description": "Lista de verificación del contenedor. Es el núcleo de la aplicación.\n\n### Propósito\nPresenta la verificación agrupada por partes físicas del contenedor (piso, techo, paredes laterales, pared frontal, puertas, exterior, limpieza y olores) y registra una respuesta por cada pregunta.\n\n### Cómo se arma la pantalla\n1. La app descarga el catálogo `question_group` (grupos = partes del contenedor).\n2. Por cada grupo descarga sus `question` asociadas (`question_group_id`).\n3. Renderiza un acordeón: un panel por grupo y, dentro, una fila por pregunta con las opciones de respuesta y un campo de observación.\n4. Cada respuesta del usuario se guarda como una fila en `answer`.\n\n### Contenedor lleno vs. contenedor vacío\nEl flag `for_empty_container` de `question_group` filtra los grupos:\n\n- `false` — grupos que se muestran en inspección de contenedor **cargado**.\n- `true` — grupos que se muestran en inspección de contenedor **vacío**.\n\nEl campo `id_part` indica el número de parte (1..7) y define el orden de aparición de los paneles.\n\n### Respuestas\n`answer_option` es un enum. Valores usados por la aplicación:\n\n| Valor | Significado |\n|---|---|\n| `CUMPLE` | La condición se verifica correctamente. |\n| `NO_CUMPLE` | Se encontró un hallazgo. Obliga a diligenciar `observation`. |\n| `NO_APLICA` | El ítem no aplica para ese tipo de contenedor. |\n\n### Validaciones\n- No se puede avanzar si queda alguna pregunta del grupo visible sin responder.\n- Si `answer_option = NO_CUMPLE`, `observation` es obligatorio.\n\n### Inconsistencia detectada\nEn el diccionario, `answer.question_id` aparece como `FK(container_inspection)`; lo correcto es `FK(question)`. Lo mismo ocurre con `question.question_id`, que en el diagrama ER no existe como FK sino como columna `id`.\n\n### Siguiente pantalla\nCargue de exportación o cargue de importación, según `process_type`."
+    },
+    {
+      "name": "Cargue de exportación",
+      "description": "Cargue del contenedor para exportación.\n\n### Propósito\nRegistrar la orden de cargue, el vehículo, los precintos colocados, el booking y la evidencia fotográfica del contenedor sellado.\n\n### Cuándo aparece\nSolo cuando `container_inspection.process_type` = **Exportación**.\n\n### Campos de la pantalla\n\n| Bloque | Campo en pantalla | Columna |\n|---|---|---|\n| Orden | Agencia | `agency_id` |\n| Orden | Código de orden de cargue | `lifting_order_code` |\n| Vehículo | Placa | `plate` |\n| Contenedor | Número de contenedor | `container_number` |\n| Sellos | Sello de cargue 1 / 2 / 3 | `load_stamp_1`, `load_stamp_2`, `load_stamp_3` |\n| Sellos | Sello de vacío | `empty_load_stamp` |\n| Documentos | Booking | `booking` |\n| Documentos | Número de strip | `strip_number` |\n| Documentos | Número EIR | `eir_number` |\n| Novedades | Descripción de modificación | `modification_description` (opcional) |\n| Evidencia | Foto 1 / Foto 2 | `photo_evidence_1_uri`, `photo_evidence_2_uri` (opcionales) |\n\n### Comportamiento de las fotos\nLa cámara guarda el archivo en el almacenamiento interno del dispositivo y en la columna se persiste **solo la URI local**. Durante la sincronización el archivo se sube al servidor y la URI se reemplaza por la URL definitiva.\n\n### Validaciones\n- Los tres sellos de cargue y el sello de vacío son obligatorios.\n- `lifting_order_code` es numérico (`double` en base de datos).\n- `plate` debe coincidir con la `vehicle_plate` capturada en la pantalla de conductor; si difiere, la app exige diligenciar `modification_description`.\n\n### Siguiente pantalla\nCierre de exportación."
+    },
+    {
+      "name": "Cargue de importación",
+      "description": "Recepción y desconsolidación de un contenedor de importación.\n\n### Propósito\nRegistrar la llegada del contenedor, incluyendo la autorización aduanera (DIAN) y los sellos con los que arribó.\n\n### Cuándo aparece\nSolo cuando `container_inspection.process_type` = **Importación**. Es la rama alterna al cargue de exportación; nunca se muestran ambas en la misma inspección.\n\n### Campos de la pantalla\n\n| Bloque | Campo en pantalla | Columna |\n|---|---|---|\n| Orden | Agencia | `agency_id` |\n| Contenedor | Número de contenedor | `container_number` |\n| Contenedor | Fecha de cargue | `load_date` |\n| Documentos | Número EIR | `eir_number` |\n| Documentos | Autorización DIAN | `dian_authorization` |\n| Sellos | Sello 1 / 2 / 3 | `load_stamp_1`, `load_stamp_2`, `load_stamp_3` |\n| Sellos | Sello de vacío | `empty_load_stamp` |\n| Novedades | Observaciones | `observations` (único campo opcional) |\n\n### Diferencias frente a exportación\n- **No** hay `booking`, `strip_number`, `plate`, `lifting_order_code` ni evidencia fotográfica.\n- **Sí** hay `dian_authorization`, que es el número del acta de autorización aduanera y es obligatorio para poder cerrar el proceso.\n- La fecha de cargue (`load_date`) se captura manualmente porque puede ser anterior al día de la inspección.\n\n### Validaciones\n- `dian_authorization` obligatorio y con formato alfanumérico.\n- `load_date` no puede ser una fecha futura.\n\n### Siguiente pantalla\nFirma y sincronización. La importación no pasa por la pantalla de cierre."
+    },
+    {
+      "name": "Cierre de exportación",
+      "description": "Verificación de salida del contenedor.\n\n### Propósito\nConfirmar, en el punto de salida, que el contenedor sale con **los mismos datos y sellos** con los que se cargó. Es un registro de control independiente que después se concilia contra `lifting_exports`.\n\n### Cuándo aparece\nAl final del flujo de exportación. Puede ser diligenciada por **otro** inspector (el de portería o el del patio de cierre); por eso la tabla `closing_exports` no tiene `container_inspection_id` y se enlaza lógicamente por `lifting_order_code` + `container_number`.\n\n### Campos de la pantalla\nSon los mismos del cargue de exportación, **sin** las novedades ni la evidencia fotográfica: `agency_id`, `lifting_order_code`, `plate`, `container_number`, `load_stamp_1..3`, `empty_load_stamp`, `booking`, `strip_number` y `eir_number`. Todos obligatorios.\n\n### Lógica de conciliación\nAl guardar, el backend compara cada sello contra el registro de `lifting_exports` correspondiente. Si hay diferencia se genera una **alerta de discrepancia de sellos** y el cierre queda pendiente de revisión.\n\n### Nota de modelo\nAl no existir una FK hacia `lifting_exports`, la integridad depende de la aplicación. Se recomienda para la versión -002 agregar `lifting_export_id` como llave foránea.\n\n### Siguiente pantalla\nFirma y sincronización."
+    },
+    {
+      "name": "Firma y sincronización",
+      "description": "Cierre de la inspección y envío al servidor.\n\n### Propósito\nCapturar la **firma manuscrita** del responsable y enviar toda la información al servidor central.\n\n### Firma\nEl usuario firma sobre un lienzo táctil. La imagen se guarda como PNG en el dispositivo y la ruta queda en `container_inspection.sign_path`. La firma es obligatoria para marcar la inspección como completa.\n\n### Sincronización\n\n| Columna | Función |\n|---|---|\n| `to_synchronize` | `true` mientras el registro no se haya enviado con éxito |\n| `error_status` | Texto del último error devuelto por el servidor |\n| `process_step` | Última pantalla completada; permite reanudar |\n\nEl servicio en segundo plano recorre las inspecciones con `to_synchronize = true`, las envía en un **único paquete** (inspección + inspector + conductor + respuestas + cargue) y solo entonces baja el flag. Si falla, escribe el motivo en `error_status` y reintenta con backoff.\n\n### Estados visibles en la pantalla\n\n| Estado | Condición |\n|---|---|\n| Pendiente | `to_synchronize = true`, sin error |\n| Con error | `to_synchronize = true` y `error_status` no vacío |\n| Sincronizada | `to_synchronize = false` |"
+    },
+    {
+      "name": "Catálogos",
+      "description": "Datos maestros del dominio de inspección. Se descargan al iniciar sesión y se cachean en el dispositivo para permitir el trabajo sin conexión. Son de solo lectura desde la app; se administran desde el backoffice.\n\n| Catálogo | Tabla | Uso |\n|---|---|---|\n| Grupos de preguntas | `question_group` | Partes del contenedor. `id_part` da el orden y `for_empty_container` indica si el grupo aplica a contenedor vacío. |\n| Preguntas | `question` | Preguntas concretas de cada grupo, enlazadas por `question_group_id`. |\n| Sellos | `stamps` | Inventario de sellos y precintos, identificados por `stamp_id` y clasificados por `stamp_type` (botella, cable, alta seguridad, vacío). |\n\nEl catálogo de sellos se usa para **validar** que los números digitados en los cargues y en el cierre correspondan a sellos existentes y no usados previamente."
+    }
+  ],
+  "paths": {
+    "/sync": {
+      "post": {
+        "tags": ["Firma y sincronización"],
+        "summary": "Sincronizar inspecciones pendientes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SyncResult" }
+                }
+              }
+            },
+            "description": "Resultado por inspección enviada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Envía en un solo paquete transaccional toda la información capturada sin conexión. Si el servidor responde error, la app escribe el motivo en `error_status` y mantiene `to_synchronize = true` para reintentar.",
+        "operationId": "syncInspections",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SyncPackage" }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/stamps": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Sellos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Stamp" }
+                }
+              }
+            },
+            "description": "Sellos disponibles."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "stamp_type",
+            "schema": { "type": "string", "example": "Alta seguridad" },
+            "required": false,
+            "description": "Filtrar por tipo de sello."
+          }
+        ],
+        "description": "Inventario de sellos usado para validar los números digitados en los cargues y en el cierre.",
+        "operationId": "listStamps"
+      }
+    },
+    "/questions": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Preguntas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Question" }
+                }
+              }
+            },
+            "description": "Preguntas del grupo."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "question_group_id",
+            "schema": { "type": "integer", "example": 1 },
+            "required": false,
+            "description": "Filtrar por grupo."
+          }
+        ],
+        "description": "Preguntas del checklist. Se descargan al iniciar sesión y se cachean para el trabajo sin conexión.",
+        "operationId": "listQuestions"
+      }
+    },
+    "/closing-exports": {
+      "get": {
+        "tags": ["Cierre de exportación"],
+        "summary": "Consultar cierres",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ClosingExport" }
+                }
+              }
+            },
+            "description": "Lista de cierres."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "container_number",
+            "schema": { "type": "string", "example": "MSCU1234567" },
+            "required": false,
+            "description": "Filtrar por contenedor."
+          },
+          {
+            "in": "query",
+            "name": "lifting_order_code",
+            "schema": {
+              "type": "number",
+              "format": "double",
+              "example": 880145
+            },
+            "required": false,
+            "description": "Filtrar por orden de cargue."
+          }
+        ],
+        "description": "Lista los cierres registrados, filtrables por contenedor u orden de cargue.",
+        "operationId": "listClosingExports"
+      },
+      "post": {
+        "tags": ["Cierre de exportación"],
+        "summary": "Registrar cierre de exportación",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClosingExportResult" }
+              }
+            },
+            "description": "Cierre registrado."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Registro independiente de la inspección. El backend concilia los sellos contra `lifting_exports` usando `lifting_order_code` + `container_number` y devuelve las discrepancias encontradas.",
+        "operationId": "createClosingExport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClosingExport" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/question-groups": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Grupos de preguntas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/QuestionGroup" }
+                }
+              }
+            },
+            "description": "Grupos ordenados por `id_part`."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "for_empty_container",
+            "schema": { "type": "boolean", "example": false },
+            "required": false,
+            "description": "`true` para los grupos de contenedor vacío."
+          }
+        ],
+        "description": "Catálogo que arma los paneles del checklist. Filtrable por `for_empty_container` según se inspeccione contenedor vacío o cargado.",
+        "operationId": "listQuestionGroups"
+      }
+    },
+    "/container-inspections": {
+      "get": {
+        "tags": ["Inspección"],
+        "summary": "Listar inspecciones",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContainerInspection"
+                  }
+                }
+              }
+            },
+            "description": "Lista de inspecciones."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "to_synchronize",
+            "schema": { "type": "boolean", "example": true },
+            "required": false,
+            "description": "`true` para traer solo las pendientes de enviar."
+          },
+          {
+            "in": "query",
+            "name": "process_type",
+            "schema": { "enum": [1, 2], "type": "integer", "example": 1 },
+            "required": false,
+            "description": "1 = Exportación, 2 = Importación."
+          }
+        ],
+        "description": "Listado usado por la pantalla de inspecciones pendientes. Permite filtrar por estado de sincronización y tipo de proceso.",
+        "operationId": "listContainerInspections"
+      },
+      "post": {
+        "tags": ["Inspección"],
+        "summary": "Crear inspección",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContainerInspection" }
+              }
+            },
+            "description": "Inspección creada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Crea el registro raíz al pulsar **Nueva inspección**. Devuelve el `uid` que usarán todas las pantallas siguientes.",
+        "operationId": "createContainerInspection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContainerInspection" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}": {
+      "get": {
+        "tags": ["Inspección"],
+        "summary": "Consultar inspección",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContainerInspection" }
+              }
+            },
+            "description": "Inspección encontrada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Devuelve la cabecera. La app la usa al reanudar una inspección: lee `process_step` y salta a la pantalla correspondiente.",
+        "operationId": "getContainerInspection"
+      },
+      "patch": {
+        "tags": ["Inspección"],
+        "summary": "Actualizar avance o estado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContainerInspection" }
+              }
+            },
+            "description": "Inspección actualizada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Actualiza `process_step`, `error_status` o `to_synchronize`. Se invoca cada vez que el usuario completa una pantalla.",
+        "operationId": "patchContainerInspection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContainerInspection" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/driver": {
+      "get": {
+        "tags": ["Conductor"],
+        "summary": "Consultar conductor y vehículo",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Driver" }
+              }
+            },
+            "description": "Datos del conductor."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Recupera el conductor y el equipo registrados para la inspección.",
+        "operationId": "getDriver"
+      },
+      "put": {
+        "tags": ["Conductor"],
+        "summary": "Guardar conductor y vehículo",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Driver" }
+              }
+            },
+            "description": "Datos guardados."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Crea o reemplaza el registro `driver`. Las placas se normalizan a mayúsculas.",
+        "operationId": "upsertDriver",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Driver" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/answers": {
+      "get": {
+        "tags": ["Checklist"],
+        "summary": "Consultar respuestas registradas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Answer" }
+                }
+              }
+            },
+            "description": "Respuestas de la inspección."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Devuelve todas las respuestas del checklist de la inspección.",
+        "operationId": "listAnswers"
+      },
+      "post": {
+        "tags": ["Checklist"],
+        "summary": "Enviar respuestas del checklist",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Answer" }
+                }
+              }
+            },
+            "description": "Respuestas registradas."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Envía en bloque todas las respuestas del checklist. Si alguna trae `answer_option = NO_CUMPLE` sin `observation`, se rechaza la petición completa.",
+        "operationId": "createAnswers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Answer" }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/inspector": {
+      "get": {
+        "tags": ["Inspector"],
+        "summary": "Consultar datos del inspector",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Inspector" }
+              }
+            },
+            "description": "Datos del inspector."
+          },
+          "204": { "$ref": "#/components/responses/NoContent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Recupera el contexto comercial y logístico registrado para la inspección.",
+        "operationId": "getInspector"
+      },
+      "put": {
+        "tags": ["Inspector"],
+        "summary": "Guardar datos del inspector",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Inspector" }
+              }
+            },
+            "description": "Datos guardados."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Crea o reemplaza el registro `inspector` de la inspección. Los cinco campos son obligatorios.",
+        "operationId": "upsertInspector",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Inspector" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/signature": {
+      "post": {
+        "tags": ["Firma y sincronización"],
+        "summary": "Cargar la firma",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SignatureResponse" }
+              }
+            },
+            "description": "Firma almacenada."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Sube el PNG de la firma manuscrita y guarda su ruta en `container_inspection.sign_path`. Es obligatorio para dar la inspección por completa.",
+        "operationId": "uploadSignature",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["signature"],
+                "properties": {
+                  "signature": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Imagen PNG del lienzo de firma."
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/lifting-export": {
+      "put": {
+        "tags": ["Cargue de exportación"],
+        "summary": "Guardar cargue de exportación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiftingExport" }
+              }
+            },
+            "description": "Cargue guardado."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Solo válido si `process_type = 1`. Si `plate` difiere de `driver.vehicle_plate`, `modification_description` pasa a ser obligatorio.",
+        "operationId": "upsertLiftingExport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LiftingExport" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/lifting-import": {
+      "put": {
+        "tags": ["Cargue de importación"],
+        "summary": "Guardar cargue de importación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiftingImport" }
+              }
+            },
+            "description": "Cargue guardado."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Solo válido si `process_type = 2`. `dian_authorization` es obligatorio y `load_date` no puede ser futura.",
+        "operationId": "upsertLiftingImport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LiftingImport" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/container-inspections/{inspectionId}/lifting-export/photos": {
+      "post": {
+        "tags": ["Cargue de exportación"],
+        "summary": "Subir evidencia fotográfica",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoEvidenceResponse"
+                }
+              }
+            },
+            "description": "Fotos almacenadas."
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        },
+        "parameters": [{ "$ref": "#/components/parameters/inspectionId" }],
+        "description": "Sube las fotos capturadas en el cargue y devuelve las URL definitivas que reemplazan a `photo_evidence_1_uri` y `photo_evidence_2_uri`.",
+        "operationId": "uploadLiftingExportPhotos",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "photo_evidence_1": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Primera foto (JPEG o PNG, máximo 5 MB)."
+                  },
+                  "photo_evidence_2": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Segunda foto (JPEG o PNG, máximo 5 MB)."
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  },
+  "openapi": "3.0.3",
+  "servers": [
+    {
+      "url": "https://www.coltanques.com.co:1000/webs/apiinspector/api",
+      "description": "Producción"
+    },
+    {
+      "url": "https://www.coltanques.co:1000/webs/apiinspector/api",
+      "description": "Desarrollo / Pruebas"
+    }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "schemas": {
+      "Stamp": {
+        "type": "object",
+        "title": "stamps",
+        "required": ["stamp_id", "stamp_type"],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 300,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "stamp_id": {
+            "type": "integer",
+            "example": 1234567,
+            "description": "Número del sello."
+          },
+          "stamp_type": {
+            "type": "string",
+            "example": "Alta seguridad",
+            "description": "Tipo de sello."
+          }
+        },
+        "description": "Sello o precinto disponible en el inventario."
+      },
+      "Answer": {
+        "type": "object",
+        "title": "answer",
+        "required": [
+          "container_inspection_id",
+          "question_id",
+          "answer_option",
+          "client",
+          "observation"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 9001,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "client": {
+            "type": "string",
+            "example": "ECOPETROL S.A.",
+            "description": "Cliente asociado a la respuesta. Se replica para facilitar reportes."
+          },
+          "observation": {
+            "type": "string",
+            "example": "Perforación de 2 cm en la esquina posterior derecha.",
+            "description": "Detalle del hallazgo. Obligatorio cuando `answer_option = NO_CUMPLE`."
+          },
+          "question_id": {
+            "type": "integer",
+            "example": 12,
+            "description": "FK hacia `question.uid`.",
+            "x-observacion": "El diccionario la declara como `FK(container_inspection)`; lo correcto es `FK(question)`."
+          },
+          "answer_option": {
+            "enum": ["CUMPLE", "NO_CUMPLE", "NO_APLICA"],
+            "type": "string",
+            "example": "CUMPLE",
+            "description": "Resultado de la verificación. `NO_CUMPLE` obliga a diligenciar `observation`."
+          },
+          "container_inspection_id": {
+            "type": "integer",
+            "example": 1042,
+            "description": "FK hacia `container_inspection.uid`."
+          }
+        },
+        "description": "Respuesta del inspector a una pregunta del checklist."
+      },
+      "Driver": {
+        "type": "object",
+        "title": "driver",
+        "required": [
+          "container_inspection_id",
+          "driver_name",
+          "vehicle_plate",
+          "trailer_plate",
+          "to_synchronize"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 601,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "driver_name": {
+            "type": "string",
+            "example": "Jorge Elías Ramírez",
+            "description": "Nombre completo del conductor."
+          },
+          "trailer_plate": {
+            "type": "string",
+            "example": "R47125",
+            "description": "Placa del tráiler o semirremolque.",
+            "x-observacion": "El diccionario la tipifica como `Timestampz`; es un error. En el diagrama ER es `varchar`."
+          },
+          "vehicle_plate": {
+            "type": "string",
+            "example": "SXK482",
+            "description": "Placa del cabezote."
+          },
+          "to_synchronize": {
+            "type": "boolean",
+            "example": true,
+            "description": "Pendiente de sincronizar."
+          },
+          "inspection_date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-28T09:40:00-05:00",
+            "description": "Fecha y hora de la inspección del vehículo.",
+            "x-observacion": "Aparece en el diagrama ER pero falta en el diccionario de datos."
+          },
+          "container_inspection_id": {
+            "type": "integer",
+            "example": 1042,
+            "description": "FK hacia `container_inspection.uid`."
+          }
+        },
+        "description": "Conductor y equipo de transporte."
+      },
+      "Question": {
+        "type": "object",
+        "title": "question",
+        "required": ["question_group_id", "description"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 3,
+            "description": "Consecutivo de la pregunta dentro del grupo (orden de despliegue)."
+          },
+          "uid": {
+            "type": "integer",
+            "example": 12,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "description": {
+            "type": "string",
+            "example": "¿El piso está libre de perforaciones y humedad?",
+            "description": "Texto de la pregunta mostrado al inspector."
+          },
+          "question_id": {
+            "type": "integer",
+            "example": 0,
+            "deprecated": true,
+            "description": "Columna heredada. No se usa.",
+            "x-observacion": "El diccionario la declara como `FK(container_inspection)`, lo cual no corresponde al modelo. Se recomienda eliminarla."
+          },
+          "question_group_id": {
+            "type": "integer",
+            "example": 1,
+            "description": "FK hacia `question_group.id`."
+          }
+        },
+        "description": "Pregunta concreta del checklist."
+      },
+      "Inspector": {
+        "type": "object",
+        "title": "inspector",
+        "required": [
+          "container_inspection_id",
+          "client",
+          "charge_type",
+          "maritime_agency",
+          "port_of_depature_or_arrival",
+          "container_type"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 501,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "client": {
+            "type": "string",
+            "example": "ECOPETROL S.A.",
+            "description": "Cliente para el que se realiza la inspección."
+          },
+          "charge_type": {
+            "type": "string",
+            "example": "Carga seca",
+            "description": "Tipo de carga."
+          },
+          "container_type": {
+            "type": "string",
+            "example": "40 HC",
+            "description": "Tipo de contenedor."
+          },
+          "maritime_agency": {
+            "type": "string",
+            "example": "MAERSK",
+            "description": "Agencia marítima responsable."
+          },
+          "container_inspection_id": {
+            "type": "integer",
+            "example": 1042,
+            "description": "FK hacia `container_inspection.uid`."
+          },
+          "port_of_depature_or_arrival": {
+            "type": "string",
+            "example": "Cartagena",
+            "description": "Puerto de salida (exportación) o de llegada (importación).",
+            "x-observacion": "El nombre de la columna contiene un error ortográfico (`depature`). Se conserva por retrocompatibilidad."
+          }
+        },
+        "description": "Contexto comercial y logístico de la inspección."
+      },
+      "SyncResult": {
+        "type": "object",
+        "title": "Resultado de sincronización",
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 1042,
+            "description": "Inspección procesada."
+          },
+          "error_status": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Motivo del fallo. La app lo copia en `container_inspection.error_status`."
+          },
+          "synchronized": {
+            "type": "boolean",
+            "example": true,
+            "description": "`true` si el paquete se guardó por completo."
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "title": "Respuesta de error",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR",
+            "description": "Código interno del error."
+          },
+          "field": {
+            "type": "string",
+            "example": "dian_authorization",
+            "nullable": true,
+            "description": "Campo que originó el error, si aplica."
+          },
+          "message": {
+            "type": "string",
+            "example": "El campo dian_authorization es obligatorio.",
+            "description": "Mensaje para el usuario."
+          }
+        }
+      },
+      "SyncPackage": {
+        "type": "object",
+        "title": "Paquete de sincronización",
+        "required": ["container_inspection"],
+        "properties": {
+          "driver": { "$ref": "#/components/schemas/Driver" },
+          "answers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Answer" }
+          },
+          "inspector": { "$ref": "#/components/schemas/Inspector" },
+          "closing_export": { "$ref": "#/components/schemas/ClosingExport" },
+          "lifting_export": { "$ref": "#/components/schemas/LiftingExport" },
+          "lifting_import": { "$ref": "#/components/schemas/LiftingImport" },
+          "container_inspection": {
+            "$ref": "#/components/schemas/ContainerInspection"
+          }
+        },
+        "description": "Estructura completa que la app envía cuando hay conectividad. Se procesa de forma transaccional: o entra todo, o no entra nada."
+      },
+      "ClosingExport": {
+        "type": "object",
+        "title": "closing_exports",
+        "required": [
+          "agency_id",
+          "lifting_order_code",
+          "plate",
+          "container_number",
+          "load_stamp_1",
+          "load_stamp_2",
+          "load_stamp_3",
+          "empty_load_stamp",
+          "booking",
+          "strip_number",
+          "eir_number"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 9101,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "plate": {
+            "type": "string",
+            "example": "SXK482",
+            "description": "Placa del vehículo que sale."
+          },
+          "booking": {
+            "type": "string",
+            "example": "BKG-2026-77120",
+            "description": "Número de booking."
+          },
+          "agency_id": {
+            "type": "integer",
+            "example": 7,
+            "description": "Identificador de la agencia."
+          },
+          "eir_number": {
+            "type": "string",
+            "example": "EIR-00918",
+            "description": "Número del EIR."
+          },
+          "load_stamp_1": {
+            "type": "string",
+            "example": "A1234567",
+            "description": "Sello 1 verificado en la salida."
+          },
+          "load_stamp_2": {
+            "type": "string",
+            "example": "A1234568",
+            "description": "Sello 2 verificado en la salida."
+          },
+          "load_stamp_3": {
+            "type": "string",
+            "example": "A1234569",
+            "description": "Sello 3 verificado en la salida."
+          },
+          "strip_number": {
+            "type": "string",
+            "example": "STR-4412",
+            "description": "Número de strip."
+          },
+          "container_number": {
+            "type": "string",
+            "example": "MSCU1234567",
+            "description": "Número del contenedor. Clave de conciliación."
+          },
+          "empty_load_stamp": {
+            "type": "string",
+            "example": "V0099887",
+            "description": "Sello de vacío verificado."
+          },
+          "lifting_order_code": {
+            "type": "number",
+            "format": "double",
+            "example": 880145,
+            "description": "Código de la orden de cargue. Clave de conciliación con `lifting_exports`."
+          }
+        },
+        "description": "Cierre de exportación. No cuelga de `container_inspection`; se concilia por `lifting_order_code` + `container_number`."
+      },
+      "LiftingExport": {
+        "type": "object",
+        "title": "lifting_exports",
+        "required": [
+          "container_inspection_id",
+          "agency_id",
+          "lifting_order_code",
+          "plate",
+          "container_number",
+          "load_stamp_1",
+          "load_stamp_2",
+          "load_stamp_3",
+          "empty_load_stamp",
+          "booking",
+          "strip_number",
+          "eir_number"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 7001,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "plate": {
+            "type": "string",
+            "example": "SXK482",
+            "description": "Placa del vehículo que realiza el cargue."
+          },
+          "booking": {
+            "type": "string",
+            "example": "BKG-2026-77120",
+            "description": "Número de booking de la naviera."
+          },
+          "agency_id": {
+            "type": "integer",
+            "example": 7,
+            "description": "Identificador de la agencia."
+          },
+          "eir_number": {
+            "type": "string",
+            "example": "EIR-00918",
+            "description": "Número del EIR (Equipment Interchange Receipt)."
+          },
+          "load_stamp_1": {
+            "type": "string",
+            "example": "A1234567",
+            "description": "Sello de cargue 1."
+          },
+          "load_stamp_2": {
+            "type": "string",
+            "example": "A1234568",
+            "description": "Sello de cargue 2."
+          },
+          "load_stamp_3": {
+            "type": "string",
+            "example": "A1234569",
+            "description": "Sello de cargue 3."
+          },
+          "strip_number": {
+            "type": "string",
+            "example": "STR-4412",
+            "description": "Número de strip."
+          },
+          "container_number": {
+            "type": "string",
+            "example": "MSCU1234567",
+            "description": "Número del contenedor."
+          },
+          "empty_load_stamp": {
+            "type": "string",
+            "example": "V0099887",
+            "description": "Sello de vacío."
+          },
+          "lifting_order_code": {
+            "type": "number",
+            "format": "double",
+            "example": 880145,
+            "description": "Código de la orden de cargue (`double`)."
+          },
+          "photo_evidence_1_uri": {
+            "type": "string",
+            "example": "/storage/inspector/ev1_7001.jpg",
+            "nullable": true,
+            "description": "URI local o URL de la primera foto de evidencia. Opcional."
+          },
+          "photo_evidence_2_uri": {
+            "type": "string",
+            "example": "/storage/inspector/ev2_7001.jpg",
+            "nullable": true,
+            "description": "URI local o URL de la segunda foto de evidencia. Opcional."
+          },
+          "container_inspection_id": {
+            "type": "integer",
+            "example": 1042,
+            "description": "FK hacia `container_inspection.uid`."
+          },
+          "modification_description": {
+            "type": "string",
+            "example": "Cambio de placa autorizado por patio.",
+            "nullable": true,
+            "description": "Descripción de cualquier novedad o modificación. Opcional."
+          }
+        },
+        "description": "Cargue de exportación."
+      },
+      "LiftingImport": {
+        "type": "object",
+        "title": "lifting_imports",
+        "required": [
+          "container_inspection_id",
+          "agency_id",
+          "container_number",
+          "load_date",
+          "eir_number",
+          "dian_authorization",
+          "load_stamp_1",
+          "load_stamp_2",
+          "load_stamp_3",
+          "empty_load_stamp"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "example": 8001,
+            "readOnly": true,
+            "description": "PK."
+          },
+          "agency_id": {
+            "type": "integer",
+            "example": 7,
+            "description": "Identificador de la agencia."
+          },
+          "load_date": {
+            "type": "string",
+            "example": "2026-07-26",
+            "description": "Fecha de cargue (`varchar`, formato `YYYY-MM-DD`). No puede ser futura."
+          },
+          "eir_number": {
+            "type": "string",
+            "example": "EIR-00921",
+            "description": "Número del EIR."
+          },
+          "load_stamp_1": {
+            "type": "string",
+            "example": "B1234567",
+            "description": "Sello 1."
+          },
+          "load_stamp_2": {
+            "type": "string",
+            "example": "B1234568",
+            "description": "Sello 2."
+          },
+          "load_stamp_3": {
+            "type": "string",
+            "example": "B1234569",
+            "description": "Sello 3."
+          },
+          "observations": {
+            "type": "string",
+            "example": "Contenedor llega con sello de vacío intacto.",
+            "nullable": true,
+            "description": "Observaciones libres. Único campo opcional de la pantalla."
+          },
+          "container_number": {
+            "type": "string",
+            "example": "TCLU7654321",
+            "description": "Número del contenedor."
+          },
+          "empty_load_stamp": {
+            "type": "string",
+            "example": "V0099888",
+            "description": "Sello de vacío."
+          },
+          "dian_authorization": {
+            "type": "string",
+            "example": "DIAN-2026-004411",
+            "description": "Número de autorización aduanera DIAN. Obligatorio para cerrar el proceso."
+          },
+          "container_inspection_id": {
+            "type": "integer",
+            "example": 1042,
+            "description": "FK hacia `container_inspection.uid`."
+          }
+        },
+        "description": "Cargue o recepción de importación."
+      },
+      "QuestionGroup": {
+        "type": "object",
+        "title": "question_group",
+        "required": ["description", "for_empty_container", "id_part"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1,
+            "readOnly": true,
+            "description": "PK (`serial`)."
+          },
+          "id_part": {
+            "type": "integer",
+            "example": 1,
+            "description": "Número de parte (1..7). Define el orden de los paneles en el checklist."
+          },
+          "description": {
+            "type": "string",
+            "example": "Piso del contenedor",
+            "description": "Nombre del grupo o parte inspeccionada."
+          },
+          "for_empty_container": {
+            "type": "boolean",
+            "example": false,
+            "description": "`true` si el grupo aplica a inspección de contenedor vacío."
+          }
+        },
+        "description": "Grupo de preguntas del checklist, equivalente a una parte física del contenedor."
+      },
+      "SignatureResponse": {
+        "type": "object",
+        "title": "Firma almacenada",
+        "properties": {
+          "sign_path": {
+            "type": "string",
+            "example": "https://cdn.coltanques.com.co/inspector/sign_1042.png"
+          }
+        }
+      },
+      "ClosingExportResult": {
+        "type": "object",
+        "title": "Resultado del cierre",
+        "properties": {
+          "discrepancies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["load_stamp_2 no coincide con el cargue"],
+            "description": "Sellos o datos que no coinciden con `lifting_exports`. Vacío si la conciliación es correcta."
+          },
+          "closing_export": { "$ref": "#/components/schemas/ClosingExport" }
+        }
+      },
+      "ContainerInspection": {
+        "type": "object",
+        "title": "container_inspection",
+        "required": [
+          "process_type",
+          "container_number",
+          "sender_client",
+          "receiver_client",
+          "container_seals",
+          "receiver_inspection_date",
+          "process_step",
+          "to_synchronize"
+        ],
+        "properties": {
+          "uid": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1042,
+            "readOnly": true,
+            "description": "PK. `serial` autoincremental."
+          },
+          "sign_path": {
+            "type": "string",
+            "example": "/storage/inspector/sign_1042.png",
+            "description": "Ruta local o URL del PNG con la firma capturada."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-28T09:15:00-05:00",
+            "readOnly": true,
+            "description": "Fecha y hora de creación (`datetime2`)."
+          },
+          "error_status": {
+            "type": "string",
+            "example": "",
+            "description": "Detalle del último error de sincronización. Vacío si no hay error."
+          },
+          "process_step": {
+            "type": "integer",
+            "example": 3,
+            "maximum": 7,
+            "minimum": 0,
+            "description": "Pantalla en la que quedó el usuario (0 = inicio ... 7 = firma). Permite reanudar inspecciones interrumpidas."
+          },
+          "process_type": {
+            "enum": [1, 2],
+            "type": "integer",
+            "example": 1,
+            "description": "Tipo de proceso: **1 = Exportación**, **2 = Importación**. Determina la rama de cargue que se muestra."
+          },
+          "sender_client": {
+            "type": "string",
+            "example": "ECOPETROL S.A.",
+            "description": "Cliente remitente."
+          },
+          "to_synchronize": {
+            "type": "boolean",
+            "example": true,
+            "description": "`true` mientras el registro esté pendiente de enviar al servidor."
+          },
+          "container_seals": {
+            "type": "string",
+            "example": "A1234567,B7654321",
+            "description": "Sellos del contenedor, separados por coma."
+          },
+          "receiver_client": {
+            "type": "string",
+            "example": "PUERTO BAHIA S.A.",
+            "description": "Cliente destinatario."
+          },
+          "container_number": {
+            "type": "string",
+            "example": "MSCU1234567",
+            "pattern": "^[A-Z]{4}[0-9]{7}$",
+            "description": "Número del contenedor (ISO 6346).",
+            "x-observacion": "En el diccionario figura como `int4`, pero el número de contenedor es alfanumérico. Debe ser `varchar`, como en el resto de tablas."
+          },
+          "receiver_inspection_date": {
+            "type": "string",
+            "example": "2026-07-28",
+            "description": "Fecha de inspección del destinatario. Almacenada como `varchar` en formato `YYYY-MM-DD`.",
+            "x-observacion": "Se recomienda migrar a tipo `date`."
+          }
+        },
+        "description": "Registro raíz del proceso de inspección. Todas las demás tablas del flujo cuelgan de ella."
+      },
+      "PhotoEvidenceResponse": {
+        "type": "object",
+        "title": "Evidencia fotográfica almacenada",
+        "properties": {
+          "photo_evidence_1_uri": {
+            "type": "string",
+            "example": "https://cdn.coltanques.com.co/inspector/ev1_7001.jpg"
+          },
+          "photo_evidence_2_uri": {
+            "type": "string",
+            "example": "https://cdn.coltanques.com.co/inspector/ev2_7001.jpg"
+          }
+        }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApiResponse" }
+          }
+        },
+        "description": "La inspección indicada no existe."
+      },
+      "NoContent": {
+        "description": "Sin contenido. No hay registros para los filtros enviados."
+      },
+      "BadRequest": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApiResponse" }
+          }
+        },
+        "description": "Datos inválidos o campos obligatorios faltantes."
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApiResponse" }
+          }
+        },
+        "description": "Falta el token o no es válido."
+      }
+    },
+    "parameters": {
+      "inspectionId": {
+        "in": "path",
+        "name": "inspectionId",
+        "schema": { "type": "integer", "example": 1042 },
+        "required": true,
+        "description": "Identificador de la inspección (`container_inspection.uid`)."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token obtenido en el login del inspector. El cliente lo añade en cada petición y lo renueva ante un 401.",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
