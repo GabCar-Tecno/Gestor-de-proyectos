@@ -1,0 +1,513 @@
+{
+  "info": {
+    "title": "ManagerCore - Gestión de Permisos por Página y Perfil",
+    "version": "001",
+    "description": "Endpoints del proceso de registro de páginas y asignación de permisos por perfil, expuestos a través del API Gateway (Ocelot). Las rutas mostradas en 'Url' son las rutas públicas del gateway que consume el front (managerwebsiteapp para la administración y traficapp para el consumo); el gateway las reenvía al backend managercoreapi, cuya ruta real se indica en 'Servicio'."
+  },
+  "paths": {
+    "/gateway/navigations/Create": {
+      "post": {
+        "tags": ["Navigations"],
+        "summary": "Registra una nueva página (raíz o hija) en una aplicación.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Resultado del registro de la página."
+          }
+        },
+        "x-backend": "/api/Navigations/AddMenuForApplication",
+        "operationId": "AddMenuForApplication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MenuItemRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/navigations/Update": {
+      "put": {
+        "tags": ["Navigations"],
+        "summary": "Actualiza los datos de una página existente.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Resultado de la actualización de la página."
+          }
+        },
+        "x-backend": "/api/Navigations/UpdateMenuItem",
+        "operationId": "UpdateMenuItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MenuItemRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/navigations/Delete/{id}": {
+      "delete": {
+        "tags": ["Navigations"],
+        "summary": "Elimina una página y todo su subárbol de páginas.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Resultado de la eliminación de la página y sus descendientes."
+          }
+        },
+        "x-backend": "/api/Navigations/DeleteMenuItem/{id}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador de la página raíz del subárbol a eliminar (Pagina.Id)."
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Parámetro heredado del modelo anterior; se acepta pero no altera la operación."
+          }
+        ],
+        "operationId": "DeleteMenuItem"
+      }
+    },
+    "/gateway/navigations/GetById/{id}": {
+      "get": {
+        "tags": ["Navigations"],
+        "summary": "Obtiene una página por su identificador.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenuItemOut" }
+              }
+            },
+            "description": "Datos de la página solicitada."
+          }
+        },
+        "x-backend": "/api/Navigations/GetById/{id}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador de la página (Pagina.Id)."
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Parámetro heredado del modelo anterior; se acepta pero no altera la consulta."
+          }
+        ],
+        "operationId": "GetMenuOptionById"
+      }
+    },
+    "/gateway/navigations/{applicationid}": {
+      "get": {
+        "tags": ["Navigations"],
+        "summary": "Lista el árbol de páginas registradas de una aplicación.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenusOut" }
+              }
+            },
+            "description": "Árbol de páginas de la aplicación (grupos, colapsables e ítems), sin filtrar por permisos."
+          }
+        },
+        "x-backend": "/api/Navigations/Get/{applicationid}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationid",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador de la aplicación (AplicacionId) cuyas páginas se desean listar."
+          }
+        ],
+        "operationId": "GetMenuByApplication"
+      }
+    },
+    "/gateway/ProfilesMenu/AddOptionsForProfile": {
+      "put": {
+        "tags": ["ProfilesMenu"],
+        "summary": "Reemplaza (en transacción) todos los permisos de un perfil para una aplicación.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Resultado del reemplazo de permisos (numberRecord = cantidad de permisos insertados)."
+          },
+          "400": {
+            "description": "Alguna de las páginas enviadas no pertenece al árbol de la aplicación indicada."
+          }
+        },
+        "x-backend": "/api/ProfilesMenu/AddOptionsForProfile",
+        "operationId": "AddOptionsForProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignProfilePermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/navigations/{applicationid}/{profileid}": {
+      "get": {
+        "tags": ["Navigations"],
+        "summary": "Devuelve el menú de una aplicación para un perfil, con el permiso de cada página.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenusOut" }
+              }
+            },
+            "description": "Menú del perfil: solo incluye las páginas donde el perfil tiene un permiso asignado, con permissionId y permissionCode por página."
+          }
+        },
+        "x-backend": "/api/Navigations/Get/{applicationid}/{profileid}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationid",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador de la aplicación (AplicacionId)."
+          },
+          {
+            "in": "path",
+            "name": "profileid",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador del perfil (PerfilId) del usuario en sesión."
+          }
+        ],
+        "operationId": "GetMenuOptionsByProfile"
+      }
+    },
+    "/gateway/ProfilesMenu/{applicationId}/profiles/{profileId}": {
+      "get": {
+        "tags": ["ProfilesMenu"],
+        "summary": "Consulta los permisos por página que tiene un perfil en una aplicación.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePermissionsOut"
+                }
+              }
+            },
+            "description": "Lista de permisos (página + permiso) del perfil para la aplicación."
+          }
+        },
+        "x-backend": "/api/ProfilesMenu/{applicationId}/profiles/{profileId}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationId",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador de la aplicación (AplicacionId)."
+          },
+          {
+            "in": "path",
+            "name": "profileId",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Identificador del perfil (PerfilId)."
+          }
+        ],
+        "operationId": "GetProfilePermissions"
+      }
+    }
+  },
+  "openapi": "3.0.1",
+  "security": [{ "Bearer": [] }],
+  "components": {
+    "schemas": {
+      "BaseOut": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "integer",
+            "description": "Código interno de resultado de la operación."
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado."
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "Código de estado HTTP (200 = OK)."
+          },
+          "numberRecord": {
+            "type": "integer",
+            "description": "Cantidad de registros afectados o devueltos por la operación."
+          }
+        }
+      },
+      "MenuNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador de la página (Pagina.Id) como texto."
+          },
+          "code": { "type": "string", "description": "Código de la página." },
+          "icon": { "type": "string", "description": "Ícono de la página." },
+          "path": {
+            "type": "string",
+            "description": "URL de la página (vacío en los nodos raíz)."
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de nodo: group (raíz), collapse (con hijos) o item (hoja)."
+          },
+          "class": {
+            "type": "string",
+            "description": "Clase CSS del nodo en el menú."
+          },
+          "title": {
+            "type": "string",
+            "description": "Título visible de la página."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Indica si la página está activa."
+          },
+          "itemId": {
+            "type": "string",
+            "description": "Identificador auxiliar del ítem (igual al Id de la página)."
+          },
+          "children": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Páginas hijas del nodo (misma estructura de nodo de menú)."
+          },
+          "parentId": {
+            "type": "integer",
+            "description": "Identificador de la página padre (0 en nodos raíz)."
+          },
+          "extralink": {
+            "type": "boolean",
+            "description": "Indicador de enlace externo (true en nodos raíz)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción de la página."
+          },
+          "permissionId": {
+            "type": "integer",
+            "description": "Permiso del perfil sobre la página: 1 = Edición, 2 = Visualización. Presente solo en el menú por perfil."
+          },
+          "permissionCode": {
+            "type": "string",
+            "description": "Código del permiso (EDICION / VISUALIZACION). Presente solo en el menú por perfil."
+          }
+        }
+      },
+      "MenusOut": {
+        "type": "object",
+        "properties": {
+          "menus": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MenuNode" },
+            "description": "Colección de nodos raíz del menú, cada uno con su árbol de páginas hijas."
+          },
+          "result": {
+            "type": "integer",
+            "description": "Código interno de resultado."
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado."
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "Código de estado HTTP."
+          },
+          "numberRecord": {
+            "type": "integer",
+            "description": "Cantidad de nodos raíz devueltos."
+          }
+        }
+      },
+      "MenuItemOut": {
+        "type": "object",
+        "properties": {
+          "menu": { "$ref": "#/components/schemas/MenuNode" },
+          "result": {
+            "type": "integer",
+            "description": "Código interno de resultado."
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado."
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "Código de estado HTTP."
+          },
+          "numberRecord": {
+            "type": "integer",
+            "description": "Cantidad de registros devueltos."
+          }
+        }
+      },
+      "MenuItemRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identificador de la página. En registro (Create) se ignora; en actualización (Update) identifica la página a modificar."
+          },
+          "code": {
+            "type": "string",
+            "description": "Código de la página (Pagina.Codigo)."
+          },
+          "icon": {
+            "type": "string",
+            "description": "Ícono de la página (Pagina.Icono)."
+          },
+          "path": {
+            "type": "string",
+            "description": "URL exacta de la página tal como la expone la app (p. ej. /component/trackings). Solo se aplica a páginas hijas; las raíz no llevan URL."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Orden de la página dentro de su nivel (Pagina.Orden)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Título visible de la página (Pagina.Nombre)."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Indica si la página queda activa (Pagina.Activo)."
+          },
+          "itemId": {
+            "type": "string",
+            "description": "Identificador auxiliar del ítem de menú."
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción de la página (Pagina.Descripcion)."
+          },
+          "parentPageId": {
+            "type": "integer",
+            "description": "Identificador de la página padre. Nulo indica página raíz (nivel de aplicación); con valor indica el nivel en el árbol."
+          },
+          "permissionId": {
+            "type": "integer",
+            "description": "Permiso por defecto (opcional); la asignación real de permisos se hace por perfil en ProfilesMenu."
+          },
+          "applicationId": {
+            "type": "integer",
+            "description": "Identificador de la aplicación. Obligatorio al registrar una página raíz (se crea el vínculo AplicacionPagina)."
+          },
+          "creationUserId": {
+            "type": "integer",
+            "description": "Identificador del usuario administrador que registra o modifica (auditoría)."
+          }
+        }
+      },
+      "PagePermissionItem": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "integer",
+            "description": "Identificador de la página (Pagina.Id) sobre la que aplica el permiso."
+          },
+          "permissionId": {
+            "type": "integer",
+            "description": "Identificador del permiso: 1 = Edición, 2 = Visualización (catálogo Permiso)."
+          }
+        }
+      },
+      "ProfilePermissionsOut": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "integer",
+            "description": "Código interno de resultado."
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado."
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "Código de estado HTTP."
+          },
+          "numberRecord": {
+            "type": "integer",
+            "description": "Cantidad de permisos devueltos."
+          },
+          "pagePermissions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PagePermissionItem" },
+            "description": "Colección de permisos (página + permiso) que el perfil tiene habilitados en la aplicación."
+          }
+        }
+      },
+      "AssignProfilePermissionsRequest": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "integer",
+            "description": "Identificador del perfil (PerfilId) al que se le asignan los permisos."
+          },
+          "applicationId": {
+            "type": "integer",
+            "description": "Identificador de la aplicación (AplicacionId) sobre cuyo árbol de páginas se reemplazan los permisos."
+          },
+          "creationUserId": {
+            "type": "integer",
+            "description": "Identificador del usuario administrador que ejecuta la asignación (auditoría)."
+          },
+          "pagePermissions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PagePermissionItem" },
+            "description": "Lista de páginas marcadas con su permiso; cada elemento es {pageId, permissionId}. permissionId: 1 = Edición, 2 = Visualización."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Bearer": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  }
+}

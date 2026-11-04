@@ -1,0 +1,3988 @@
+{
+  "info": {
+    "title": "API REST Cuadrillas Coltanques",
+    "contact": {
+      "name": "Coltanques S.A.S. — Tecno Corp.",
+      "email": "soporte@coltanques.com.co"
+    },
+    "version": "1.0.0",
+    "description": "**API REST Cuadrillas** de Coltanques S.A.S. — Tecno Corp.\n\nEste documento describe **los endpoints que consume la aplicación de Cuadrillas** para la administración de cuadrillas de cargue y descargue, sus integrantes, las solicitudes de servicio y la certificación de unidades de carga. El proveedor enlaza la API a su App y desde allí envía y recibe información contra la base de datos de Coltanques. El formato de intercambio es **JSON**.\n\n```\nApp Cuadrillas (proveedor)\n      │   Authorization: Bearer <token>   (vigencia 24 h)\n      ▼\n┌───────────────────────────────────────────────┐\n│   API Gateway Cuadrillas                        │  .../gateway\n│   (cuadrillas, integrantes, solicitudes,        │\n│    certificaciones, catálogos)                  │\n└───────────────────────────────────────────────┘\n```\n\n## Procesos que expone\n\n| Proceso | Descripción |\n|---------|-------------|\n| **Autenticación** | Token de servicio (`/gateway/token`), login de usuario, perfiles y opciones de menú. |\n| **Recuperación de contraseña** | Generación del código, envío por correo con plantilla y cambio de clave. |\n| **Cuadrillas** | Creación del encabezado, asignación de integrantes, historial por estado y consulta por id. |\n| **Integrantes** | Creación de integrantes, listado de activos y administración (agregar, mover, eliminar, responsable, estado). |\n| **Administradores de cuadrillas** | Creación de administradores por ciudad y sus listados por ciudad y por administrador. |\n| **Solicitudes de cuadrilla** | Pendientes por gestionar, historial, asignación de cuadrilla, gestión de la unidad de carga y rechazo. |\n| **Certificación de unidades de carga** | Listado por estado y fecha, administración de la certificación, rechazo e historial. |\n| **Archivos e imágenes** | Configuración del file server y cargue múltiple de imágenes en Base64. |\n| **Catálogos** | Datos maestros: tipos de documento, unidades de medida, tipos de integrante, tipos de servicio, estados, departamentos y municipios. |\n\n## Autenticación\n\nEl consumo **inicia con `POST /gateway/token`**, que devuelve un token con **vigencia de 24 horas**. Ese token viaja en la cabecera `Authorization: Bearer <token>` en **todos** los métodos siguientes. Si no se envía o está vencido, la API responde **HTTP 401**.\n\nCredenciales de servicio (usuario, contraseña e `applicationId`) son las comunicadas al proveedor; en esta documentación aparecen enmascaradas.\n\n## Convención de respuesta\n\nCasi todos los endpoints devuelven **HTTP 200** y comunican el resultado real del proceso en el campo **`result`**, no en el código HTTP. Solo la falta de token produce un `401`.\n\n```json\n{ \"crewLaborId\": 13, \"crewLaborMessage\": \"OK\", \"numberRecord\": 1, \"result\": 1, \"message\": \"Success: Operación Exitosa\", \"statusCode\": 200 }\n```\n\n### Códigos de `result`\n\n| Valor | Significado |\n|-------|-------------|\n| 0 | Error |\n| 1 | Exitoso |\n| 2 | Sin registros |\n| 3 | Usuario no existente |\n| 4 | Solicitud incorrecta |\n| 5 | Sin contenido |\n| 6 | No encontrado |\n| 7 | No autorizado |\n\n## Reglas de negocio transversales\n\nAplican a prácticamente todos los endpoints y por eso no se repiten en cada uno:\n\n- El token debe enviarse en la cabecera y estar vigente; de lo contrario se retorna **401**.\n- La petición **no puede ser nula**.\n- Todos los campos son obligatorios salvo indicación contraria.\n- Los datos enviados deben concordar entre sí.\n- Los filtros opcionales se anulan enviando **cero (0)** en los numéricos y **cadena vacía (`''`)** en los de texto.\n\n> **Notas de fidelidad al contrato real:**\n> - Se conservan los nombres exactos del backend, incluidos los typos: `refresToken`, `nember` / `nameNember` / `nemberCrewLaborMessage` (por *member*), `Identificatgion`, `Conseutivo`, `departament`, y la ruta `applicationpermissions/byyapplicacionidprofileid`.\n> - El contador de registros llega unas veces como **`numberRecord`** y otras como **`numRecord`**; ambos se documentan.\n> - El `applicationId` **no es único**: es **25** para el token y el file server, y **31** para las opciones de menú y los permisos de perfil.\n> - En varios endpoints el nombre del campo en la tabla del manual no coincide con el del cuerpo JSON de ejemplo. Se documenta el del **cuerpo JSON**, que es el que viaja, y la diferencia queda anotada en `x-observacion`."
+  },
+  "tags": [
+    {
+      "name": "Autenticación",
+      "description": "Punto de entrada a la API y datos de sesión del usuario.\n\n### Flujo\n1. **`POST /gateway/token`** — autenticación máquina a máquina con las credenciales del proveedor. Devuelve el token de servicio con **vigencia de 24 horas**. Es la única operación que no requiere token previo.\n2. **`POST /gateway/login`** — login del usuario final de la App. Recibe el objeto de usuario completo y devuelve su perfil.\n3. **`GET /gateway/applicationpermissions/...`** — permisos del perfil obtenido en el login.\n4. **`GET /gateway/navigations/{applicationid}/{profileid}`** — opciones de menú que se pintan en la App para ese perfil.\n\n### Sobre el `applicationId`\nEl valor **no es el mismo en todos los métodos**:\n\n| Uso | Valor |\n|---|---|\n| Token de servicio | 25 |\n| Opciones de menú y permisos de perfil | 31 |\n| Configuración del file server | 25 |\n\n### Estructura del menú\n`GET /gateway/navigations` devuelve una jerarquía de **tres niveles**: `group` → `collapse` → `item`. Los campos `class`, `extralink` y `submenu` provienen de la plantilla original y **no aplican** en esta implementación: llegan vacíos o en `false`."
+    },
+    {
+      "name": "Recuperación de contraseña",
+      "description": "Restablecimiento de la clave del usuario de la App, en tres pasos encadenados.\n\n### Flujo\n1. **`POST /gateway/login/generatepasswordreset/{User}`** — la App envía el usuario. El backend genera un código de validación y devuelve el `code` junto con el correo destino (`emailShipping`).\n2. **`POST /gateway/emails/bytemplateid`** — se envía el correo con el código usando la **plantilla 9**. Los valores variables (`title`, `name`, `code`) viajan en el arreglo `viewModels`.\n3. **`POST /gateway/login/generatepasswordchange`** — se envía el usuario, el código recibido y la nueva contraseña.\n\n### Detalle de la plantilla de correo\nEl arreglo `viewModels` es una lista de pares `name` / `value`. Los tres nombres esperados son:\n\n| `name` | Contenido |\n|---|---|\n| `title` | Título del correo (código de verificación) |\n| `name` | Nombre del usuario destinatario |\n| `code` | Código de validación generado en el paso 1 |\n\n### Inconsistencia detectada\nEl cuerpo de **Cambio Clave** viaja como `{ \"User\", \"codeUpdate\", \"newPassword\" }`, pero la tabla del manual describe los campos como `Id (Int)` y `newPassword (Integer)`. Lo que efectivamente se envía son **cadenas**, y el identificador es el **nombre de usuario**, no un id numérico."
+    },
+    {
+      "name": "Cuadrillas",
+      "description": "Creación y consulta de cuadrillas.\n\n### Flujo de creación\nLa cuadrilla se arma en **dos llamadas separadas**:\n\n1. **Encabezado** (`sprcreatedcrewlabor`) — datos básicos: descripción, departamento, ciudad, responsable y teléfono. Devuelve el **`crewLaborId`** generado.\n2. **Detalle** (`sprdetailscrewlabor`) — se invoca **una vez por cada integrante** que se asigna, usando el `crewLaborId` del paso anterior.\n\n### Consultas disponibles\n\n| Endpoint | Devuelve |\n|---|---|\n| `sprcrewlaborhistories` | Listado de cuadrillas filtrado por estado |\n| `sprexecsprcrewlaborids` | Una cuadrilla específica **con sus integrantes** |\n\n### Códigos de estado de la cuadrilla\n\n| Valor | Significado |\n|---|---|\n| 0 | Todas, sin importar el estado (solo como filtro) |\n| 1 | Activa |\n| 2 | Inactiva |\n\n### Inconsistencia detectada\nEn la sección 13.4 del manual las descripciones de `id`, `description` y `departament` están intercambiadas con las de otro endpoint (aparecen como *\"identificación del integrante creado\"*, *\"mensaje del sql\"* y *\"número de registros\"*). Aquí se documenta el significado real de cada campo."
+    },
+    {
+      "name": "Integrantes",
+      "description": "Alta y administración de los integrantes que conforman las cuadrillas.\n\n### Creación\n`sprnemberscrewlabor` crea la persona en el maestro de integrantes: identificación, tipo de documento, nombres, apellidos, correo, departamento y municipio. **Crear al integrante no lo asigna a ninguna cuadrilla**; la asignación se hace desde el detalle de cuadrilla.\n\n### Administración\n`spradministrationmembers` es un **endpoint multipropósito**: el campo `typeTransaction` decide qué operación se ejecuta.\n\n| `typeTransaction` | Operación |\n|---|---|\n| 1 | Agregar a otra cuadrilla |\n| 2 | Eliminar de una cuadrilla |\n| 3 | Mover a otra cuadrilla (inactiva en la actual y la agrega a la nueva) |\n| 4 | Asignar como responsable |\n| 5 | Cambiar de estado |\n\nDos campos cambian de significado según la transacción:\n\n- **`typeMember`** — si `typeTransaction` es distinto de **4**, debe enviarse en **1**.\n- **`state`** — si `typeTransaction` es distinto de **5**, debe enviarse en **1**; si es 5, se envía el código del estado destino.\n\n### Nomenclatura\nEl backend escribe *member* como **`nember`** en varios campos (`nember`, `nameNember`, `nemberCrewLaborMessage`). Se conserva tal cual para no romper el contrato."
+    },
+    {
+      "name": "Administradores de cuadrillas",
+      "description": "Responsables de cuadrilla asignados por ciudad.\n\n### Creación y modificación\n`SprCrewAdministratorbyCitys` también es multipropósito, mediante `typeTransaccion`:\n\n| `typeTransaccion` | Operación |\n|---|---|\n| 1 | Crear administrador |\n| 2 | Modificar el estado del administrador |\n\nAl crear, el campo `state` **siempre debe enviarse en 1**.\n\n### Consultas\n\n| Endpoint | Devuelve |\n|---|---|\n| `sprlistcrewlabormanager` | Administradores filtrados por estado, para un usuario |\n| `sprlistcrewlabormanagerid` | Cuadrillas asignadas a un administrador específico |\n\n### Filtro de estado en el listado\n\n| Valor | Resultado |\n|---|---|\n| 0 | Todos los administradores |\n| 1 | Solo activos |\n| 100 | Solo inactivos |\n\nNótese que el inactivo es **100**, no 2: es un código distinto al usado en las cuadrillas.\n\n### Inconsistencia detectada\nEn `sprlistcrewlabormanagerid` el cuerpo envía `managerId`, pero la tabla del manual nombra el campo `administrator`. El que viaja es **`managerId`**."
+    },
+    {
+      "name": "Solicitudes de cuadrilla",
+      "description": "Ciclo de vida de una solicitud de servicio de cuadrilla, desde que llega hasta que se gestiona o se rechaza.\n\n### Flujo\n1. **`sprlistrequestptecrewlabor`** — el administrador ve las solicitudes pendientes, filtradas por estado.\n2. **`sprassigncrewlabor`** — asigna una cuadrilla a la solicitud seleccionada.\n3. **`sprappmanageloadunits`** — registra la gestión: tipo de servicio, unidad de medida, cantidad y valor.\n4. **`sprrejectcrewlaborrequisition`** — alternativa al paso 2: rechaza la solicitud.\n5. **`sprlisthistoryrequestcrewlabor`** — consulta el histórico con filtros de fecha, agencia, manifiesto, estado y solicitud.\n\n### Estados de la solicitud\n\n| Valor | Estado |\n|---|---|\n| 0 | Todas, sin importar el estado (solo como filtro) |\n| 1 | Activa, pendiente de gestionar o asignar cuadrilla |\n| 2 | Con asignación de cuadrilla |\n| 3 | Inicio de proceso |\n| 4 | En proceso |\n| 5 | Gestionada |\n| 6 | Rechazada |\n\n### Filtros del historial\n`dateInitial` y `dateEnd` son **obligatorios**. `agency`, `manifest`, `idState` e `idRequest` son opcionales y se anulan enviándolos en **cero**; `state` se anula enviando **cadena vacía**.\n\n### Inconsistencia detectada\nLa respuesta del listado de pendientes trae **`nameplace` y `namePlace`**, dos claves que solo se diferencian por una mayúscula y que representan lo mismo. El historial devuelve únicamente `namePlace`."
+    },
+    {
+      "name": "Certificación de unidades de carga",
+      "description": "Proceso paralelo al de cuadrillas: certificar el estado de una unidad de carga y registrar las novedades encontradas.\n\n### Flujo\n1. **`sprlistcertifyloadunit`** — lista las unidades pendientes de certificar, por estado y rango de fechas.\n2. **`sprcertifyloadunit`** — registra la certificación y las novedades. En este endpoint `typeService` **siempre es 5**.\n3. **`sprrejectcertifyloadunit`** — rechaza la solicitud de certificación.\n4. **`sprlisthistorycertifyloadunit`** — consulta el histórico de unidades certificadas.\n\n### Novedades que se registran\nLos cinco campos de novedad son de **texto libre y opcionales**; se diligencian solo si se presenta el hecho:\n\n| Campo | Novedad |\n|---|---|\n| `breakdowns` | Averías |\n| `missing` | Faltantes |\n| `leftovers` | Sobrantes |\n| `devolutions` | Devoluciones |\n| `documents` | Documentos |\n| `observation` | Observación general |\n\n### Estados de la certificación\n\n| Valor | Estado |\n|---|---|\n| 0 | Todas, sin importar el estado (solo como filtro) |\n| 1 | Creada / vigente pendiente de certificar o rechazar |\n| 2 | Aceptada |\n| 3 | En proceso |\n| 4 | Certificada |\n| 5 | Rechazada |\n\n### Inconsistencias detectadas\n- El manual presenta **dos numeraciones distintas** de estados para el mismo proceso: en la sección 24 dice *\"1. Vigente Pte. 2. Certificada 100. Rechazada\"* y más adelante *\"1. Vigente 2. Aceptada 3. En Proceso 4. Certificada 5. Rechazada\"*. Se documenta la segunda, que coincide con el catálogo de estados y con el histórico.\n- El rechazo recibe **`certifyUnitLoadId`** pero responde **`certifyLoadUnitId`**: las palabras van en distinto orden en la petición y en la respuesta.\n- El cuerpo del histórico usa `dateIni` / `dateEnd` / `State` / `idRequest`, mientras la tabla del manual los nombra `initialDate` / `endDate` / `State` / `idSolicitud`."
+    },
+    {
+      "name": "Archivos e imágenes",
+      "description": "Cargue de las imágenes que respaldan la gestión de cuadrillas y las certificaciones.\n\n### Flujo obligatorio en dos pasos\nEl cargue **no funciona de forma aislada**: primero hay que consultar la configuración del file server y luego usar sus valores en el cargue.\n\n1. **`GET /gateway/applicationfileservers/byapplicationidprocess/{applicationid}/{process}/includeinactives/{active}`**\n   Con `applicationid` = **25** y `process` = **IMGCUADRILLAS** (el registro corresponde al `id` 19). Devuelve `storagePath`, `folder`, `group`, `user`, `key` y `domain`.\n\n2. **`POST /gateway/files/multipleupload`**\n   Recibe esos mismos valores más el arreglo `files` con las imágenes.\n\n### Cómo viaja el archivo\nLa imagen va **codificada en Base64** dentro del JSON, en el campo `file`. **No se usa `multipart/form-data`.**\n\n### Estructura de carpetas\nEl `folderName` debe construirse siguiendo esta jerarquía: carpeta de **año y mes actual** → dentro, una carpeta con el **número de la gestión** → dentro de esa, la imagen.\n\n### El objeto `imageCrewLaborCertify`\nEs el bloque que enlaza la imagen con el proceso de negocio: `idRequest` (solicitud de cuadrilla o de certificación), `typeService`, `fileName`, `url`, `user`, `Ind` (indicador del punto del proceso en que se toma la imagen) y `observation`.\n\n### Correspondencia de nombres entre los dos pasos\nLos campos cambian de nombre al pasar de la consulta al cargue, lo que suele generar errores de integración:\n\n| Devuelve el paso 1 | Se envía en el paso 2 |\n|---|---|\n| `storagePath` | `storagePath` |\n| `folder` | `folderName` |\n| `group` | `group` |\n| `user` | `userName` |\n| `key` | `secretAccessKey` |\n| `domain` | `domainName` |"
+    },
+    {
+      "name": "Catálogos",
+      "description": "Datos maestros que alimentan los selectores de la App. Son de solo lectura y conviene cachearlos al iniciar sesión.\n\n| Catálogo | Endpoint | Contenido |\n|---|---|---|\n| Tipos de documento | `AppCrewsLaborTypeDocuments` | Manifiesto, Orden de Servicio |\n| Unidades de medida | `AppCrewsLaborunitsMeasures` | Cajas, Estiba, Certificador, descargue/cargue diurno o nocturno por persona |\n| Tipos de integrante | `typemembercrewlabs` | Integrante Cuadrilla, Responsable Cuadrilla |\n| Tipos de certificación de carga | `typecertificationload` | Certificado Diurno, Certificado Nocturno |\n| Tipos de servicio de cuadrilla | `appcrewslabortypeservices` | Cargue, Descargue, Certificador |\n| Tipos de servicio a solicitar | `typeservicecrewlabors` | Gestionar Unidad de Carga, Certificar Unidad de Carga |\n| Estados de solicitud de certificación | `statesrequestcertificationunitloads` | Creada, Aceptada, En Proceso, Certificada, Rechazada |\n| Estados de solicitud de cuadrilla | `statesrequestcrewlabs` | Activa, Con Asignación Cuadrilla, Inicio Proceso, En Proceso, Gestionada, Rechazada |\n| Tipos de documento de identificación | `typedocumentidentifications` | CC, CE, TAX y sus equivalencias DIAN |\n| Departamentos | `departments/bycountryid` | Departamentos por país (Colombia = 1) |\n| Municipios | `municipalities/bydepartmentid` | Municipios filtrados por departamento |\n\n### El parámetro `includeinactives`\nCasi todos reciben un booleano que indica si se incluyen los registros inactivos. En la práctica la App lo envía en **`false`**, aunque algunas secciones del manual indican `true`; el comportamiento correcto para poblar selectores es `false`.\n\n### Observación sobre los verbos HTTP\nLas secciones 39 y 40 del manual declaran `Tipo: Post` para los listados de estados, pero las capturas de Postman muestran peticiones **GET**. Aquí se documentan como **GET**, que es lo que realmente se ejecuta.\n\n### Observación sobre los nombres de campo\nVarios catálogos reutilizan la clave `UnitId` aunque el contenido no sea una unidad de medida: en el catálogo de tipos de integrante, por ejemplo, `UnitId` es el código del tipo de integrante. También hay claves inconsistentes como `countryId`, que en el listado de departamentos representa el **código del departamento**, no el del país."
+    }
+  ],
+  "paths": {
+    "/gateway/login": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Login del usuario de la App",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginAppResponse" }
+              }
+            },
+            "description": "Perfil del usuario autenticado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Recibe el objeto de usuario completo y autentica al usuario final de la App. La respuesta devuelve **los mismos campos de entrada** ya completos con el perfil, la agencia y los datos de auditoría.\n\nSolo `userName`, `email` y `password` son datos ingresados por la persona; el resto se envía con valores por defecto.",
+        "operationId": "loginApp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginAppRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/token": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Obtener token de servicio",
+        "security": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            },
+            "description": "Token emitido."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Autenticación máquina a máquina con las credenciales del proveedor. Devuelve el token con **vigencia de 24 horas** que debe enviarse en la cabecera `Authorization` del resto de métodos.\n\n**Es la única operación que no requiere token previo.**\n\nEl `applicationId` para este método es **25**.",
+        "operationId": "getToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TokenRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/emails/bytemplateid": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Enviar código por correo",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SendCodeResponse" }
+              }
+            },
+            "description": "Resultado del envío."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "**Paso 2 de 3.** Envía el correo con el código de verificación usando la **plantilla 9**. Los valores variables viajan en el arreglo `viewModels` como pares `name` / `value`.\n\n> Este endpoint **no usa el sobre común de respuesta**: devuelve `title`, `message`, `statusCode` (texto) y `object`.",
+        "operationId": "sendCodeByTemplate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SendCodeRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/files/multipleupload": {
+      "post": {
+        "tags": ["Archivos e imágenes"],
+        "summary": "Cargar imágenes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseResponse" }
+              }
+            },
+            "description": "Imágenes almacenadas."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "**Paso 2 de 2 del cargue de imágenes.** Recibe los parámetros devueltos por la configuración del file server más el arreglo de archivos.\n\n**La imagen viaja codificada en Base64 dentro del JSON**; no se usa `multipart/form-data`.\n\nEl `folderName` debe construirse con la jerarquía: carpeta de **año y mes actual** → carpeta con el **número de la gestión** → la imagen.\n\nEl objeto `imageCrewLaborCertify` enlaza la imagen con la solicitud de cuadrilla o de certificación correspondiente.",
+        "operationId": "uploadImages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UploadImagesRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/AppCrewsLaborTypeDocuments": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de documento",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeDocumentsResponse"
+                }
+              }
+            },
+            "description": "Listado de tipos de documento."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos."
+          }
+        ],
+        "description": "Lista los tipos de documento con los que llega una solicitud: manifiesto u orden de servicio.",
+        "operationId": "listTypeDocuments"
+      }
+    },
+    "/gateway/AppCrewsLaborunitsMeasures": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Unidades de medida",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitMeasuresResponse"
+                }
+              }
+            },
+            "description": "Listado de unidades de medida."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos."
+          }
+        ],
+        "description": "Lista las unidades de medida usadas en la gestión de cuadrillas: cajas, estiba, certificador, descargue o cargue diurno y nocturno por persona.",
+        "operationId": "listUnitMeasures"
+      }
+    },
+    "/gateway/login/generatepasswordchange": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Cambiar la contraseña",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleMessageResponse"
+                }
+              }
+            },
+            "description": "Resultado del cambio."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "**Paso 3 de 3.** Recibe el usuario, el código de verificación recibido por correo y la nueva contraseña. Los datos deben concordar con los generados en el paso 1.",
+        "operationId": "generatePasswordChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprassigncrewlabor": {
+      "post": {
+        "tags": ["Solicitudes de cuadrilla"],
+        "summary": "Asignar cuadrilla a una solicitud",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AssignCrewResponse" }
+              }
+            },
+            "description": "Cuadrilla asignada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Asigna una cuadrilla a la solicitud seleccionada. Tras esta llamada la solicitud pasa al estado **2 (con asignación de cuadrilla)**.",
+        "operationId": "assignCrew",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssignCrewRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprcertifyloadunit": {
+      "post": {
+        "tags": ["Certificación de unidades de carga"],
+        "summary": "Administrar certificación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CertifyResponse" }
+              }
+            },
+            "description": "Certificación registrada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Registra la gestión de la unidad a certificar y las **novedades** presentadas: averías, faltantes, sobrantes, devoluciones y documentos, más una observación general. Todas son opcionales y de texto libre.\n\n**`typeService` siempre es 5** en este endpoint.",
+        "operationId": "certifyLoadUnit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CertifyRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprcreatedcrewlabor": {
+      "post": {
+        "tags": ["Cuadrillas"],
+        "summary": "Crear encabezado de cuadrilla",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CrewResponse" }
+              }
+            },
+            "description": "Cuadrilla creada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "**Paso 1 de la creación.** Registra los datos básicos de la cuadrilla y devuelve el **`crewLaborId`** que se necesita para asignarle integrantes.\n\nEl `responsable` es el número de identificación de la persona a cargo, no su nombre.",
+        "operationId": "createCrewLabor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCrewRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprdetailscrewlabor": {
+      "post": {
+        "tags": ["Cuadrillas"],
+        "summary": "Asignar integrante a la cuadrilla",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CrewResponse" }
+              }
+            },
+            "description": "Integrante asignado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "**Paso 2 de la creación.** Asigna un integrante a una cuadrilla existente. Se invoca **una vez por cada integrante**.\n\nEl integrante debe existir previamente en el maestro (ver *Crear integrante*).",
+        "operationId": "createCrewDetail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrewDetailRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprnemberscrewlabor": {
+      "post": {
+        "tags": ["Integrantes"],
+        "summary": "Crear integrante",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateMemberResponse"
+                }
+              }
+            },
+            "description": "Integrante creado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Da de alta a una persona en el maestro de integrantes de cuadrillas.\n\n**Crear al integrante no lo asigna a ninguna cuadrilla.** La asignación se hace después con *Asignar integrante a la cuadrilla*.",
+        "operationId": "createMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateMemberRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewLabors/sprappmanageloadunits": {
+      "post": {
+        "tags": ["Solicitudes de cuadrilla"],
+        "summary": "Gestionar la unidad de carga",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ManageLoadResponse" }
+              }
+            },
+            "description": "Gestión registrada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Registra la gestión de la solicitud: la **unidad de medida** que descarga la cuadrilla, la **cantidad** y el **valor**. Estos tres datos los diligencia el usuario en la App.\n\n> La ruta usa `crewLabors` con **L mayúscula**.",
+        "operationId": "manageLoadUnit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ManageLoadUnitRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprcrewlaborhistories": {
+      "post": {
+        "tags": ["Cuadrillas"],
+        "summary": "Historial de cuadrillas por estado",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CrewHistoryResponse" }
+              }
+            },
+            "description": "Listado de cuadrillas."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista las cuadrillas creadas. Sirve para varios procesos de la App según el estado enviado: **0** trae todas sin importar el estado, **1** solo las activas y **2** solo las inactivas.\n\nCada registro incluye el conteo de integrantes en `numberNember`, ya formateado como texto (por ejemplo *\"5 Miembros\"*).",
+        "operationId": "getCrewHistories",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrewHistoryRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewLabors/sprexecsprcrewlaborids": {
+      "post": {
+        "tags": ["Cuadrillas"],
+        "summary": "Consultar una cuadrilla y sus integrantes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CrewByIdResponse" }
+              }
+            },
+            "description": "Cuadrilla con sus integrantes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Devuelve una cuadrilla específica **con el detalle de sus integrantes**. La respuesta repite los datos de la cuadrilla en cada fila, una por integrante.\n\n> La ruta usa `crewLabors` con **L mayúscula**, a diferencia de la mayoría de endpoints del grupo.",
+        "operationId": "getCrewById",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrewByIdRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprlistcertifyloadunit": {
+      "post": {
+        "tags": ["Certificación de unidades de carga"],
+        "summary": "Listar unidades a certificar",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ListCertifyResponse" }
+              }
+            },
+            "description": "Listado de unidades a certificar."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Muestra las solicitudes de unidades de carga a certificar por estado y rango de fecha. **El rango de fechas es obligatorio.**\n\nEstados: **0** todas, **1** creada o vigente pendiente de certificar, **2** aceptada, **3** en proceso, **4** certificada, **5** rechazada.",
+        "operationId": "listCertifyLoadUnits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ListCertifyRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprlistcrewlabormanager": {
+      "post": {
+        "tags": ["Administradores de cuadrillas"],
+        "summary": "Listar administradores por ciudad",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListManagersResponse"
+                }
+              }
+            },
+            "description": "Listado de administradores."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los administradores de ciudad existentes para el usuario consultado.\n\nFiltro de estado: **0** todos, **1** solo activos, **100** solo inactivos. Nótese que el inactivo es **100**, no 2.",
+        "operationId": "listManagers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ListManagersRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprlistnembercrewlabors": {
+      "post": {
+        "tags": ["Integrantes"],
+        "summary": "Listar integrantes activos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ListMembersResponse" }
+              }
+            },
+            "description": "Listado de integrantes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Lista los integrantes en estado activo creados por el proveedor, filtrados por departamento y municipio.",
+        "operationId": "listMembers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ListMembersRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/login/generatepasswordreset/{User}": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Generar código de recuperación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneratePasswordResetResponse"
+                }
+              }
+            },
+            "description": "Código generado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "User",
+            "schema": { "type": "string", "example": "Cuadrillapruebas" },
+            "required": true,
+            "description": "Nombre de usuario que solicita el cambio."
+          }
+        ],
+        "description": "**Paso 1 de 3.** Recibe el usuario y genera un código de validación. Devuelve el `code` generado y el correo (`emailShipping`) al que debe enviarse.\n\nEl usuario viaja en la **ruta**, no en el cuerpo; la petición no lleva body.",
+        "operationId": "generatePasswordReset"
+      }
+    },
+    "/gateway/crewlabors/spradministrationmembers": {
+      "post": {
+        "tags": ["Integrantes"],
+        "summary": "Administrar integrante",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminMemberResponse" }
+              }
+            },
+            "description": "Integrante modificado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Endpoint **multipropósito**: `typeTransaction` decide la operación.\n\n| Valor | Operación |\n|---|---|\n| 1 | Agregar a otra cuadrilla |\n| 2 | Eliminar de una cuadrilla |\n| 3 | Mover a otra cuadrilla (inactiva en la actual y la agrega a la nueva) |\n| 4 | Asignar como responsable |\n| 5 | Cambiar de estado |\n\n**Cuidado con dos campos condicionales:**\n- `typeMember` debe ir en **1** si `typeTransaction` es distinto de 4.\n- `state` debe ir en **1** si `typeTransaction` es distinto de 5.",
+        "operationId": "administrateMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminMemberRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprrejectcertifyloadunit": {
+      "post": {
+        "tags": ["Certificación de unidades de carga"],
+        "summary": "Rechazar certificación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CertifyResponse" }
+              }
+            },
+            "description": "Solicitud rechazada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Rechaza una solicitud de certificación de unidad de carga.\n\n> La petición recibe `certifyUnitLoadId` pero la respuesta devuelve `certifyLoadUnitId`: las palabras van en distinto orden.",
+        "operationId": "rejectCertifyLoadUnit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RejectCertifyRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprlistcrewlabormanagerid": {
+      "post": {
+        "tags": ["Administradores de cuadrillas"],
+        "summary": "Listar cuadrillas de un administrador",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagerCrewsResponse"
+                }
+              }
+            },
+            "description": "Cuadrillas del administrador."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Devuelve las cuadrillas que tiene asignadas un administrador específico, con el conteo de miembros y el estado de cada una.",
+        "operationId": "listManagerCrews",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ManagerCrewsRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprlistrequestptecrewlabor": {
+      "post": {
+        "tags": ["Solicitudes de cuadrilla"],
+        "summary": "Listar solicitudes pendientes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingRequestsResponse"
+                }
+              }
+            },
+            "description": "Listado de solicitudes pendientes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Muestra las solicitudes de cuadrilla pendientes por gestionar o asignar. El resultado depende del estado enviado: **0** todas, **1** activa pendiente de gestionar, **2** con asignación, **3** inicio de proceso, **4** en proceso, **5** gestionada, **6** rechazada.",
+        "operationId": "listPendingRequests",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PendingRequestsRequest"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/typemembercrewlabs/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de integrante",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TypeMembersResponse" }
+              }
+            },
+            "description": "Listado de tipos de integrante."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los tipos de integrante disponibles al crear una persona: integrante de cuadrilla o responsable de cuadrilla.",
+        "operationId": "listTypeMembers"
+      }
+    },
+    "/gateway/CrewLabors/SprCrewAdministratorbyCitys": {
+      "post": {
+        "tags": ["Administradores de cuadrillas"],
+        "summary": "Crear o modificar administrador por ciudad",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateManagerResponse"
+                }
+              }
+            },
+            "description": "Administrador creado o modificado."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Crea los administradores o responsables de las cuadrillas por ciudad. `typeTransaccion` decide la operación: **1** crea el administrador, **2** modifica su estado.\n\nAl crear, `state` **siempre se envía en 1**.\n\n> La ruta va en **CamelCase** (`CrewLabors/SprCrewAdministratorbyCitys`), a diferencia del resto del grupo.",
+        "operationId": "createManager",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateManagerRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/navigations/{applicationid}/{profileid}": {
+      "get": {
+        "tags": ["Autenticación"],
+        "summary": "Opciones de menú del usuario",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenuResponse" }
+              }
+            },
+            "description": "Árbol de navegación del perfil."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationid",
+            "schema": { "type": "integer", "example": 31 },
+            "required": true,
+            "description": "Id de la aplicación. Para cuadrillas es **31**."
+          },
+          {
+            "in": "path",
+            "name": "profileid",
+            "schema": { "type": "integer", "example": 2 },
+            "required": true,
+            "description": "Id del perfil que devolvió el método de perfiles de usuario."
+          }
+        ],
+        "description": "Lista las opciones de menú que la App debe pintar para el perfil indicado. La estructura es una jerarquía de **tres niveles**: `group` → `collapse` → `item`.\n\nLos campos `class`, `extralink` y `submenu` vienen de la plantilla original y no aplican en esta implementación.",
+        "operationId": "getNavigations"
+      }
+    },
+    "/gateway/crewlabors/sprlisthistorycertifyloadunit": {
+      "post": {
+        "tags": ["Certificación de unidades de carga"],
+        "summary": "Historial de unidades certificadas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertifyHistoryResponse"
+                }
+              }
+            },
+            "description": "Historial de certificaciones."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Muestra el histórico de solicitudes de unidades de carga certificadas. **Las fechas son obligatorias**; se recomienda arrancar con un rango de la última semana. Los demás filtros se anulan enviándolos en cero.\n\nLa estructura de la respuesta es la misma del listado de unidades a certificar.",
+        "operationId": "listCertifyHistory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CertifyHistoryRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/crewlabors/sprrejectcrewlaborrequisition": {
+      "post": {
+        "tags": ["Solicitudes de cuadrilla"],
+        "summary": "Rechazar solicitud de cuadrilla",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ManageLoadResponse" }
+              }
+            },
+            "description": "Solicitud rechazada."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Rechaza la solicitud seleccionada. Es la alternativa a asignarle una cuadrilla; la solicitud pasa al estado **6 (rechazada)**.\n\nLa respuesta reutiliza los campos `manageLoadId` y `manageLoadMessage` del endpoint de gestión.",
+        "operationId": "rejectCrewRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RejectCrewRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/statesrequestcrewlabs/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Estados de solicitud de cuadrilla",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CrewStatesResponse" }
+              }
+            },
+            "description": "Listado de estados."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los estados existentes para las solicitudes de cuadrilla: activa, con asignación de cuadrilla, inicio de proceso, en proceso, gestionada y rechazada.\n\n> El manual declara este método como `Post`, pero la captura de Postman muestra un **GET**. Se documenta como GET.",
+        "operationId": "listCrewStates"
+      }
+    },
+    "/gateway/typecertificationload/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de certificación de carga",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeCertificationsResponse"
+                }
+              }
+            },
+            "description": "Listado de tipos de certificación."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los tipos de certificación de carga existentes: certificado diurno o nocturno.",
+        "operationId": "listTypeCertifications"
+      }
+    },
+    "/gateway/typeservicecrewlabors/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de servicio a solicitar",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeServiceCertifyResponse"
+                }
+              }
+            },
+            "description": "Listado de tipos de servicio a solicitar."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los tipos de servicio que se pueden solicitar: gestionar unidad de carga o certificar unidad de carga.",
+        "operationId": "listTypeServicesToRequest"
+      }
+    },
+    "/gateway/crewlabors/sprlisthistoryrequestcrewlabor": {
+      "post": {
+        "tags": ["Solicitudes de cuadrilla"],
+        "summary": "Historial de solicitudes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestHistoryResponse"
+                }
+              }
+            },
+            "description": "Historial de solicitudes."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "description": "Consulta el histórico de solicitudes registradas.\n\n**`dateInitial` y `dateEnd` son obligatorios.** Los filtros de agencia, manifiesto, estado y solicitud son opcionales y se anulan enviándolos en **cero**; `state` se anula con **cadena vacía**.\n\nA diferencia del listado de pendientes, la respuesta incluye los datos del proveedor (`supplierName`, `idSupplier`).",
+        "operationId": "listRequestHistory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestHistoryRequest" }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/gateway/appcrewslabortypeservices/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de servicio de cuadrilla",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeServiceCrewResponse"
+                }
+              }
+            },
+            "description": "Listado de tipos de servicio."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los tipos de servicio existentes para gestionar una solicitud de cuadrilla: cargue, descargue y certificador.",
+        "operationId": "listTypeServicesCrew"
+      }
+    },
+    "/gateway/municipalities/bydepartmentid/{departmentid}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Municipios por departamento",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MunicipalitiesResponse"
+                }
+              }
+            },
+            "description": "Listado de municipios."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "departmentid",
+            "schema": { "type": "integer", "example": 5 },
+            "required": true,
+            "description": "Código del departamento a filtrar."
+          }
+        ],
+        "description": "Lista los municipios pertenecientes al departamento indicado. El parámetro es el **código del departamento** obtenido del catálogo de departamentos.",
+        "operationId": "listMunicipalities"
+      }
+    },
+    "/gateway/typedocumentidentifications/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Tipos de documento de identificación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeDocumentIdentificationsResponse"
+                }
+              }
+            },
+            "description": "Listado de tipos de documento de identificación."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los tipos de documento de identificación existentes (CC, CE, TAX) con sus equivalencias ante la DIAN como adquiriente y como documento soporte.",
+        "operationId": "listTypeDocumentIdentifications"
+      }
+    },
+    "/gateway/statesrequestcertificationunitloads/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Estados de solicitud de certificación",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertifyStatesResponse"
+                }
+              }
+            },
+            "description": "Listado de estados."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los estados existentes para las solicitudes de unidades a certificar: creada, aceptada, en proceso, certificada y rechazada.\n\n> El manual declara este método como `Post`, pero la captura de Postman muestra un **GET**. Se documenta como GET.",
+        "operationId": "listCertifyStates"
+      }
+    },
+    "/gateway/departments/bycountryid/{countryid}/includeinactives/{includeinactives}": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Departamentos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DepartmentsResponse" }
+              }
+            },
+            "description": "Listado de departamentos."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "countryid",
+            "schema": { "type": "integer", "example": 1 },
+            "required": true,
+            "description": "Id del país. Colombia es **1**."
+          },
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Lista los departamentos del país indicado. Para Colombia el `countryid` es **1**.",
+        "operationId": "listDepartments"
+      }
+    },
+    "/gateway/applicationfileservers/byapplicationidprocess/{applicationid}/{process}/includeinactives/{active}": {
+      "get": {
+        "tags": ["Archivos e imágenes"],
+        "summary": "Configuración del file server",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FileServerResponse" }
+              }
+            },
+            "description": "Configuración del file server."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationid",
+            "schema": { "type": "integer", "example": 25 },
+            "required": true,
+            "description": "Id de la aplicación. Para el file server de cuadrillas es **25**."
+          },
+          {
+            "in": "path",
+            "name": "process",
+            "schema": { "type": "string", "example": "IMGCUADRILLAS" },
+            "required": true,
+            "description": "Nombre del proceso. Para cuadrillas es **IMGCUADRILLAS**."
+          },
+          {
+            "in": "path",
+            "name": "active",
+            "schema": { "type": "boolean", "example": true },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos."
+          }
+        ],
+        "description": "**Paso 1 de 2 del cargue de imágenes.** Devuelve los parámetros de la carpeta compartida que el siguiente endpoint necesita: ruta, carpeta, grupo, usuario, llave y dominio.\n\nPara cuadrillas se consulta con `applicationid` = **25** y `process` = **IMGCUADRILLAS**; el registro corresponde al `id` **19**.\n\nOjo con el cambio de nombres al pasar al paso 2: `folder` → `folderName`, `user` → `userName`, `key` → `secretAccessKey`, `domain` → `domainName`.",
+        "operationId": "getFileServerConfig"
+      }
+    },
+    "/gateway/applicationpermissions/byyapplicacionidprofileid/{applicationId}/{profileId}/includeinactives/{includeinactives}": {
+      "get": {
+        "tags": ["Autenticación"],
+        "summary": "Permisos del perfil",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePermissionsResponse"
+                }
+              }
+            },
+            "description": "Permisos del perfil."
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "applicationId",
+            "schema": { "type": "integer", "example": 31 },
+            "required": true,
+            "description": "Id de la aplicación. Para cuadrillas es **31**."
+          },
+          {
+            "in": "path",
+            "name": "profileId",
+            "schema": { "type": "integer", "example": 2 },
+            "required": true,
+            "description": "Id del perfil del usuario."
+          },
+          {
+            "in": "path",
+            "name": "includeinactives",
+            "schema": { "type": "boolean", "example": false },
+            "required": true,
+            "description": "Indica si se incluyen los registros inactivos. La App lo envía en `false`."
+          }
+        ],
+        "description": "Devuelve las opciones y permisos habilitados para un perfil dentro de la aplicación. Para cuadrillas el `applicationId` es **31** y el `profileId` es el que devolvió el login.\n\n> La ruta contiene el typo `byyapplicacionidprofileid` (doble `y` y `applicacion` en español). Se conserva porque así está publicada.",
+        "operationId": "getProfilePermissions"
+      }
+    }
+  },
+  "openapi": "3.0.3",
+  "servers": [
+    {
+      "url": "https://www.coltanques.co:1400",
+      "description": "Ambiente publicado en el manual"
+    }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "schemas": {
+      "Member": {
+        "type": "object",
+        "title": "Integrante",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "integrante@coltanques.com.co",
+            "description": "Correo del integrante."
+          },
+          "state": {
+            "type": "string",
+            "example": "Activo",
+            "description": "Descripción del estado del integrante."
+          },
+          "nameCity": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "description": "Nombre de la ciudad."
+          },
+          "department": {
+            "type": "integer",
+            "example": 5,
+            "description": "Código del departamento."
+          },
+          "nameNember": {
+            "type": "string",
+            "example": "Integrante pruebas finales apellido finales",
+            "description": "Nombre completo del integrante."
+          },
+          "municipality": {
+            "type": "string",
+            "example": "105001",
+            "description": "Código del municipio."
+          },
+          "typeDocument": {
+            "type": "integer",
+            "example": 1,
+            "description": "Tipo de documento de identificación."
+          },
+          "numberDocument": {
+            "type": "string",
+            "example": "65987654",
+            "description": "Número de identificación del integrante."
+          }
+        }
+      },
+      "Manager": {
+        "type": "object",
+        "title": "Administrador de cuadrillas",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "10",
+            "description": "Id de tabla."
+          },
+          "name": {
+            "type": "string",
+            "example": "Nombre Apellido1 Apellido2",
+            "description": "Nombre del administrador."
+          },
+          "phone": {
+            "type": "string",
+            "example": "5547995222",
+            "description": "Teléfono del administrador."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de estado del administrador."
+          },
+          "supplierId": {
+            "type": "string",
+            "example": "1110007156",
+            "description": "Identificación del proveedor al que pertenece."
+          },
+          "departament": {
+            "type": "integer",
+            "example": 5,
+            "description": "Id del departamento del administrador."
+          },
+          "municipality": {
+            "type": "string",
+            "example": "105002",
+            "description": "Id del municipio del administrador."
+          },
+          "nameSupplier": {
+            "type": "string",
+            "example": "RAMIREZ BARRERO DIEGO FERNANDO",
+            "description": "Nombre del proveedor."
+          },
+          "identifiqueId": {
+            "type": "string",
+            "example": "69898909",
+            "description": "Número de identificación del administrador."
+          },
+          "numberCrewLabor": {
+            "type": "string",
+            "example": "0 Cuadrillas Asignadas",
+            "description": "Cantidad de cuadrillas a su cargo."
+          },
+          "dateModification": {
+            "type": "string",
+            "example": "2025-07-21T15:08:36.393",
+            "description": "Fecha de creación o última modificación."
+          },
+          "descriptionState": {
+            "type": "string",
+            "example": "ACTIVO",
+            "description": "Descripción del estado."
+          },
+          "descriptionDepartament": {
+            "type": "string",
+            "example": "ANTIOQUIA",
+            "description": "Descripción del departamento."
+          },
+          "descriptionMunicipality": {
+            "type": "string",
+            "example": "ABEJORRAL",
+            "description": "Descripción del municipio."
+          }
+        }
+      },
+      "CrewDetail": {
+        "type": "object",
+        "title": "Cuadrilla con integrantes",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "3",
+            "description": "Id de la cuadrilla."
+          },
+          "city": {
+            "type": "string",
+            "example": "105001",
+            "description": "Código de la ciudad."
+          },
+          "phone": {
+            "type": "string",
+            "example": "545454651521",
+            "description": "Teléfono del responsable."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del estado de la cuadrilla."
+          },
+          "nameCity": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "description": "Nombre de la ciudad."
+          },
+          "department": {
+            "type": "integer",
+            "example": 5,
+            "description": "Id del departamento."
+          },
+          "idIntegral": {
+            "type": "string",
+            "example": "3333333333",
+            "description": "Cédula del integrante."
+          },
+          "description": {
+            "type": "string",
+            "example": "Cuadrilla Prueba TRES",
+            "description": "Nombre de la cuadrilla."
+          },
+          "responsable": {
+            "type": "string",
+            "example": "Cuadrilla51G50918D5933G5G454346515211",
+            "description": "Nombre completo del responsable."
+          },
+          "dateCreation": {
+            "type": "string",
+            "example": "2025-06-04T11:11:35.897",
+            "description": "Fecha de creación."
+          },
+          "nameIntegral": {
+            "type": "string",
+            "example": "Integrante 3 Apellido Integrante 3",
+            "description": "Nombre del integrante."
+          },
+          "numberNember": {
+            "type": "string",
+            "example": "1 Miembros",
+            "description": "Cantidad de integrantes."
+          },
+          "typeIntegral": {
+            "type": "integer",
+            "example": 1,
+            "description": "Tipo de integrante."
+          },
+          "userCreation": {
+            "type": "string",
+            "example": "415",
+            "description": "Usuario de creación."
+          },
+          "dateModification": {
+            "type": "string",
+            "example": "2025-06-06T09:05:06.743",
+            "description": "Fecha de modificación."
+          },
+          "nameTypeIntegral": {
+            "type": "string",
+            "example": "Integrante Cuadrilla",
+            "description": "Descripción del tipo de integrante."
+          },
+          "userModification": {
+            "type": "string",
+            "example": "",
+            "description": "Usuario de modificación."
+          }
+        },
+        "description": "Repite los datos de la cuadrilla por cada integrante que la conforma.",
+        "x-observacion": "En la sección 13.4 del manual las descripciones de `id`, `description` y `departament` están copiadas por error de otro endpoint."
+      },
+      "Department": {
+        "type": "object",
+        "title": "Departamento",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 5,
+            "description": "Código del departamento."
+          },
+          "name": {
+            "type": "string",
+            "example": "ANTIOQUIA",
+            "description": "Descripción del departamento."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 13,
+            "description": "Agencia asociada."
+          },
+          "country": {
+            "type": "string",
+            "example": "COLOMBIA",
+            "description": "Nombre del país."
+          },
+          "initial": {
+            "type": "string",
+            "example": "ANT",
+            "description": "Sigla del departamento."
+          },
+          "regTerId": {
+            "type": "integer",
+            "example": 9,
+            "description": "Id de región territorial."
+          },
+          "countryId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del país."
+          },
+          "codeRegPlanComercial": {
+            "type": "integer",
+            "example": 2,
+            "description": "Código de región del plan comercial."
+          }
+        },
+        "x-observacion": "La tabla del manual describe `countryId` como *código del departamento*; en realidad el código del departamento es `code` y `countryId` es el del país."
+      },
+      "MenuOption": {
+        "type": "object",
+        "title": "Opción de menú",
+        "properties": {
+          "icon": {
+            "type": "string",
+            "example": "mdi mdi-toggle-switch",
+            "description": "Nombre del icono utilizado."
+          },
+          "path": {
+            "type": "string",
+            "example": "/component/managercrewlab",
+            "description": "Ruta del componente en la App."
+          },
+          "type": {
+            "enum": ["group", "collapse", "item"],
+            "type": "string",
+            "example": "group",
+            "description": "Nivel del nodo dentro de la jerarquía."
+          },
+          "class": {
+            "type": "string",
+            "example": "nav-small-cap",
+            "description": "Heredado de la plantilla. No aplica: llega vacío."
+          },
+          "title": {
+            "type": "string",
+            "example": "Gestión Cuadrillas",
+            "description": "Nombre visible de la opción."
+          },
+          "submenu": {
+            "type": "array",
+            "items": {},
+            "example": [],
+            "description": "Heredado de la plantilla. No aplica: llega vacío."
+          },
+          "children": {
+            "type": "array",
+            "items": {},
+            "description": "Nodos hijos. Contiene la jerarquía real del menú."
+          },
+          "extralink": {
+            "type": "boolean",
+            "example": false,
+            "description": "Heredado de la plantilla. No aplica: llega en `false`."
+          }
+        },
+        "description": "Nodo del árbol de navegación. La jerarquía es de tres niveles: `group` → `collapse` → `item`."
+      },
+      "ResultCode": {
+        "enum": [0, 1, 2, 3, 4, 5, 6, 7],
+        "type": "integer",
+        "title": "result",
+        "example": 1,
+        "description": "Resultado del proceso. 0 = Error, 1 = Exitoso, 2 = Sin registros, 3 = Usuario no existente, 4 = Solicitud incorrecta, 5 = Sin contenido, 6 = No encontrado, 7 = No autorizado."
+      },
+      "TypeMember": {
+        "type": "object",
+        "title": "Tipo de integrante",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del tipo de integrante."
+          },
+          "stateId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Estado del registro."
+          },
+          "description": {
+            "type": "string",
+            "example": "Integrante Cuadrilla",
+            "description": "Descripción del tipo de integrante."
+          },
+          "creationDate": {
+            "type": "string",
+            "example": "2025-04-15T00:00:00",
+            "description": "Fecha de creación."
+          },
+          "createdByUser": {
+            "type": "string",
+            "example": "acruze",
+            "description": "Usuario de creación."
+          },
+          "modifiedByUser": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Usuario de modificación."
+          },
+          "modificationDate": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Fecha de modificación."
+          }
+        },
+        "x-observacion": "La tabla del manual llama a la clave `UnitId`; la respuesta real usa `id`."
+      },
+      "UploadFile": {
+        "type": "object",
+        "title": "Archivo a cargar",
+        "required": ["file", "name", "extension", "description", "author"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "byte",
+            "example": "JVBERi0xLjQKJcOkw7zDtsOfCg==",
+            "description": "Archivo o imagen codificada en **Base64**."
+          },
+          "name": {
+            "type": "string",
+            "example": "InformeImprimirLiqTerceros.pdf",
+            "description": "Nombre del archivo con su extensión."
+          },
+          "author": {
+            "type": "string",
+            "example": "autor",
+            "description": "Autor del archivo."
+          },
+          "extension": {
+            "type": "string",
+            "example": ".pdf",
+            "description": "Extensión del archivo, únicamente."
+          },
+          "description": {
+            "type": "string",
+            "example": "cualquier archivo",
+            "description": "Nombre o descripción del archivo."
+          }
+        }
+      },
+      "CrewHistory": {
+        "type": "object",
+        "title": "Cuadrilla",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1",
+            "description": "Id de la cuadrilla."
+          },
+          "city": {
+            "type": "string",
+            "example": "105001",
+            "description": "Código de la ciudad."
+          },
+          "phone": {
+            "type": "string",
+            "example": "545454651521",
+            "description": "Teléfono del administrador."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del estado de la cuadrilla."
+          },
+          "nameCity": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "description": "Nombre de la ciudad."
+          },
+          "department": {
+            "type": "integer",
+            "example": 5,
+            "description": "Id del departamento de la cuadrilla."
+          },
+          "description": {
+            "type": "string",
+            "example": "Cuadrilla Prueba uno",
+            "description": "Nombre de la cuadrilla."
+          },
+          "responsable": {
+            "type": "string",
+            "example": "Administrador1apellido 1apellido2",
+            "description": "Nombre completo del administrador de la cuadrilla."
+          },
+          "dateCreation": {
+            "type": "string",
+            "example": "2025-06-04T11:04:57.597",
+            "description": "Fecha de creación."
+          },
+          "numberNember": {
+            "type": "string",
+            "example": "5 Miembros",
+            "description": "Cantidad de integrantes de la cuadrilla."
+          },
+          "userCreation": {
+            "type": "string",
+            "example": "6626",
+            "description": "Usuario de creación."
+          },
+          "dateModification": {
+            "type": "string",
+            "example": "2025-06-05T14:25:21.913",
+            "description": "Fecha de modificación."
+          },
+          "userModification": {
+            "type": "string",
+            "example": "",
+            "description": "Usuario de modificación."
+          }
+        }
+      },
+      "CrewRequest": {
+        "type": "object",
+        "title": "Solicitud de cuadrilla",
+        "properties": {
+          "cost": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Costo del servicio."
+          },
+          "place": {
+            "type": "string",
+            "example": "105001",
+            "description": "Código de la ciudad."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del estado de la solicitud."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 6,
+            "description": "Código de la agencia del documento."
+          },
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Cantidad."
+          },
+          "manifest": {
+            "type": "integer",
+            "example": 10955253,
+            "description": "Número del documento o manifiesto."
+          },
+          "unitLoad": {
+            "type": "integer",
+            "example": 0,
+            "description": "Código de la unidad de medida."
+          },
+          "idRequest": {
+            "type": "number",
+            "format": "double",
+            "example": 2,
+            "description": "Número de la solicitud."
+          },
+          "namePlace": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "nullable": true,
+            "description": "Descripción de la ciudad."
+          },
+          "nameState": {
+            "type": "string",
+            "example": "ACTIVA",
+            "description": "Descripción del estado de la solicitud."
+          },
+          "nameplace": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "nullable": true,
+            "description": "Nombre de la ciudad.",
+            "x-observacion": "Duplicado de `namePlace`, distinguido solo por una mayúscula. Solo aparece en el listado de pendientes."
+          },
+          "createrDate": {
+            "type": "string",
+            "example": "2025-06-19T00:00:00",
+            "description": "Fecha de creación de la solicitud."
+          },
+          "createrUser": {
+            "type": "string",
+            "example": "acruze",
+            "description": "Usuario de creación de la solicitud."
+          },
+          "dateRequest": {
+            "type": "string",
+            "example": "2025-06-14T00:00:00",
+            "description": "Fecha de la solicitud."
+          },
+          "idCrewLabor": {
+            "type": "number",
+            "format": "double",
+            "example": 18,
+            "description": "Id de la cuadrilla asignada."
+          },
+          "typeService": {
+            "type": "integer",
+            "example": 0,
+            "description": "Código del tipo de servicio solicitado."
+          },
+          "modifierDate": {
+            "type": "string",
+            "example": "2025-07-02T12:02:03.617",
+            "description": "Fecha de modificación."
+          },
+          "modifierUser": {
+            "type": "string",
+            "example": "6626",
+            "description": "Usuario de modificación."
+          },
+          "nameUnitLoad": {
+            "type": "string",
+            "example": "Cajas",
+            "nullable": true,
+            "description": "Descripción de la unidad de medida."
+          },
+          "nameCrewLabor": {
+            "type": "string",
+            "example": "Cuadrilla Prueba",
+            "description": "Descripción de la cuadrilla."
+          },
+          "typeDocumentC": {
+            "type": "string",
+            "example": "Manifiesto",
+            "description": "Tipo de documento: manifiesto u orden de servicio."
+          },
+          "nameTypeService": {
+            "type": "string",
+            "example": "Gestionar Unidad de Carga",
+            "nullable": true,
+            "description": "Descripción del tipo de servicio."
+          }
+        }
+      },
+      "ManagerCrew": {
+        "type": "object",
+        "title": "Cuadrilla asignada a un administrador",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "administrador prueba lastname1 lastname2",
+            "description": "Nombre del administrador."
+          },
+          "crewLaborId": {
+            "type": "number",
+            "format": "double",
+            "example": 56,
+            "description": "Id de la cuadrilla asignada."
+          },
+          "identifiqueId": {
+            "type": "string",
+            "example": "1001297688",
+            "description": "Número de identificación del administrador."
+          },
+          "nameCrewLabor": {
+            "type": "string",
+            "example": "cuadrilla hoy",
+            "description": "Nombre de la cuadrilla asignada."
+          },
+          "dateModification": {
+            "type": "string",
+            "example": "2025-08-04T08:54:05.157",
+            "description": "Fecha de creación o última modificación."
+          },
+          "descriptionState": {
+            "type": "string",
+            "example": "ACTIVA",
+            "description": "Estado en el que se encuentra la cuadrilla."
+          },
+          "membersAssignedtocrews": {
+            "type": "string",
+            "example": "2 Miembros Asignados a la cuadrilla",
+            "description": "Cantidad de miembros asignados."
+          }
+        }
+      },
+      "TypeService": {
+        "type": "object",
+        "title": "Tipo de servicio",
+        "properties": {
+          "serviceId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del tipo de servicio."
+          },
+          "description": {
+            "type": "string",
+            "example": "Cargue",
+            "description": "Descripción del tipo de servicio."
+          }
+        }
+      },
+      "UnitMeasure": {
+        "type": "object",
+        "title": "Unidad de medida",
+        "properties": {
+          "unitId": {
+            "type": "integer",
+            "example": 2,
+            "description": "Código de la unidad."
+          },
+          "description": {
+            "type": "string",
+            "example": "Cajas",
+            "description": "Descripción de la unidad."
+          }
+        }
+      },
+      "BaseResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          { "type": "object", "properties": {} }
+        ],
+        "description": "Respuesta sin carga útil adicional: solo los campos comunes."
+      },
+      "CrewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "crewLaborId": {
+                "type": "number",
+                "format": "double",
+                "example": 13,
+                "description": "Número de identificación de la cuadrilla creada o modificada."
+              },
+              "crewLaborMessage": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL. `OK` si fue exitoso."
+              }
+            }
+          }
+        ]
+      },
+      "MenuResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "menus": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MenuOption" }
+              }
+            }
+          }
+        ]
+      },
+      "Municipality": {
+        "type": "object",
+        "title": "Municipio",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 2,
+            "description": "Código del municipio."
+          },
+          "name": {
+            "type": "string",
+            "example": "ABEJORRAL",
+            "description": "Descripción del municipio."
+          },
+          "countryId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del país."
+          },
+          "codeReduced": {
+            "type": "string",
+            "example": "105002",
+            "description": "Código reducido del municipio."
+          },
+          "codeMinistry": {
+            "type": "string",
+            "example": "5002000",
+            "description": "Código del ministerio."
+          },
+          "departmentId": {
+            "type": "integer",
+            "example": 5,
+            "description": "Código del departamento."
+          }
+        },
+        "x-observacion": "La tabla del manual escribe las claves como `codeReduce` y `departamentId`; la respuesta real usa `codeReduced` y `departmentId`."
+      },
+      "RequestState": {
+        "type": "object",
+        "title": "Estado de solicitud",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del estado."
+          },
+          "active": {
+            "type": "boolean",
+            "example": true,
+            "nullable": true,
+            "description": "Indica si el estado está activo."
+          },
+          "description": {
+            "type": "string",
+            "example": "Creada",
+            "description": "Descripción del estado."
+          },
+          "dateCreation": {
+            "type": "string",
+            "example": "2025-08-06T00:00:00",
+            "nullable": true,
+            "description": "Fecha de creación."
+          },
+          "userCreation": {
+            "type": "string",
+            "example": "ACRUZE",
+            "nullable": true,
+            "description": "Usuario de creación."
+          },
+          "dateModification": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Fecha de modificación."
+          },
+          "userModification": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Usuario de modificación."
+          }
+        }
+      },
+      "TokenRequest": {
+        "type": "object",
+        "title": "Credenciales de servicio",
+        "required": ["userName", "password", "applicationId"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "********",
+            "description": "Contraseña comunicada al proveedor."
+          },
+          "userName": {
+            "type": "string",
+            "example": "UserCrewLabApi",
+            "description": "Usuario comunicado al proveedor."
+          },
+          "applicationId": {
+            "type": "integer",
+            "example": 25,
+            "description": "Id de la aplicación. Para el token es **25**."
+          }
+        }
+      },
+      "TypeDocument": {
+        "type": "object",
+        "title": "Tipo de documento",
+        "properties": {
+          "documentId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Código del tipo de documento."
+          },
+          "description": {
+            "type": "string",
+            "example": "Manifiesto",
+            "description": "Descripción del tipo de documento."
+          }
+        }
+      },
+      "TokenResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "description": "Token de servicio. Vigencia de 24 horas."
+              },
+              "refresToken": {
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "description": "Token de refresco (datos del token cifrados).",
+                "x-observacion": "El backend escribe `refresToken`, sin la segunda `h` de *refresh*."
+              }
+            }
+          }
+        ]
+      },
+      "CertifyRequest": {
+        "type": "object",
+        "title": "Registro de la certificación",
+        "required": ["idrequest", "typeService"],
+        "properties": {
+          "user": {
+            "type": "string",
+            "example": "2666",
+            "description": "Código del usuario. Opcional."
+          },
+          "missing": {
+            "type": "string",
+            "example": "Prueba 2",
+            "description": "Observaciones si se presentan faltantes. Opcional."
+          },
+          "documents": {
+            "type": "string",
+            "example": "Prueba 2",
+            "description": "Observaciones sobre documentos. Opcional."
+          },
+          "idrequest": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud."
+          },
+          "leftovers": {
+            "type": "string",
+            "example": "Prueba 2",
+            "description": "Observaciones si se presentan sobrantes. Opcional."
+          },
+          "breakdowns": {
+            "type": "string",
+            "example": "Prueba 2",
+            "description": "Observaciones si se presentan averías. Opcional."
+          },
+          "devolutions": {
+            "type": "string",
+            "example": "Prueba 2",
+            "description": "Observaciones si se presentan devoluciones. Opcional."
+          },
+          "observation": {
+            "type": "string",
+            "example": "",
+            "description": "Observación general. Opcional."
+          },
+          "typeService": {
+            "type": "number",
+            "format": "double",
+            "example": 5,
+            "description": "Id del tipo de servicio. **Para certificación siempre es 5.**"
+          }
+        },
+        "description": "Las cinco novedades y la observación son opcionales: se diligencian solo si se presenta el hecho.",
+        "x-observacion": "El campo se escribe `idrequest`, todo en minúsculas, a diferencia de `idRequest` en el resto de la API."
+      },
+      "EmailViewModel": {
+        "type": "object",
+        "title": "Variable de la plantilla",
+        "required": ["name", "value"],
+        "properties": {
+          "name": {
+            "enum": ["title", "name", "code"],
+            "type": "string",
+            "example": "code",
+            "description": "Nombre de la variable dentro de la plantilla."
+          },
+          "value": {
+            "type": "string",
+            "example": "0FC3F8EE-9",
+            "description": "Valor que reemplaza a la variable."
+          }
+        }
+      },
+      "CertifyLoadUnit": {
+        "type": "object",
+        "title": "Unidad de carga a certificar",
+        "properties": {
+          "id": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud de certificación."
+          },
+          "place": {
+            "type": "string",
+            "example": "105001",
+            "description": "Id del sitio."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 21,
+            "description": "Agencia del documento asignado."
+          },
+          "missing": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones sobre faltantes."
+          },
+          "documents": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones sobre documentos."
+          },
+          "leftovers": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones sobre sobrantes."
+          },
+          "namePlace": {
+            "type": "string",
+            "example": "MEDELLIN",
+            "description": "Descripción del sitio."
+          },
+          "nameState": {
+            "type": "string",
+            "example": "ACEPTADA",
+            "description": "Descripción del estado."
+          },
+          "breakdowns": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones sobre averías."
+          },
+          "conseutivo": {
+            "type": "integer",
+            "example": 11327722,
+            "description": "Consecutivo o número de manifiesto.",
+            "x-observacion": "El backend escribe `Conseutivo`, sin la `c` de *consecutivo*."
+          },
+          "devolutions": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones sobre devoluciones."
+          },
+          "typeService": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del tipo de certificación: diurna o nocturna."
+          },
+          "creationDate": {
+            "type": "string",
+            "example": "2025-06-26T00:00:00",
+            "description": "Fecha de creación del registro."
+          },
+          "creationUser": {
+            "type": "string",
+            "example": "acruze",
+            "description": "Usuario de creación."
+          },
+          "observations": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones generales."
+          },
+          "typeDocumentC": {
+            "type": "string",
+            "example": "Manifiesto",
+            "description": "Tipo de documento: manifiesto u orden de servicio."
+          },
+          "nameTypeService": {
+            "type": "string",
+            "example": "Gestionar Unidad de Carga",
+            "description": "Descripción del tipo de certificación."
+          },
+          "modificationDate": {
+            "type": "string",
+            "example": "2025-07-28T14:22:03.78",
+            "description": "Fecha de modificación."
+          },
+          "modificationUser": {
+            "type": "string",
+            "example": "6626",
+            "description": "Usuario de modificación."
+          }
+        }
+      },
+      "CertifyResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "certifyLoadUnitId": {
+                "type": "number",
+                "format": "double",
+                "example": 1,
+                "description": "Id de la solicitud gestionada o rechazada."
+              },
+              "certifyLoadUnitMessage": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL."
+              }
+            }
+          }
+        ]
+      },
+      "CrewByIdRequest": {
+        "type": "object",
+        "title": "Consulta de cuadrilla por id",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "number",
+            "format": "double",
+            "example": 3,
+            "description": "Número de identificación de la cuadrilla a consultar."
+          }
+        }
+      },
+      "LoginAppRequest": {
+        "type": "object",
+        "title": "Usuario de la App",
+        "required": ["userName", "email", "password"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 0,
+            "description": "Código único de la tabla usuario."
+          },
+          "ip": {
+            "type": "string",
+            "example": "127.0.0.1",
+            "description": "Dirección IP desde la que se conecta."
+          },
+          "code": {
+            "type": "string",
+            "example": "0",
+            "description": "Cédula del usuario."
+          },
+          "name": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Nombres y apellidos completos."
+          },
+          "email": {
+            "type": "string",
+            "example": "angely.cruz@coltanques.com.co",
+            "description": "Correo del usuario. **Obligatorio.**"
+          },
+          "active": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si el usuario está activo."
+          },
+          "customer": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Nombre del cliente."
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "********",
+            "description": "Contraseña cifrada. **Obligatorio.**"
+          },
+          "typeUser": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Descripción del tipo de usuario."
+          },
+          "userName": {
+            "type": "string",
+            "example": "angely.cruz",
+            "description": "Nombre de usuario. **Obligatorio.**"
+          },
+          "cellPhone": {
+            "type": "string",
+            "example": "",
+            "description": "Número de celular."
+          },
+          "firstName": {
+            "type": "string",
+            "example": "",
+            "description": "Primer nombre."
+          },
+          "typeState": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Descripción del estado."
+          },
+          "customerId": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id de cliente, si el usuario lo es."
+          },
+          "secondName": {
+            "type": "string",
+            "example": "",
+            "description": "Segundo nombre."
+          },
+          "typeUserId": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id del tipo de usuario."
+          },
+          "typeStateId": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id del estado del tipo de usuario."
+          },
+          "creationDate": {
+            "type": "string",
+            "example": "2025-05-29T13:53:55.0637047-05:00",
+            "description": "Fecha de creación del registro."
+          },
+          "creationUser": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Nombre del usuario de creación."
+          },
+          "firstLastName": {
+            "type": "string",
+            "example": "",
+            "description": "Primer apellido."
+          },
+          "creationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de quien creó el registro."
+          },
+          "lastAccessDate": {
+            "type": "string",
+            "example": "0001-01-01T00:00:00",
+            "description": "Fecha del último acceso."
+          },
+          "secondLastName": {
+            "type": "string",
+            "example": "",
+            "description": "Segundo apellido."
+          },
+          "modificationDate": {
+            "type": "string",
+            "example": "2025-05-29T13:53:55.0637663-05:00",
+            "description": "Fecha de modificación del registro."
+          },
+          "modificationUser": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Nombre del usuario de modificación."
+          },
+          "modificationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de quien modificó el registro."
+          }
+        },
+        "description": "Objeto de usuario completo. Solo `userName`, `email` y `password` son obligatorios; el resto se envía con valores por defecto y el backend los completa."
+      },
+      "SendCodeRequest": {
+        "type": "object",
+        "title": "Envío del código por correo",
+        "required": [
+          "templateId",
+          "toEmailAddress",
+          "toEmailName",
+          "viewModels"
+        ],
+        "properties": {
+          "templateId": {
+            "type": "integer",
+            "example": 9,
+            "description": "Id de la plantilla de correo. Para este proceso siempre es **9**."
+          },
+          "viewModels": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EmailViewModel" }
+          },
+          "toEmailName": {
+            "type": "string",
+            "example": "Angely",
+            "description": "Nombre del destinatario."
+          },
+          "toEmailAddress": {
+            "type": "string",
+            "example": "angely.cruz@coltanques.com.co",
+            "description": "Correo destino del código de verificación."
+          }
+        }
+      },
+      "CrewByIdResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "crewLaborIds": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CrewDetail" }
+              }
+            }
+          }
+        ]
+      },
+      "FileServerConfig": {
+        "type": "object",
+        "title": "Configuración del file server",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 19,
+            "description": "Id interno del registro de configuración."
+          },
+          "key": {
+            "type": "string",
+            "example": "3HRM7N0NMktInSPMXkmlUw==",
+            "description": "Llave. Se reenvía como `secretAccessKey`."
+          },
+          "user": {
+            "type": "string",
+            "example": "C3ugLjLl/dJ0PlWSmPW+MA==",
+            "description": "Usuario. Se reenvía como `userName`."
+          },
+          "group": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Grupo. Se reenvía como `group`."
+          },
+          "domain": {
+            "type": "string",
+            "example": "coltanques.local",
+            "description": "Dominio. Se reenvía como `domainName`."
+          },
+          "folder": {
+            "type": "string",
+            "example": "\\\\ImgCuadrillas",
+            "description": "Carpeta base. Se reenvía en el cargue como `folderName`."
+          },
+          "process": {
+            "type": "string",
+            "example": "IMGCUADRILLAS",
+            "description": "Nombre del proceso."
+          },
+          "application": {
+            "type": "string",
+            "example": "CrewLaborApi",
+            "description": "Descripción breve de la aplicación."
+          },
+          "storagePath": {
+            "type": "string",
+            "example": "jGMulvKOJQzExlBG8iEMIg==",
+            "description": "Ruta de almacenamiento. Se reenvía tal cual en el cargue."
+          },
+          "creationDate": {
+            "type": "string",
+            "example": "2025-05-24T00:00:00",
+            "description": "Fecha de creación."
+          },
+          "applicationId": {
+            "type": "integer",
+            "example": 25,
+            "description": "Id de la aplicación."
+          },
+          "creationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de usuario de creación."
+          },
+          "modificationDate": {
+            "type": "string",
+            "example": "2025-05-24T00:00:00",
+            "description": "Fecha de modificación."
+          },
+          "modificationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de usuario de modificación."
+          }
+        },
+        "description": "Trae todos los datos requeridos para consumir el cargue de imágenes."
+      },
+      "LoginAppResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/LoginAppRequest" },
+                "description": "Perfil del usuario autenticado. Devuelve los mismos campos del cuerpo de entrada, ya completos."
+              }
+            }
+          }
+        ]
+      },
+      "SendCodeResponse": {
+        "type": "object",
+        "title": "Respuesta del envío de correo",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Emails",
+            "description": "Título del método."
+          },
+          "object": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Resultado del proceso si se envían adjuntos."
+          },
+          "message": {
+            "type": "string",
+            "example": "Success: Operación Exitosa",
+            "description": "Mensaje con el detalle de lo ocurrido."
+          },
+          "statusCode": {
+            "type": "string",
+            "example": "OK",
+            "description": "Resultado del proceso. Aquí llega como texto, no como número."
+          }
+        },
+        "description": "**Este endpoint no usa el sobre común.** Devuelve una estructura propia del servicio de correos."
+      },
+      "AssignCrewRequest": {
+        "type": "object",
+        "title": "Asignación de cuadrilla",
+        "required": ["requestId", "crewLaborId", "user"],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que ejecuta la asignación."
+          },
+          "requestId": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud."
+          },
+          "crewLaborId": {
+            "type": "number",
+            "format": "double",
+            "example": 18,
+            "description": "Id de la cuadrilla que se asigna."
+          }
+        }
+      },
+      "CreateCrewRequest": {
+        "type": "object",
+        "title": "Encabezado de cuadrilla",
+        "required": [
+          "description",
+          "departament",
+          "city",
+          "responsable",
+          "phone",
+          "userId"
+        ],
+        "properties": {
+          "city": {
+            "type": "string",
+            "example": "105001",
+            "description": "Código del municipio."
+          },
+          "phone": {
+            "type": "string",
+            "example": "5454546515 21",
+            "description": "Número telefónico del responsable."
+          },
+          "userId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del usuario que registra."
+          },
+          "departament": {
+            "type": "integer",
+            "example": 5,
+            "description": "Código del departamento."
+          },
+          "description": {
+            "type": "string",
+            "example": "Cuadrilla perm 2",
+            "description": "Descripción o nombre de la cuadrilla."
+          },
+          "responsable": {
+            "type": "string",
+            "example": "88993355",
+            "description": "Número de identificación del responsable de la cuadrilla."
+          }
+        },
+        "x-observacion": "En la tabla del manual el campo teléfono aparece escrito como `Pone`; el cuerpo real usa `phone`."
+      },
+      "CrewDetailRequest": {
+        "type": "object",
+        "title": "Asignación de integrante a cuadrilla",
+        "required": ["crewLaborId", "nember", "user", "state"],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario de creación."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Estado de la asignación."
+          },
+          "nember": {
+            "type": "number",
+            "format": "double",
+            "example": 52888333,
+            "description": "Identificación del integrante que se asigna."
+          },
+          "crewLaborId": {
+            "type": "number",
+            "format": "double",
+            "example": 2,
+            "description": "Id de la cuadrilla."
+          }
+        },
+        "description": "Se invoca una vez por cada integrante que se agrega a la cuadrilla.",
+        "x-observacion": "`nember` es el nombre real del campo en el backend; corresponde a *member*."
+      },
+      "ProfilePermission": {
+        "type": "object",
+        "title": "Permiso de perfil",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 14,
+            "description": "Id o índice de la tabla."
+          },
+          "ip": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "description": "Dirección IP."
+          },
+          "active": {
+            "type": "boolean",
+            "example": true,
+            "description": "Estado del registro."
+          },
+          "option": {
+            "type": "string",
+            "example": "Ver historial de asignaciones",
+            "description": "Opción habilitada por el permiso."
+          },
+          "profile": {
+            "type": "string",
+            "example": "Usuario",
+            "description": "Nombre del perfil."
+          },
+          "optionId": {
+            "type": "integer",
+            "example": 10,
+            "description": "Id de la opción."
+          },
+          "profileId": {
+            "type": "integer",
+            "example": 2,
+            "description": "Id del perfil."
+          },
+          "application": {
+            "type": "string",
+            "example": "CrewLaborApp",
+            "description": "Aplicación a la que pertenece el permiso."
+          },
+          "creationDate": {
+            "type": "string",
+            "example": "2026-07-29T00:00:00",
+            "description": "Fecha de creación del registro."
+          },
+          "creationUser": {
+            "type": "string",
+            "example": "Edwin Julián Gómez Ramírez",
+            "description": "Nombre del usuario de creación."
+          },
+          "applicationId": {
+            "type": "integer",
+            "example": 31,
+            "description": "Id de la aplicación. Para cuadrillas es **31**."
+          },
+          "creationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de usuario de creación."
+          },
+          "modificationDate": {
+            "type": "string",
+            "example": "2026-07-29T00:00:00",
+            "description": "Fecha de modificación del registro."
+          },
+          "modificationUser": {
+            "type": "string",
+            "example": "Edwin Julián Gómez Ramírez",
+            "description": "Nombre del usuario de modificación."
+          },
+          "modificationUserId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id de usuario de modificación."
+          },
+          "permissionDescription": {
+            "type": "string",
+            "example": "Listado de solicitudes",
+            "description": "Descripción del permiso."
+          }
+        }
+      },
+      "RejectCrewRequest": {
+        "type": "object",
+        "title": "Rechazo de solicitud",
+        "required": ["requestId", "user"],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que rechaza."
+          },
+          "requestId": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud a rechazar."
+          }
+        }
+      },
+      "TypeCertification": {
+        "type": "object",
+        "title": "Tipo de certificación de carga",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 2,
+            "description": "Código del tipo de certificación."
+          },
+          "description": {
+            "type": "string",
+            "example": "Certificado Diurno",
+            "description": "Descripción del tipo de certificación."
+          }
+        }
+      },
+      "AdminMemberRequest": {
+        "type": "object",
+        "title": "Administración de integrante",
+        "required": [
+          "typeTransaction",
+          "idMember",
+          "idCrewLaborCurrent",
+          "idCrewLabor",
+          "typeMember",
+          "state",
+          "user"
+        ],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que ejecuta la transacción."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "**Si `typeTransaction` es distinto de 5, debe enviarse en 1.** Si es 5, se envía el código del estado destino."
+          },
+          "idMember": {
+            "type": "string",
+            "example": "2222222222",
+            "description": "Cédula del integrante a modificar."
+          },
+          "typeMember": {
+            "type": "integer",
+            "example": 1,
+            "description": "Tipo de integrante. **Si `typeTransaction` es distinto de 4, debe enviarse en 1.**"
+          },
+          "idCrewLabor": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Número de identificación de la cuadrilla destino. Se envía en 0 cuando no aplica."
+          },
+          "typeTransaction": {
+            "enum": [1, 2, 3, 4, 5],
+            "type": "integer",
+            "example": 5,
+            "description": "Operación: **1** agregar a otra cuadrilla, **2** eliminar de una cuadrilla, **3** mover a otra cuadrilla, **4** asignar como responsable, **5** cambiar de estado."
+          },
+          "idCrewLaborCurrent": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Número de identificación de la cuadrilla actual."
+          }
+        },
+        "description": "Endpoint multipropósito. `typeTransaction` decide la operación que se ejecuta."
+      },
+      "AssignCrewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "integer",
+                "example": 1,
+                "description": "Id de la solicitud asignada."
+              },
+              "messageRequest": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL."
+              }
+            }
+          }
+        ]
+      },
+      "CrewHistoryRequest": {
+        "type": "object",
+        "title": "Filtro de historial de cuadrillas",
+        "required": ["user", "state"],
+        "properties": {
+          "user": {
+            "type": "string",
+            "example": "6626",
+            "description": "Identificación del usuario."
+          },
+          "state": {
+            "enum": [0, 1, 2],
+            "type": "integer",
+            "example": 0,
+            "description": "Estado a consultar. **0** = todas, **1** = activa, **2** = inactiva."
+          }
+        }
+      },
+      "CrewRequestHistory": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CrewRequest" },
+          {
+            "type": "object",
+            "properties": {
+              "idSupplier": {
+                "type": "string",
+                "example": "1110007156",
+                "description": "Número de identificación del proveedor."
+              },
+              "supplierName": {
+                "type": "string",
+                "example": "RAMIREZ BARRERO DIEGO FERNANDO",
+                "description": "Nombre del proveedor."
+              }
+            }
+          }
+        ],
+        "title": "Solicitud en el historial",
+        "description": "Misma estructura del listado de pendientes, más los datos del proveedor. No incluye la clave duplicada `nameplace`."
+      },
+      "CrewStatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "statesRequestCrewLabs": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RequestState" }
+              }
+            }
+          }
+        ]
+      },
+      "FileServerResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "applicationFileServers": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/FileServerConfig" }
+              }
+            }
+          }
+        ]
+      },
+      "ListCertifyRequest": {
+        "type": "object",
+        "title": "Filtro de unidades a certificar",
+        "required": [
+          "initialDate",
+          "endDate",
+          "idState",
+          "state",
+          "agency",
+          "manifest",
+          "requestId"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "example": "",
+            "description": "Descripción del estado. Enviar cadena vacía para no filtrar."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id de agencia. Enviar 0 para no filtrar."
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-08-06",
+            "description": "Fecha final. **Obligatoria.**"
+          },
+          "idState": {
+            "enum": [0, 1, 2, 3, 4, 5],
+            "type": "integer",
+            "example": 0,
+            "description": "Estado. **0** todas, **1** creada o vigente pendiente, **2** aceptada, **3** en proceso, **4** certificada, **5** rechazada."
+          },
+          "manifest": {
+            "type": "integer",
+            "example": 0,
+            "description": "Número de manifiesto. Enviar 0 para no filtrar."
+          },
+          "requestId": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Id de la solicitud. Enviar 0 para no filtrar."
+          },
+          "initialDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-02-06",
+            "description": "Fecha inicial. **Obligatoria.**"
+          }
+        },
+        "description": "El rango de fechas es obligatorio; los demás filtros se anulan con **0** o **cadena vacía**.",
+        "x-observacion": "La tabla del manual nombra el último campo `idSolicitud`; el cuerpo real envía `requestId`."
+      },
+      "ListMembersRequest": {
+        "type": "object",
+        "title": "Filtro de integrantes activos",
+        "required": ["user", "department", "municipality"],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que consulta."
+          },
+          "department": {
+            "type": "integer",
+            "example": 5,
+            "description": "Departamento a filtrar."
+          },
+          "municipality": {
+            "type": "string",
+            "example": "105001",
+            "description": "Municipio a filtrar."
+          }
+        },
+        "x-observacion": "El manual titula el campo `departament` en el texto, pero el cuerpo de ejemplo envía `department`."
+      },
+      "ManageLoadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "manageLoadId": {
+                "type": "number",
+                "format": "double",
+                "example": 1,
+                "description": "Id de la solicitud gestionada o rechazada."
+              },
+              "manageLoadMessage": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL."
+              }
+            }
+          }
+        ]
+      },
+      "AdminMemberResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "identification": {
+                "type": "string",
+                "example": "0.00",
+                "description": "Número de identificación del integrante modificado."
+              },
+              "nemberCrewLaborMessage": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL."
+              }
+            }
+          }
+        ],
+        "description": "La tabla del manual nombra el primer campo `Identificatgion`; la respuesta real usa `identification`."
+      },
+      "CreateMemberRequest": {
+        "type": "object",
+        "title": "Alta de integrante",
+        "required": [
+          "identification",
+          "typeIdentification",
+          "name",
+          "lastName",
+          "email",
+          "department",
+          "municipality",
+          "user"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Arturo integrante",
+            "description": "Nombres del integrante."
+          },
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario de creación."
+          },
+          "email": {
+            "type": "string",
+            "example": "arturo.trt@gmail.com.co",
+            "description": "Correo del integrante."
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Apellidos de Arturo",
+            "description": "Apellidos del integrante."
+          },
+          "department": {
+            "type": "integer",
+            "example": 5,
+            "description": "Departamento al que pertenece."
+          },
+          "municipality": {
+            "type": "string",
+            "example": "15001",
+            "description": "Municipio al que pertenece."
+          },
+          "identification": {
+            "type": "string",
+            "example": "1003645789",
+            "description": "Número de cédula del integrante."
+          },
+          "typeIdentification": {
+            "type": "string",
+            "example": "1",
+            "description": "Tipo de identificación."
+          }
+        }
+      },
+      "CrewHistoryResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "crewLaborHistories": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CrewHistory" }
+              }
+            }
+          }
+        ]
+      },
+      "DepartmentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "departments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Department" }
+              }
+            }
+          }
+        ]
+      },
+      "ListCertifyResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listCertifyLoadUnit": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CertifyLoadUnit" }
+              }
+            }
+          }
+        ]
+      },
+      "ListManagersRequest": {
+        "type": "object",
+        "title": "Filtro de administradores",
+        "required": ["state", "user"],
+        "properties": {
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que consulta."
+          },
+          "state": {
+            "enum": [0, 1, 100],
+            "type": "integer",
+            "example": 0,
+            "description": "Estado a consultar. **0** = todos, **1** = solo activos, **100** = solo inactivos."
+          }
+        }
+      },
+      "ListMembersResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listNemberCrewLabors": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Member" }
+              }
+            }
+          }
+        ]
+      },
+      "ManagerCrewsRequest": {
+        "type": "object",
+        "title": "Cuadrillas por administrador",
+        "required": ["managerId"],
+        "properties": {
+          "managerId": {
+            "type": "string",
+            "example": "1001297688",
+            "description": "Número de identificación del administrador a consultar."
+          }
+        },
+        "x-observacion": "La tabla del manual nombra este campo `administrator`; el cuerpo real envía `managerId`."
+      },
+      "TypeMembersResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "typeMemberCrewLabs": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TypeMember" }
+              }
+            }
+          }
+        ]
+      },
+      "UploadImagesRequest": {
+        "type": "object",
+        "title": "Cargue múltiple de imágenes",
+        "required": [
+          "storagePath",
+          "folderName",
+          "group",
+          "userName",
+          "secretAccessKey",
+          "domainName",
+          "files",
+          "imageCrewLaborCertify"
+        ],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UploadFile" }
+          },
+          "group": {
+            "type": "string",
+            "example": "",
+            "description": "Grupo devuelto por la configuración."
+          },
+          "userName": {
+            "type": "string",
+            "example": "C3ugLjLl/dJ0PlWSmPW+MA==",
+            "description": "Usuario devuelto por la configuración."
+          },
+          "domainName": {
+            "type": "string",
+            "example": "coltanques.local",
+            "description": "Dominio."
+          },
+          "folderName": {
+            "type": "string",
+            "example": "\\\\ImgCuadrillas",
+            "description": "Carpeta destino. Debe construirse como año/mes → número de gestión → imagen."
+          },
+          "storagePath": {
+            "type": "string",
+            "example": "jGMulvKOJQzExlBG8iEMIg==",
+            "description": "Ruta de almacenamiento devuelta por la configuración."
+          },
+          "secretAccessKey": {
+            "type": "string",
+            "example": "3HRM7N0NMktInSPMXkmlUw==",
+            "description": "Llave devuelta por la configuración."
+          },
+          "imageCrewLaborCertify": {
+            "$ref": "#/components/schemas/ImageCrewLaborCertify"
+          }
+        },
+        "description": "Los seis primeros campos provienen de la consulta de configuración del file server. **No se usa `multipart/form-data`**: el archivo viaja en Base64 dentro del JSON."
+      },
+      "CommonResponseFields": {
+        "type": "object",
+        "title": "Campos comunes de respuesta",
+        "properties": {
+          "result": { "$ref": "#/components/schemas/ResultCode" },
+          "message": {
+            "type": "string",
+            "example": "Success: Operación Exitosa",
+            "description": "Mensaje con el detalle de lo ocurrido."
+          },
+          "numRecord": {
+            "type": "integer",
+            "example": 1,
+            "description": "Variante del contador usada por algunos endpoints.",
+            "x-observacion": "Duplicidad heredada del backend. Solo llega uno de los dos por respuesta."
+          },
+          "statusCode": {
+            "type": "integer",
+            "example": 200,
+            "description": "Código HTTP equivalente al resultado.",
+            "x-observacion": "El manual lo declara unas veces como `Int` y otras como `String`. Llega como número."
+          },
+          "numberRecord": {
+            "type": "integer",
+            "example": 1,
+            "description": "Número de registros devueltos."
+          }
+        },
+        "description": "Campos que acompañan a la carga útil en todas las respuestas. El contador de registros llega como `numberRecord` en unos endpoints y como `numRecord` en otros."
+      },
+      "CreateManagerRequest": {
+        "type": "object",
+        "title": "Administrador de cuadrillas por ciudad",
+        "required": [
+          "typeTransaccion",
+          "identificationNumber",
+          "name",
+          "lastName1",
+          "lastName2",
+          "phone",
+          "state",
+          "departament",
+          "city",
+          "user"
+        ],
+        "properties": {
+          "city": {
+            "type": "string",
+            "example": "100",
+            "description": "Municipio o ciudad del administrador."
+          },
+          "name": {
+            "type": "string",
+            "example": "administrador nombre",
+            "description": "Nombres del administrador."
+          },
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que registra."
+          },
+          "phone": {
+            "type": "string",
+            "example": "2568745",
+            "description": "Número telefónico."
+          },
+          "state": {
+            "type": "integer",
+            "example": 1,
+            "description": "Estado del administrador. **Al crear siempre se envía en 1.**"
+          },
+          "lastName1": {
+            "type": "string",
+            "example": "apellidouno",
+            "description": "Primer apellido."
+          },
+          "lastName2": {
+            "type": "string",
+            "example": "apellidodos",
+            "description": "Segundo apellido."
+          },
+          "departament": {
+            "type": "integer",
+            "example": 5,
+            "description": "Departamento al que pertenece."
+          },
+          "typeTransaccion": {
+            "enum": [1, 2],
+            "type": "integer",
+            "example": 1,
+            "description": "**1** crear administrador, **2** modificar el estado del administrador."
+          },
+          "identificationNumber": {
+            "type": "string",
+            "example": "56887914",
+            "description": "Número de identificación del administrador."
+          }
+        },
+        "x-observacion": "El campo se llama `typeTransaccion` (con doble c), a diferencia de `typeTransaction` en la administración de integrantes."
+      },
+      "CreateMemberResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "identification": {
+                "type": "string",
+                "example": "1003645789",
+                "description": "Número de identificación del integrante creado."
+              },
+              "nemberCrewLaborMessage": {
+                "type": "string",
+                "example": "OK",
+                "description": "Mensaje del proceso SQL."
+              }
+            }
+          }
+        ]
+      },
+      "ListManagersResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listCrewLaborManagers": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Manager" }
+              }
+            }
+          }
+        ]
+      },
+      "ManagerCrewsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listCrewLaborManagerId": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ManagerCrew" }
+              }
+            }
+          }
+        ]
+      },
+      "RejectCertifyRequest": {
+        "type": "object",
+        "title": "Rechazo de certificación",
+        "required": ["certifyUnitLoadId"],
+        "properties": {
+          "user": {
+            "type": "string",
+            "example": "2666",
+            "description": "Código del usuario. Opcional."
+          },
+          "certifyUnitLoadId": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud a rechazar."
+          }
+        },
+        "x-observacion": "La petición usa `certifyUnitLoadId` y la respuesta devuelve `certifyLoadUnitId`: las palabras van en distinto orden."
+      },
+      "TypeServiceToRequest": {
+        "type": "object",
+        "title": "Tipo de servicio a solicitar",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 2,
+            "description": "Código del tipo de servicio."
+          },
+          "description": {
+            "type": "string",
+            "example": "Certificar Unidad de Carga",
+            "description": "Descripción del tipo de servicio."
+          }
+        },
+        "x-observacion": "La tabla del manual llama a la clave `ServiceId`; la respuesta real usa `id`."
+      },
+      "UnitMeasuresResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "appCrewsLaborunitsMeasure": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/UnitMeasure" }
+              }
+            }
+          }
+        ]
+      },
+      "CertifyHistoryRequest": {
+        "type": "object",
+        "title": "Filtro de historial de certificaciones",
+        "required": [
+          "dateIni",
+          "dateEnd",
+          "agency",
+          "manifest",
+          "State",
+          "idRequest"
+        ],
+        "properties": {
+          "State": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id de estado de la solicitud. Enviar 0 para no filtrar."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 0,
+            "description": "Id de agencia. Enviar 0 para no filtrar."
+          },
+          "dateEnd": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-08-06",
+            "description": "Fecha final. **Obligatoria.**"
+          },
+          "dateIni": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-08-06",
+            "description": "Fecha inicial. **Obligatoria.**"
+          },
+          "manifest": {
+            "type": "integer",
+            "example": 0,
+            "description": "Número de manifiesto. Enviar 0 para no filtrar."
+          },
+          "idRequest": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Id de la solicitud. Enviar 0 para no filtrar."
+          }
+        },
+        "description": "Se recomienda arrancar con un rango de la última semana. Los filtros opcionales se anulan con **0**.",
+        "x-observacion": "La tabla del manual nombra estos campos `initialDate`, `endDate` e `idSolicitud`; el cuerpo real envía `dateIni`, `dateEnd` e `idRequest`. Además `State` va con mayúscula inicial."
+      },
+      "CertifyStatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "statesRequestCertificationUnitLoads": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RequestState" }
+              }
+            }
+          }
+        ]
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "title": "Cambio de clave",
+        "required": ["User", "codeUpdate", "newPassword"],
+        "properties": {
+          "User": {
+            "type": "string",
+            "example": "Cuadrillapruebas",
+            "description": "Nombre de usuario."
+          },
+          "codeUpdate": {
+            "type": "string",
+            "example": "0FC3F8EE-9",
+            "description": "Código de validación enviado al correo."
+          },
+          "newPassword": {
+            "type": "string",
+            "format": "password",
+            "example": "********",
+            "description": "Nueva contraseña."
+          }
+        },
+        "x-observacion": "La tabla del manual describe estos campos como `Id (Int)` y `newPassword (Integer)`, pero el cuerpo real envía cadenas y el identificador es el nombre de usuario."
+      },
+      "CreateManagerResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "identificationNumber": {
+                "type": "number",
+                "format": "double",
+                "example": 56887914,
+                "description": "Número de identificación del administrador creado."
+              }
+            }
+          }
+        ]
+      },
+      "ImageCrewLaborCertify": {
+        "type": "object",
+        "title": "Enlace de la imagen con el proceso",
+        "required": [
+          "idRequest",
+          "typeService",
+          "fileName",
+          "url",
+          "user",
+          "Ind",
+          "observation"
+        ],
+        "properties": {
+          "Ind": {
+            "type": "integer",
+            "example": 0,
+            "description": "Indicador del punto del proceso en el que se toma la imagen."
+          },
+          "url": {
+            "type": "string",
+            "example": "\\\\ImgCuadrillas\\InformeImprimirLiqTerceros.pdf",
+            "description": "Url del archivo."
+          },
+          "user": {
+            "type": "string",
+            "example": "6626",
+            "description": "Id del usuario."
+          },
+          "fileName": {
+            "type": "string",
+            "example": "InformeImprimirLiqTerceros.pdf",
+            "description": "Nombre del archivo."
+          },
+          "idRequest": {
+            "type": "number",
+            "format": "double",
+            "example": 2,
+            "description": "Id de la solicitud, ya sea de cuadrilla o de certificación."
+          },
+          "observation": {
+            "type": "string",
+            "example": "",
+            "description": "Observaciones al momento de la toma de la imagen."
+          },
+          "typeService": {
+            "type": "integer",
+            "example": 1,
+            "description": "Id del tipo de servicio de la solicitud."
+          }
+        }
+      },
+      "ManageLoadUnitRequest": {
+        "type": "object",
+        "title": "Gestión de la unidad de carga",
+        "required": [
+          "requestId",
+          "serviceType",
+          "unitLoad",
+          "quantity",
+          "cost",
+          "user"
+        ],
+        "properties": {
+          "cost": {
+            "type": "number",
+            "format": "double",
+            "example": 120,
+            "description": "Valor ingresado."
+          },
+          "user": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que registra."
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double",
+            "example": 1500,
+            "description": "Cantidad registrada."
+          },
+          "unitLoad": {
+            "type": "number",
+            "format": "double",
+            "example": 2,
+            "description": "Id de la unidad de medida."
+          },
+          "requestId": {
+            "type": "number",
+            "format": "double",
+            "example": 1,
+            "description": "Id de la solicitud."
+          },
+          "serviceType": {
+            "type": "integer",
+            "example": 2,
+            "description": "Id del tipo de servicio."
+          }
+        }
+      },
+      "RequestHistoryRequest": {
+        "type": "object",
+        "title": "Filtro de historial de solicitudes",
+        "required": [
+          "dateInitial",
+          "dateEnd",
+          "agency",
+          "manifest",
+          "idState",
+          "state",
+          "idRequest"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "example": "",
+            "description": "Descripción del estado. Enviar cadena vacía para no filtrar."
+          },
+          "agency": {
+            "type": "integer",
+            "example": 0,
+            "description": "Código de agencia. Enviar 0 para no filtrar."
+          },
+          "dateEnd": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-07-23",
+            "description": "Fecha final. **Obligatoria.**"
+          },
+          "idState": {
+            "type": "integer",
+            "example": 0,
+            "description": "Código de estado. Enviar 0 para no filtrar."
+          },
+          "manifest": {
+            "type": "integer",
+            "example": 0,
+            "description": "Número de documento. Enviar 0 para no filtrar."
+          },
+          "idRequest": {
+            "type": "number",
+            "format": "double",
+            "example": 0,
+            "description": "Id de la solicitud. Enviar 0 para no filtrar."
+          },
+          "dateInitial": {
+            "type": "string",
+            "format": "date",
+            "example": "2025-01-23",
+            "description": "Fecha inicial. **Obligatoria.**"
+          }
+        },
+        "description": "Solo el rango de fechas es obligatorio. Los demás filtros se anulan con **0** (numéricos) o **cadena vacía** (texto)."
+      },
+      "SimpleMessageResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "mensaje": {
+                "type": "string",
+                "example": "OK",
+                "description": "Resultado del proceso en el motor SQL."
+              }
+            }
+          }
+        ]
+      },
+      "TypeDocumentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "appCrewsLaborTypeDocuments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TypeDocument" }
+              }
+            }
+          }
+        ]
+      },
+      "CertifyHistoryResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listHistoryCertifyLoadUnit": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CertifyLoadUnit" }
+              }
+            }
+          }
+        ]
+      },
+      "MunicipalitiesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "municipalities": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Municipality" }
+              }
+            }
+          }
+        ]
+      },
+      "PendingRequestsRequest": {
+        "type": "object",
+        "title": "Filtro de solicitudes pendientes",
+        "required": ["state", "idUser"],
+        "properties": {
+          "state": {
+            "enum": [0, 1, 2, 3, 4, 5, 6],
+            "type": "integer",
+            "example": 1,
+            "description": "Estado de las solicitudes. **0** todas, **1** activa pendiente de gestionar, **2** con asignación de cuadrilla, **3** inicio de proceso, **4** en proceso, **5** gestionada, **6** rechazada."
+          },
+          "idUser": {
+            "type": "integer",
+            "example": 6626,
+            "description": "Id del usuario que consulta."
+          }
+        }
+      },
+      "RequestHistoryResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listHistoryRequestCrewLabor": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CrewRequestHistory" }
+              }
+            }
+          }
+        ]
+      },
+      "PendingRequestsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "listRequestPteCrewLabor": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CrewRequest" }
+              }
+            }
+          }
+        ]
+      },
+      "TypeServiceCrewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "appCrewsLaborTypeService": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TypeService" }
+              }
+            }
+          }
+        ]
+      },
+      "ProfilePermissionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "applicationPermissions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ProfilePermission" }
+              }
+            }
+          }
+        ]
+      },
+      "TypeCertificationsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "typeCertificationLoads": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TypeCertification" }
+              }
+            }
+          }
+        ]
+      },
+      "TypeDocumentIdentification": {
+        "type": "object",
+        "title": "Tipo de documento de identificación",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "CC",
+            "description": "Código natural del tipo de documento."
+          },
+          "stateId": {
+            "type": "integer",
+            "example": 1,
+            "description": "Estado del tipo de documento."
+          },
+          "typeDocument": {
+            "type": "string",
+            "example": "CEDULA CIUDADANÍA",
+            "description": "Descripción del tipo de documento."
+          },
+          "dianEquivalence": {
+            "type": "integer",
+            "example": 2,
+            "description": "Id de equivalencia ante la DIAN."
+          },
+          "dianEquivalenceAcquirer": {
+            "type": "integer",
+            "example": 13,
+            "description": "Id de equivalencia como adquiriente."
+          },
+          "dianEquivalenceSupportDocument": {
+            "type": "integer",
+            "example": 22,
+            "description": "Id de equivalencia como documento soporte."
+          }
+        }
+      },
+      "TypeServiceCertifyResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "typeServiceCrewLabors": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TypeServiceToRequest" }
+              }
+            }
+          }
+        ]
+      },
+      "GeneratePasswordResetResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "0CF9073A-8",
+                "description": "Código de validación generado."
+              },
+              "mensaje": {
+                "type": "string",
+                "example": "OK",
+                "description": "Resultado del proceso en el motor SQL."
+              },
+              "emailShipping": {
+                "type": "string",
+                "example": "usuario@coltanques.com.co",
+                "description": "Correo al que se envía el código."
+              }
+            }
+          }
+        ]
+      },
+      "TypeDocumentIdentificationsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CommonResponseFields" },
+          {
+            "type": "object",
+            "properties": {
+              "typeDocumentIdentifications": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TypeDocumentIdentification"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/BaseResponse" }
+          }
+        },
+        "description": "Falta el token, no es válido o está vencido."
+      }
+    },
+    "parameters": {},
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token de servicio obtenido en `POST /gateway/token`. Vigencia de 24 horas. Si no se envía o está vencido, la API responde 401.",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

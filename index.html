@@ -1851,13 +1851,7 @@
             <sc-if value="{{ viewApidoc }}" hint-placeholder-val="{{ false }}">
               <dc-import name="Apidoc"
                 proyecto="{{ proyecto }}" isDev="{{ isDev }}"
-                setTabUrl="{{ setTabUrl }}" apiTabUrlBorder="{{ apiTabUrlBorder }}"
-                apiTabUrlColor="{{ apiTabUrlColor }}" setTabJson="{{ setTabJson }}"
-                apiTabJsonBorder="{{ apiTabJsonBorder }}" apiTabJsonColor="{{ apiTabJsonColor }}"
-                apiTabUrl="{{ apiTabUrl }}" apiUrlVal="{{ apiUrlVal }}"
-                onApiUrl="{{ onApiUrl }}" saveApiUrl="{{ saveApiUrl }}"
-                apiTabJson="{{ apiTabJson }}" apiJsonVal="{{ apiJsonVal }}"
-                onApiJson="{{ onApiJson }}" saveApiJson="{{ saveApiJson }}"
+                apiUrlVal="{{ apiUrlVal }}" onApiUrl="{{ onApiUrl }}" saveApiUrl="{{ saveApiUrl }}"
                 apiErrShow="{{ apiErrShow }}" apiErr="{{ apiErr }}"
                 redocContainerRef="{{ redocContainerRef }}" showFullscreenBtn="{{ showFullscreenBtn }}"
                 toggleFullscreen="{{ toggleFullscreen }}" fullscreenTitle="{{ fullscreenTitle }}"
@@ -2411,7 +2405,7 @@
             reqTab:REQ_TAB.documents, filter:FILTER_ALL, modal:null, form:{},
             projectsView:PROJECTS_VIEW.grid, reqSelectMode:false, reqSelected:{},
             maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
-            apiTab:API_TAB.url, apiUrlInput:'', apiJsonInput:'', apiErr:'', apiHasRender:false,
+            apiUrlInput:'', apiErr:'', apiHasRender:false,
             session:null, authChecked:false, profileRole:null, devProfiles:[], pmProfiles:[],
             loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
             recoveryMode:false, recoveryPass1:'', recoveryPass2:'', recoveryError:'', recoveryLoading:false,
@@ -2944,9 +2938,8 @@
         addCredRow(){ this.setState(s=>({form:{...s.form,credRows:[...s.form.credRows,{environmentId:'',label:'',username:'',secret:'',url:'',notes:''}]}})); }
         removeCredRow(i){ this.setState(s=>({form:{...s.form,credRows:s.form.credRows.filter((r,j)=>j!==i)}})); }
 
-        openApiDoc(){ const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:VIEW.apiDoc, apiTab:spec.source||API_TAB.url, apiUrlInput:spec.url||'', apiJsonInput:spec.json||'', apiErr:'', apiHasRender:!!spec.source}); if(spec.source){ setTimeout(()=>this.renderSpec(spec),DELAY_MS.redocRender); } }
-        setApiTab(t){ this.setState({apiTab:t,apiErr:''}); }
-        renderSpec(spec){ const el=this._redocEl; if(!window.Redoc){ this.setState({apiErr:'No se pudo cargar Redoc (revisa tu conexión).'}); return; } if(!el) return; const opts={hideDownloadButton:!this.isDev()}; try{ el.replaceChildren(); if(spec.source===API_TAB.url){ window.Redoc.init(spec.url,opts,el,(err)=>{ if(err){ this.setState({apiErr:'No se pudo cargar la spec desde la URL (posible CORS o URL inválida). Prueba pegando el JSON.'}); } }); } else { const obj=JSON.parse(spec.json); window.Redoc.init(obj,opts,el); } }catch(e){ this.setState({apiErr:'Error al renderizar: '+e.message}); } }
+        openApiDoc(){ const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:VIEW.apiDoc, apiUrlInput:spec.source===API_TAB.url?(spec.url||''):'', apiErr:'', apiHasRender:!!spec.source}); if(spec.source){ setTimeout(()=>this.renderSpec(spec),DELAY_MS.redocRender); } }
+        renderSpec(spec){ const el=this._redocEl; if(!window.Redoc){ this.setState({apiErr:'No se pudo cargar Redoc (revisa tu conexión).'}); return; } if(!el) return; const opts={hideDownloadButton:!this.isDev()}; try{ el.replaceChildren(); if(spec.source===API_TAB.url){ window.Redoc.init(spec.url,opts,el,(err)=>{ if(err){ this.setState({apiErr:'No se pudo cargar la spec: no se encontró el archivo en esa ruta.'}); } }); } else { const obj=JSON.parse(spec.json); window.Redoc.init(obj,opts,el); } }catch(e){ this.setState({apiErr:'Error al renderizar: '+e.message}); } }
         toggleApiFullscreen(){ const el=this._redocContainerEl; if(!el) return; if(document.fullscreenElement){ document.exitFullscreen(); } else if(el.requestFullscreen){ el.requestFullscreen(); } }
 
         async saveApiUrl(){
@@ -2954,7 +2947,7 @@
           try{ await this._saveApiUrl(); } finally{ this._busy=false; }
         }
         async _saveApiUrl(){
-          const url=(this.state.apiUrlInput||'').trim(); if(!url){ this.setState({apiErr:'Ingresa una URL.'}); return; }
+          const url=(this.state.apiUrlInput||'').trim(); if(!url){ this.setState({apiErr:'Ingresa la ruta del archivo.'}); return; }
           const spec={source:API_TAB.url,url};
           this.setState({apiErr:'',apiHasRender:true,saveStatus:SAVE_STATUS.saving});
           const { error } = await this._sb.from(TABLE.projects).update({api_spec_source:API_TAB.url, api_spec_url:url, api_spec_json:null}).eq('id',this.state.proyectoId);
@@ -2962,21 +2955,6 @@
           if(error){ this.setState({apiErr:'No se pudo guardar: '+error.message}); return; }
           await this.loadData();
           setTimeout(()=>this.renderSpec(spec),DELAY_MS.redocRender);
-        }
-        async saveApiJson(){
-          if(!this.isDev()||this._busy) return; this._busy=true;
-          try{ await this._saveApiJson(); } finally{ this._busy=false; }
-        }
-        async _saveApiJson(){
-          const json=this.state.apiJsonInput||''; let obj;
-          try{ obj=JSON.parse(json); }catch(e){ this.setState({apiErr:'JSON inválido: '+e.message}); return; }
-          const spec={source:API_TAB.json,json};
-          this.setState({apiErr:'',apiHasRender:true,saveStatus:SAVE_STATUS.saving});
-          const { error } = await this._sb.from(TABLE.projects).update({api_spec_source:API_TAB.json, api_spec_url:null, api_spec_json:obj}).eq('id',this.state.proyectoId);
-          this.setState({saveStatus:error?SAVE_STATUS.error:SAVE_STATUS.saved});
-          if(error){ this.setState({apiErr:'No se pudo guardar: '+error.message}); return; }
-          await this.loadData();
-          setTimeout(()=>{ const el=this._redocEl; if(el&&window.Redoc){ el.replaceChildren(); try{ window.Redoc.init(obj,{},el); }catch(e){ this.setState({apiErr:'Error: '+e.message}); } } },DELAY_MS.redocRender);
         }
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
@@ -4536,14 +4514,9 @@
 
           R.viewApidoc=v===VIEW.apiDoc;
           R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : '1240px');
-          R.apiTabUrl=s.apiTab===API_TAB.url; R.apiTabJson=s.apiTab===API_TAB.json;
-          R.apiTabUrlColor=s.apiTab===API_TAB.url?'var(--gp-cyan)':'var(--gp-muted)';
-          R.apiTabJsonColor=s.apiTab===API_TAB.json?'var(--gp-cyan)':'var(--gp-muted)';
-          R.apiTabUrlBorder=s.apiTab===API_TAB.url?'var(--gp-cyan)':'transparent'; R.apiTabJsonBorder=s.apiTab===API_TAB.json?'var(--gp-cyan)':'transparent';
-          R.apiUrlVal=s.apiUrlInput||''; R.apiJsonVal=s.apiJsonInput||'';
-          R.onApiUrl=(e)=>this.setState({apiUrlInput:e.target.value}); R.onApiJson=(e)=>this.setState({apiJsonInput:e.target.value});
-          R.setTabUrl=()=>this.setApiTab(API_TAB.url); R.setTabJson=()=>this.setApiTab(API_TAB.json);
-          R.saveApiUrl=()=>this.saveApiUrl(); R.saveApiJson=()=>this.saveApiJson();
+          R.apiUrlVal=s.apiUrlInput||'';
+          R.onApiUrl=(e)=>this.setState({apiUrlInput:e.target.value});
+          R.saveApiUrl=()=>this.saveApiUrl();
           R.apiErr=s.apiErr||''; R.apiErrShow=!!s.apiErr;
           R.redocDisplay=(v===VIEW.apiDoc&&s.apiHasRender)?'block':'none';
           R.apiEmptyShow=v===VIEW.apiDoc&&!s.apiHasRender;
@@ -4647,7 +4620,7 @@
                   copyBorder: copied?'var(--gp-green-40)':'var(--gp-line-18)',
                   copyTitle: copied?'Copiado':'Copiar URL' };
               }),
-              recursoCards:[ ...(isDev ? [cardOf('manualTecnico','Manual Técnico',ICON.book)] : []), cardOf('diagramas','Diagramas',ICON.diagram), cardOf('manualUsuario','Manual de Usuario',ICON.userGuide), githubCard, {label:'Documentación Técnica',iconHref:ICON.api,status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'var(--gp-green)':'var(--gp-muted-2)',open:()=>this.openApiDoc()}, ...(isDev ? [estimacionesCard] : []) ],
+              recursoCards:[ ...(isDev ? [cardOf('manualTecnico','Manual Técnico',ICON.book)] : []), cardOf('diagramas','Diagramas',ICON.diagram), cardOf('manualUsuario','Manual de Usuario',ICON.userGuide), githubCard, ...((isDev||apiHasSpec) ? [{label:'Documentación Técnica',iconHref:ICON.api,status:apiHasSpec?'Configurado':'Sin spec',statusColor:apiHasSpec?'var(--gp-green)':'var(--gp-muted-2)',open:()=>this.openApiDoc()}] : []), ...(isDev ? [estimacionesCard] : []) ],
               credenciales:(rec.credenciales||[]).map(c=>{
                 const shown=!!s.credShown[c.id]; const k=COPY_KEY.credentialPrefix+c.id; const copied=s.copiedKey===k;
                 return { label:c.label||'(sin nombre)',

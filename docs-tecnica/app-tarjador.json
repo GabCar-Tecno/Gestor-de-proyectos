@@ -1,0 +1,2537 @@
+{
+  "info": {
+    "title": "API Asistencia TyS",
+    "contact": {
+      "name": "Juan Camilo Posso",
+      "email": "camilo.posso@tecno.co"
+    },
+    "license": {
+      "url": "https://www.coltanques.co",
+      "name": "Uso interno — Coltanques S.A.S."
+    },
+    "version": "1.0.1",
+    "description": "API **Gateway de Asistencia TyS** de Coltanques S.A.S.\n\nEs un **proxy inverso construido sobre [Ocelot](https://ocelot.readthedocs.io/)**. No contiene\nlógica de negocio propia: recibe las peticiones de las aplicaciones cliente sobre el prefijo\n`/gateway/*`, valida el token JWT y **reenruta** cada petición al microservicio interno\n`AssistanceTySApi` (servicio downstream `TySServices`, puerto 1801).\n\n```\nCliente (App escoltas / Web administración)\n      │   Authorization: Bearer <JWT>\n      ▼\n┌───────────────────────────────┐\n│   API Gateway Asistencia TyS   │  https://www.coltanques.com.co:1800\n│   (Ocelot · /gateway/*)        │\n└───────────────┬───────────────┘\n                │ reenruta (downstream)\n                ▼\n        AssistanceTySApi (TySServices · puerto 1801)\n```\n\n## Procesos que expone\n\n| Proceso | Descripción |\n|---------|-------------|\n| **Autenticación** | Inicio de sesión de la app y de servicio (emisión de token JWT). |\n| **Recuperación de contraseña** | Generación, verificación de código y restablecimiento. |\n| **Servicios** | Consulta, creación y asignación de servicios de acompañamiento. |\n| **Turnos** | Turno actual, disponibles, asignación, cambio y marcación de entrada/salida. |\n| **Reportes** | Inicio y finalización de reportes de servicio, registros, observaciones, PDF y exportación. |\n| **Administración** | Gestión de horarios maestros (ShiftMasters). |\n| **Catálogos** | Datos maestros: departamentos, ciudades, tipos de servicio/reporte, manifiestos y agencias. |\n\n## Autenticación\n\nTodas las operaciones requieren un token **JWT** en el encabezado `Authorization: Bearer <token>`,\nsalvo el inicio de sesión (`/gateway/LoginApi` y `/gateway/LoginApp`).\n\n> **Nota:** los esquemas de request/response provienen del contrato real del microservicio\n> `AssistanceTySApi`; aquí se reexponen bajo el prefijo `/gateway/*` del gateway.\n\nEste contrato documenta los endpoints que consume la app móvil de escoltas **`Coltanques-assistance-tys-app`** (Flutter) y la web de administración, reexpuestos por el gateway bajo `/gateway/*`."
+  },
+  "tags": [
+    {
+      "name": "Diagramas de flujo",
+      "x-traitTag": true,
+      "description": "Diagramas de flujo"
+    },
+    {
+      "name": "Diccionario de datos",
+      "x-traitTag": true,
+      "description": "Estructura física de las tablas del microservicio **AssistanceTySApi** (downstream del gateway Ocelot, base de asistencia TyS) que consume la app móvil **Coltanques-assistance-tys-app** (Flutter).\n\nIncluye las tablas propias del dominio (servicios, turnos, reportes) y las tablas/vistas maestras compartidas mapeadas por EF Core y excluidas de migraciones: `Usuario`, `Departamento`, `cities`, `Agencia`, `manifiesto`.\n\n**Convenciones**\n\n- `Length` con valor `1,1` corresponde a una columna de identidad (`IDENTITY(1,1)`), no a una longitud de dato.\n- Tipos alineados al `ContextModelSnapshot` de EF Core y a las entidades en `AssistanceTySApi.Model/Entities`.\n- Se conservan los nombres exactos de tabla del backend (`Services`, `ShiftMasters`, `manifiesto`, etc.).\n- Las tablas compartidas documentan solo las columnas mapeadas por este microservicio (pueden existir más columnas en la base física).\n\n**Índice de tablas** (navegables desde el menú lateral)\n\n1. `ServiceTypes` — tipos de servicio\n2. `ServiceStatuses` — estados de servicio\n3. `ReportTypes` — tipos de registro de reporte\n4. `ReportEvidenceTypes` — tipos de evidencia\n5. `ShiftMasters` — versiones de horario maestro\n6. `ShiftSlots` — franjas de un maestro\n7. `UserShiftAssignments` — asignación de turno al escolta\n8. `ShiftLogs` — marcación de entrada/salida\n9. `Services` — servicios de acompañamiento\n10. `ServiceReports` — reportes de servicio\n11. `ReportRecords` — registros / observaciones del reporte\n12. `ReportEvidences` — evidencias de un registro\n13. `Departamento` — maestro geográfico (compartida)\n14. `cities` — ciudades (compartida)\n15. `Agencia` — agencias (compartida / vista)\n16. `manifiesto` — manifiestos (compartida)\n17. `Usuario` — usuarios / escoltas (compartida)\n\n## ServiceTypes\n\n*7 columnas. Catálogo de tipos de servicio de acompañamiento. Endpoint: `GET /gateway/Catalogs/service-types`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Name | nvarchar | 100 | NO |  |  |\n| HasManifest | bit |  | NO | 1 | Indica si el tipo exige manifiesto |\n| Code | nvarchar | 20 | YES |  |  |\n| IsActive | bit |  | NO | 1 |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ServiceStatuses\n\n*5 columnas. Catálogo de estados del servicio.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Name | nvarchar | 100 | NO |  |  |\n| IsActive | bit |  | NO | 1 |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ReportTypes\n\n*5 columnas. Catálogo de tipos de registro dentro de un reporte. Endpoint: `GET /gateway/Catalogs/report-types`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Name | nvarchar | 100 | NO |  |  |\n| IsActive | bit |  | NO | 1 |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ReportEvidenceTypes\n\n*5 columnas. Catálogo de tipos de evidencia (foto, video, etc.).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Name | nvarchar | 100 | NO |  |  |\n| IsActive | bit |  | NO | 1 |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ShiftMasters\n\n*6 columnas. Versión de configuración de turnos vigente desde `EffectiveDate`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| EffectiveDate | timestamp |  | NO |  | datetime2 |\n| CreatedBy | number |  | NO |  | FK → Usuario(Id) |\n| IsActive | bit |  | NO | 1 |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ShiftSlots\n\n*7 columnas. Franjas horarias de un `ShiftMaster` (típicamente 3 slots).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| ShiftMasterId | number |  | NO |  | FK → ShiftMasters(Id) |\n| SlotNumber | number |  | NO |  | Número de franja (1..n) |\n| StartTime | time |  | NO |  | time |\n| EndTime | time |  | NO |  | time |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## UserShiftAssignments\n\n*7 columnas. Historial de asignación de franja al escolta. Un cambio de turno crea un registro nuevo.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| UserId | number |  | NO |  | FK → Usuario(Id) |\n| SlotNumber | number |  | NO |  | Número de franja asignada |\n| ValidFrom | timestamp |  | NO |  | datetime2; vigencia desde |\n| Justification | nvarchar | 500 | YES |  | Obligatoria en cambio de turno |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ShiftLogs\n\n*6 columnas. Marcación de entrada (`StartedAt`) y salida (`EndedAt`) del escolta por día.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| UserId | number |  | NO |  | FK → Usuario(Id) |\n| SlotNumber | number |  | NO |  |  |\n| ShiftDate | timestamp |  | NO |  | datetime2; día del turno |\n| StartedAt | timestamp |  | NO |  | datetime2; clock-in |\n| EndedAt | timestamp |  | YES |  | datetime2; clock-out |\n\n## Services\n\n*15 columnas. Servicio de acompañamiento asignado a un escolta (`CustodianId`).*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| DepartmentId | number |  | NO |  | smallint; FK → Departamento(Codigo) |\n| CityId | number |  | NO |  | FK → cities(Id) |\n| ManifestId | number |  | YES |  | Lógico → manifiesto(Consecutivo) |\n| AgencyId | number |  | YES |  | Lógico → Agencia(Codigo) |\n| ServiceTypeId | number |  | NO |  | FK → ServiceTypes(Id) |\n| CustodianId | number |  | NO |  | FK → Usuario(Id); escolta |\n| Plate | nvarchar | 20 | YES |  | Placa del vehículo |\n| Instructions | nvarchar | 1000 | YES |  | Instrucciones del servicio |\n| ScheduledDate | timestamp |  | NO |  | datetime2 |\n| SlotNumber | number |  | NO |  | Franja del turno |\n| StatusId | number |  | NO |  | FK → ServiceStatuses(Id) |\n| CreatedBy | number |  | NO |  | FK → Usuario(Id) |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n| UpdatedAt | timestamp |  | YES |  | datetime2 |\n\n## ServiceReports\n\n*6 columnas. Reporte de un servicio. Solo uno activo (`FinalizedAt` NULL) por servicio.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| ServiceId | number |  | NO |  | FK → Services(Id) |\n| UserId | number |  | NO |  | FK → Usuario(Id); escolta que reporta |\n| StartedAt | timestamp |  | NO |  | datetime2 |\n| FinalizedAt | timestamp |  | YES |  | datetime2; NULL = activo |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n\n## ReportRecords\n\n*7 columnas. Registro u observación añadido a un reporte activo.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| ReportId | number |  | NO |  | FK → ServiceReports(Id) |\n| VehiclePlate | nvarchar | 20 | YES |  |  |\n| ReportTypeId | number |  | YES |  | FK → ReportTypes(Id) |\n| Observations | nvarchar | 2000 | YES |  |  |\n| Location | nvarchar | 500 | YES |  |  |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n\n## ReportEvidences\n\n*5 columnas. Evidencia (ruta/archivo) asociada a un `ReportRecord`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| RecordId | number |  | NO |  | FK → ReportRecords(Id) |\n| File | nvarchar | 500 | NO |  | Ruta o referencia del archivo |\n| EvidenceTypeId | number |  | NO |  | FK → ReportEvidenceTypes(Id) |\n| CreatedAt | timestamp |  | NO | getutcdate() | datetime2 |\n\n## Departamento\n\n*Maestro de departamentos (compartida, excluida de migraciones). Endpoint: `GET /gateway/Catalogs/departments`. Columnas mapeadas por este API.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Codigo | number |  | NO |  | PK; smallint (Id en el contrato HTTP) |\n| Nombre | nvarchar | 100 | NO |  |  |\n| IdPais | number |  | NO |  | smallint |\n\n## cities\n\n*Maestro de ciudades (compartida, excluida de migraciones). Endpoint: `GET /gateway/Catalogs/cities?departmentId=`. Columnas mapeadas por este API.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Description | nvarchar | 100 | NO |  | Nombre de la ciudad (`name` en el DTO) |\n\n## Agencia\n\n*Agencias (compartida / vista, excluida de migraciones). Endpoint: `GET /gateway/Catalogs/agencies?cityId=`. Se filtra por `CodigoReducido`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Codigo | number |  | NO |  | PK; smallint (`id` en el DTO) |\n| Nombre | nvarchar | 60 | NO |  |  |\n| CodigoReducido | nvarchar | 6 | YES |  | Código reducido de ciudad |\n\n## manifiesto\n\n*Manifiestos (compartida, excluida de migraciones). Endpoint: `GET /gateway/Catalogs/manifest?agencyId=`.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Consecutivo | number |  | NO |  | PK (`id` en el DTO) |\n| IdPlaca | nvarchar | 12 | NO |  | Placa (`placa` en el DTO) |\n| IdAgencia | number |  | NO |  | smallint; lógico → Agencia(Codigo) |\n| RazonSocial | nvarchar | 300 | YES |  |  |\n\n## Usuario\n\n*Usuarios de la plataforma (compartida, excluida de migraciones). Referenciado por escoltas (`CustodianId`), creadores y marcaciones de turno. Columnas mapeadas por este API.*\n\n| Column Name | Type | Length | Nullable | Default | Constraints |\n|---|---|---|---|---|---|\n| Id | number | 1,1 | NO |  | PK, IDENTITY |\n| Codigo | nvarchar | max | NO |  |  |\n| NombreUsuario | nvarchar | max | NO |  | Login / username |\n| Apellido1 | nvarchar | max | NO |  |  |\n| Apellido2 | nvarchar | max | NO |  |  |\n| Nombre1 | nvarchar | max | NO |  |  |\n| Nombre2 | nvarchar | max | NO |  |  |\n| Celular | nvarchar | max | NO |  |  |\n| Correo | nvarchar | max | NO |  |  |\n| CreacionUsuarioId | number |  | NO |  | FK → Usuario(Id) |\n| FechaCreacion | timestamp |  | NO | getdate() | datetime2 |\n| ModificacionUsuarioId | number |  | YES |  | FK → Usuario(Id) |\n| FechaModificacion | timestamp |  | YES |  | datetime2 |\n| Activo | bit |  | NO |  |  |\n"
+    },
+    {
+      "name": "Diagramas BD",
+      "x-traitTag": true,
+      "description": "Diagramas BD"
+    },
+    {
+      "name": "Autenticación",
+      "description": "Inicio de sesión y emisión de tokens JWT."
+    },
+    {
+      "name": "Recuperación de contraseña",
+      "description": "Códigos de verificación y restablecimiento de contraseña."
+    },
+    {
+      "name": "Servicios",
+      "description": "Servicios de acompañamiento: consulta, creación y asignación."
+    },
+    {
+      "name": "Turnos",
+      "description": "Gestión de turnos del escolta y marcación de entrada/salida."
+    },
+    {
+      "name": "Reportes",
+      "description": "Reportes de servicio: inicio, finalización, registros, observaciones y exportación."
+    },
+    {
+      "name": "Administración",
+      "description": "Configuración de horarios maestros (ShiftMasters)."
+    },
+    {
+      "name": "Catálogos",
+      "description": "Datos maestros de solo lectura utilizados por las apps."
+    }
+  ],
+  "paths": {
+    "/gateway/Reports": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Paginated list of all reports (web - admin).",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportAdminItemDtoPagedResponseDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the page of reports."
+          },
+          "204": { "description": "No reports matching the filters." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "Page",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "PageSize",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          { "in": "query", "name": "Search", "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "ServiceTypeId",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "FromDate",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "in": "query",
+            "name": "ToDate",
+            "schema": { "type": "string", "format": "date-time" }
+          }
+        ],
+        "description": "Returns a paginated list of all reports. Optional filters: custodianId, statusId, fromDate, toDate. For web/admin use.",
+        "operationId": "getReports"
+      }
+    },
+    "/gateway/LoginApi": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Pots JWT token",
+        "security": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenOut" }
+              }
+            },
+            "description": "OK"
+          },
+          "201": { "description": "Returns the newly created item" },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "If the item is null"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Oops! Can't lookup your query right now"
+          }
+        },
+        "description": "This is the method to generate the Token JWT.",
+        "operationId": "postLoginApi",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequestDto" }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/gateway/LoginApp": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Post token",
+        "security": [],
+        "responses": {
+          "200": { "description": "OK" },
+          "201": { "description": "Returns the newly created item" },
+          "400": { "description": "If the item is null" },
+          "500": { "description": "Oops! Can't lookup your query right now" }
+        },
+        "description": "This is the method to generate the Token.",
+        "operationId": "postLoginApp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginAppRequestDto" }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/gateway/Services": {
+      "get": {
+        "tags": ["Servicios"],
+        "summary": "Paginated list of services with optional filters.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceListDtoPagedResponseDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the page of services."
+          },
+          "204": { "description": "No services matching the filters." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "Page",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "PageSize",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "CustodianId",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "StatusId",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "FromDate",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "in": "query",
+            "name": "ToDate",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          { "in": "query", "name": "Search", "schema": { "type": "string" } }
+        ],
+        "description": "Returns a paginated list of services. Optional filters: custodianId, statusId, fromDate, toDate.",
+        "operationId": "getServices"
+      },
+      "post": {
+        "tags": ["Servicios"],
+        "summary": "Creates a new service and assigns it to an escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Service created successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid data."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Example body:\r\n```json\r\n{\r\n  \"departmentId\": 1,\r\n  \"cityId\": 5,\r\n  \"manifestId\": null,\r\n  \"serviceTypeId\": 2,\r\n  \"custodianId\": 10,\r\n  \"instructions\": \"Monitor main entrance\",\r\n  \"scheduledDate\": \"2026-04-10\",\r\n  \"slotNumber\": 1\r\n}\r\n```",
+        "operationId": "postServices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateServiceDto" }
+            }
+          },
+          "description": "Service data to create."
+        }
+      }
+    },
+    "/gateway/Reports/me": {
+      "post": {
+        "tags": ["Reportes"],
+        "summary": "Returns all reports for the authenticated escort (paginated).",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportListDtoListBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the paginated list of reports."
+          },
+          "204": { "description": "The escort has no reports." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Returns the escort's reports. Optional filters: manifestConsecutivo, fromDate, reportTypeIds.",
+        "operationId": "postReportsMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MyReportsRequestDto" }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/Services/{id}": {
+      "get": {
+        "tags": ["Servicios"],
+        "summary": "Returns the detail of a service by its ID.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceDetailDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the service detail."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Service not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Service ID."
+          }
+        ],
+        "description": "Returns the full information of a service including department, city, type, custodian and status.",
+        "operationId": "getServicesId"
+      }
+    },
+    "/gateway/Reports/export": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Export report list in Excel format.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            },
+            "description": "Returns the Excel file."
+          },
+          "204": { "description": "No reports matching the filters." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "Page",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "PageSize",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          { "in": "query", "name": "Search", "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "ServiceTypeId",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          {
+            "in": "query",
+            "name": "FromDate",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "in": "query",
+            "name": "ToDate",
+            "schema": { "type": "string", "format": "date-time" }
+          }
+        ],
+        "description": "Generates and downloads an Excel (.xlsx) file with all reports matching the applied filters (custodianId, fromDate, toDate). Pagination is not applied.",
+        "operationId": "getReportsExport"
+      }
+    },
+    "/gateway/Catalogs/cities": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the cities of a specific department.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CityDtoBaseResponse" }
+              }
+            },
+            "description": "Returns the list of cities."
+          },
+          "204": { "description": "No cities found for the department." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Department not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "departmentId",
+            "schema": { "type": "integer", "format": "int32" },
+            "description": "Department ID."
+          }
+        ],
+        "description": "Returns the cities belonging to a specific department, sorted alphabetically.",
+        "operationId": "getCatalogsCities"
+      }
+    },
+    "/gateway/Shifts/Available": {
+      "get": {
+        "tags": ["Turnos"],
+        "summary": "Lists available shifts according to the active shift master.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftSlotDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of available shifts."
+          },
+          "204": {
+            "description": "No active shift master or no configured slots."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Returns the shift slots of the current master (the most recent with EffectiveDate <= today).",
+        "operationId": "getShiftsAvailable"
+      }
+    },
+    "/gateway/Catalogs/agencies": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the agencies of a specific city.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of agencies."
+          },
+          "204": { "description": "No agencies found for the given city." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cityId",
+            "schema": { "type": "string" },
+            "description": "Reduced city code."
+          }
+        ],
+        "description": "Returns the agencies whose CodigoReducido matches the provided cityId.",
+        "operationId": "getCatalogsAgencies"
+      }
+    },
+    "/gateway/Catalogs/manifest": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the manifests of an agency.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of manifests."
+          },
+          "204": { "description": "No manifests found for the given agency." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "agencyId",
+            "schema": { "type": "integer", "format": "int32" },
+            "description": "Agency ID."
+          }
+        ],
+        "description": "Returns the list of manifests (id and plate) filtered by agencyId.",
+        "operationId": "getCatalogsManifest"
+      }
+    },
+    "/gateway/admin/ShiftMasters": {
+      "get": {
+        "tags": ["Administración"],
+        "summary": "Lists all shift master versions.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftMasterListDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of shift masters."
+          },
+          "204": { "description": "No shift masters found." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Returns all shift master versions sorted by effective date (most recent first).",
+        "operationId": "getAdminShiftMasters"
+      },
+      "post": {
+        "tags": ["Administración"],
+        "summary": "Creates a new shift master with its slots.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Shift master created successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid data or incorrect time format."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "The shift master defines a shift configuration that takes effect from the specified date\r\n(EffectiveDate). It includes a list of slots where each has: number, name, start time (HH:mm)\r\nand end time (HH:mm).\r\n            \r\nExample body:\r\n```json\r\n{\r\n  \"effectiveDate\": \"2026-04-14\",\r\n  \"userId\": 12,\r\n  \"slots\": [\r\n    { \"slotNumber\": 1, \"name\": \"Morning\", \"startTime\": \"06:00\", \"endTime\": \"14:00\" },\r\n    { \"slotNumber\": 2, \"name\": \"Afternoon\", \"startTime\": \"14:00\", \"endTime\": \"22:00\" },\r\n    { \"slotNumber\": 3, \"name\": \"Night\",    \"startTime\": \"22:00\", \"endTime\": \"06:00\" }\r\n  ]\r\n}\r\n```",
+        "operationId": "postAdminShiftMasters",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateShiftMasterDto" }
+            }
+          },
+          "description": "Shift master data and its slots."
+        }
+      }
+    },
+    "/gateway/Catalogs/departments": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the full list of departments.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of departments."
+          },
+          "204": { "description": "No departments found." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Returns all available departments sorted alphabetically. Used to populate selects.",
+        "operationId": "getCatalogsDepartments"
+      }
+    },
+    "/gateway/Catalogs/report-types": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the full list of report types.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportTypeDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of report types."
+          },
+          "204": { "description": "No report types found." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "description": "Returns all available report types sorted alphabetically. Used to populate selects.",
+        "operationId": "getCatalogsReportTypes"
+      }
+    },
+    "/gateway/Catalogs/service-types": {
+      "get": {
+        "tags": ["Catálogos"],
+        "summary": "Returns the full list of service types.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceTypeDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of service types."
+          },
+          "204": { "description": "No service types found." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hasManifest",
+            "schema": { "type": "boolean" },
+            "description": "Filter by whether the service type requires a manifest (true/false). Optional."
+          }
+        ],
+        "description": "Returns active service types. If hasManifest=true/false is provided, filters by that field.",
+        "operationId": "getCatalogsServiceTypes"
+      }
+    },
+    "/gateway/Reports/{reportId}/pdf": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Download report in PDF format.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            },
+            "description": "Returns the PDF file."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Report not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Report ID."
+          }
+        ],
+        "description": "Generates and downloads the report in PDF (.pdf) format with all records and evidence.",
+        "operationId": "getReportsReportIdPdf"
+      }
+    },
+    "/gateway/Shifts/{userId}/Assign": {
+      "post": {
+        "tags": ["Turnos"],
+        "summary": "First shift assignment for the authenticated escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Shift assigned successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "The escort already has an assigned shift."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Only allowed if the escort has no previously assigned shift.\r\nIf already assigned, use PUT /api/Shifts/Change.",
+        "operationId": "postShiftsUserIdAssign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssignShiftDto" }
+            }
+          },
+          "description": "Slot number to assign."
+        }
+      }
+    },
+    "/gateway/Shifts/{userId}/Change": {
+      "put": {
+        "tags": ["Turnos"],
+        "summary": "Changes the authenticated escort's shift.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Shift changed successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid data."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "The escort has no assigned shift."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Requires a mandatory justification. Creates a new assignment record\r\n(the previous one is not modified; history is preserved).",
+        "operationId": "putShiftsUserIdChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangeShiftDto" }
+            }
+          },
+          "description": "New slot number and reason for the change."
+        }
+      }
+    },
+    "/gateway/Services/Today/{userId}": {
+      "get": {
+        "tags": ["Servicios"],
+        "summary": "Returns today's service for the authenticated escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceTodayDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns today's service."
+          },
+          "204": { "description": "No service assigned for today." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Returns the service assigned to the authenticated escort for the current date.",
+        "operationId": "getServicesTodayUserId"
+      }
+    },
+    "/gateway/Shifts/{userId}/ClockIn": {
+      "post": {
+        "tags": ["Turnos"],
+        "summary": "Records the start of shift (clock-in) for the authenticated escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Clock-in recorded successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Already clocked in today or no shift assigned."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Creates a record in ShiftLog with the current time as StartedAt.\r\nOnly allowed once per day. Requires an assigned shift.",
+        "operationId": "postShiftsUserIdClockIn"
+      }
+    },
+    "/gateway/Shifts/{userId}/Current": {
+      "get": {
+        "tags": ["Turnos"],
+        "summary": "Returns the active shift for today for the authenticated escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftCurrentDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the escort's current shift."
+          },
+          "204": {
+            "description": "The escort has no assigned shift or there is no active shift master."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Returns the shift assigned for today, including whether clock-in/out has already been recorded.",
+        "operationId": "getShiftsUserIdCurrent"
+      }
+    },
+    "/gateway/admin/ShiftMasters/{id}": {
+      "get": {
+        "tags": ["Administración"],
+        "summary": "Returns the detail of a shift master by ID.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftMasterDetailDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the shift master with its slots."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Shift master not found for the provided ID."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Shift master ID."
+          }
+        ],
+        "description": "Returns a shift master with all its slots (number, name, start time, end time).",
+        "operationId": "getAdminShiftMastersId"
+      }
+    },
+    "/gateway/Shifts/{userId}/ClockOut": {
+      "post": {
+        "tags": ["Turnos"],
+        "summary": "Records the end of shift (clock-out) for the authenticated escort.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Clock-out recorded successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "No clock-in recorded today or already clocked out."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true
+          }
+        ],
+        "description": "Updates today's ShiftLog record with the current time as EndedAt.\r\nRequires a prior clock-in. Only allowed once per day.",
+        "operationId": "postShiftsUserIdClockOut"
+      }
+    },
+    "/gateway/admin/ShiftMasters/Latest": {
+      "get": {
+        "tags": ["Administración"],
+        "summary": "Returns the active shift master for a given date or the most recent one.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftMasterDetailDtoBaseObjectResponse"
+                }
+              }
+            },
+            "description": "Returns the active master with its slots."
+          },
+          "204": {
+            "description": "No shift masters found or none active for the given date/period."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Date to find the active master for (format: yyyy-MM-dd). If not provided, returns the most recent active master."
+          }
+        ],
+        "description": "Returns the active shift master for a given date (if date is provided). If date is not provided, returns the most recent master. If no master exists for the specified day, returns the closest preceding one.",
+        "operationId": "getAdminShiftMastersLatest"
+      }
+    },
+    "/gateway/Reports/{reportId}/records": {
+      "post": {
+        "tags": ["Reportes"],
+        "summary": "Adds a record to an active report.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Record added successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "The report is not active or invalid data."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Report not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Report ID."
+          }
+        ],
+        "description": "Example body:\r\n```json\r\n[\r\n  {\r\n    \"plateNumber\": \"string\",\r\n    \"reportTypeId\": 0,\r\n    \"observations\": \"string\",\r\n    \"location\": \"string\",\r\n    \"evidences\": [\r\n      {\r\n        \"evidenceTypeId\": 0,\r\n        \"base64\": \"string\",\r\n        \"fileType\": \"string\"\r\n      }\r\n    ]\r\n  }\r\n]\r\n```",
+        "operationId": "postReportsReportIdRecords",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ReportRecordDto" }
+              }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/gateway/Services/escorts/available": {
+      "get": {
+        "tags": ["Servicios"],
+        "summary": "Lists the available escorts to assign to a service.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableEscortDtoBaseResponse"
+                }
+              }
+            },
+            "description": "Returns the list of escorts with their shift."
+          },
+          "204": { "description": "No escorts with an assigned shift." },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Date for which to query active shifts (default: today)."
+          }
+        ],
+        "description": "Returns all escorts with an assigned shift for the given date. Used to populate the escort dropdown.",
+        "operationId": "getServicesEscortsAvailable"
+      }
+    },
+    "/gateway/PasswordRecovery/VerifyCode": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Verificar el código de recuperación",
+        "responses": { "200": { "description": "OK" } },
+        "operationId": "postPasswordRecoveryVerifyCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyCodeRequestDto" }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/PasswordRecovery/GenerateCode": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Generar y enviar el código de verificación",
+        "responses": { "200": { "description": "OK" } },
+        "operationId": "postPasswordRecoveryGenerateCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCodeRequestDto"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/PasswordRecovery/ResetPassword": {
+      "post": {
+        "tags": ["Recuperación de contraseña"],
+        "summary": "Restablecer la contraseña con el código",
+        "responses": { "200": { "description": "OK" } },
+        "operationId": "postPasswordRecoveryResetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequestDto"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/Reports/{reportId}/observations": {
+      "post": {
+        "tags": ["Reportes"],
+        "summary": "Adds an observation to an active report.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Observation added successfully."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Report not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Report ID."
+          }
+        ],
+        "description": "Adds an observation to the report. Only the observations field is required; vehiclePlate, reportTypeId, location and evidences are optional.",
+        "operationId": "postReportsReportIdObservations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddObservationDto" }
+            }
+          },
+          "description": "Observation data. Only `observations` is required."
+        }
+      }
+    },
+    "/gateway/Reports/{serviceId}/report/start": {
+      "post": {
+        "tags": ["Reportes"],
+        "summary": "Starts a new report for a service.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Report started successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "An active report already exists for this service."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "You do not have permission to start a report for this service."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Service not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "Service ID for which to start the report."
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "description": "Starts a new report for a specific service. Only one active report is allowed per service.",
+        "operationId": "postReportsServiceIdReportStart"
+      }
+    },
+    "/gateway/Reports/{reportId}/report/finalize": {
+      "post": {
+        "tags": ["Reportes"],
+        "summary": "Finalizes an active service report.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BaseOut" }
+              }
+            },
+            "description": "Report finalized successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "The report is not active or has already been finalized."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Invalid or missing JWT token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "You do not have permission to finalize this report."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            },
+            "description": "Report not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            },
+            "description": "Internal server error."
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "schema": { "type": "integer", "format": "int32" },
+            "required": true,
+            "description": "ID of the report to finalize."
+          }
+        ],
+        "description": "Finalizes an active report. The report must be in active status to be finalized.",
+        "operationId": "postReportsReportIdReportFinalize"
+      }
+    }
+  },
+  "openapi": "3.0.3",
+  "servers": [
+    {
+      "url": "https://www.coltanques.com.co:1800",
+      "description": "Producción"
+    },
+    { "url": "https://localhost:5005", "description": "Desarrollo local" }
+  ],
+  "security": [{ "Bearer": [] }],
+  "components": {
+    "schemas": {
+      "Result": {
+        "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        "type": "integer",
+        "format": "int32"
+      },
+      "BaseOut": {
+        "type": "object",
+        "properties": {
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "CityDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "nullable": true },
+          "name": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "TokenOut": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "nullable": true },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" },
+          "refreshToken": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "AgencyDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "name": { "type": "string", "nullable": true },
+          "codigoReducido": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ManifestDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "placa": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ShiftSlotDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "endTime": { "type": "string", "nullable": true },
+          "startTime": { "type": "string", "nullable": true },
+          "slotNumber": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "DepartmentDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "name": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ReportListDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "plate": { "type": "string", "nullable": true },
+          "records": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportRecordItemDto" },
+            "nullable": true
+          },
+          "cityName": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "serviceId": { "type": "integer", "format": "int32" },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "statusName": { "type": "string", "nullable": true },
+          "consecutive": { "type": "string", "nullable": true },
+          "recordCount": { "type": "integer", "format": "int32" },
+          "custodianName": { "type": "string", "nullable": true },
+          "departmentName": { "type": "string", "nullable": true },
+          "serviceTypeName": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ReportTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "name": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "AssignShiftDto": {
+        "type": "object",
+        "required": ["slotNumber"],
+        "properties": {
+          "slotNumber": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ChangeShiftDto": {
+        "type": "object",
+        "required": ["justification", "slotNumber"],
+        "properties": {
+          "slotNumber": { "type": "integer", "format": "int32" },
+          "justification": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      },
+      "HttpStatusCode": {
+        "enum": [
+          100, 101, 102, 103, 200, 201, 202, 203, 204, 205, 206, 207, 208, 226,
+          300, 301, 302, 303, 304, 305, 306, 307, 308, 400, 401, 402, 403, 404,
+          405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 421,
+          422, 423, 424, 426, 428, 429, 431, 451, 500, 501, 502, 503, 504, 505,
+          506, 507, 508, 510, 511
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "detail": { "type": "string", "nullable": true },
+          "status": { "type": "integer", "format": "int32", "nullable": true },
+          "instance": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": {}
+      },
+      "ServiceListDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "client": { "type": "string", "nullable": true },
+          "consecutive": { "type": "string", "nullable": true },
+          "custodianName": { "type": "string", "nullable": true },
+          "scheduledDate": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "name": { "type": "string", "nullable": true },
+          "hasManifest": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "LoginRequestDto": {
+        "type": "object",
+        "required": ["password", "userName"],
+        "properties": {
+          "password": { "type": "string", "minLength": 1 },
+          "userName": { "type": "string", "minLength": 1 },
+          "applicationId": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ReportRecordDto": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "nullable": true },
+          "evidences": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportEvidenceDto" },
+            "nullable": true
+          },
+          "plateNumber": { "type": "string", "nullable": true },
+          "observations": { "type": "string", "nullable": true },
+          "reportTypeId": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceTodayDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "plate": { "type": "string", "nullable": true },
+          "records": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportRecordItemDto" },
+            "nullable": true
+          },
+          "cityName": { "type": "string", "nullable": true },
+          "manifestId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "slotNumber": { "type": "integer", "format": "int32" },
+          "statusName": { "type": "string", "nullable": true },
+          "consecutive": { "type": "string", "nullable": true },
+          "hasManifest": { "type": "boolean" },
+          "instructions": { "type": "string", "nullable": true },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "departmentName": { "type": "string", "nullable": true },
+          "serviceTypeName": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ShiftCurrentDto": {
+        "type": "object",
+        "properties": {
+          "endTime": { "type": "string", "nullable": true },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "services": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ShiftCurrentServiceDto" },
+            "nullable": true
+          },
+          "isClocked": { "type": "boolean" },
+          "shiftDate": { "type": "string", "format": "date-time" },
+          "startTime": { "type": "string", "nullable": true },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "slotNumber": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "CreateServiceDto": {
+        "type": "object",
+        "required": [
+          "cityId",
+          "custodianId",
+          "departmentId",
+          "scheduledDate",
+          "serviceTypeId",
+          "slotNumber",
+          "userId"
+        ],
+        "properties": {
+          "plate": { "type": "string", "nullable": true },
+          "cityId": { "type": "integer", "format": "int32" },
+          "userId": { "type": "integer", "format": "int32" },
+          "agencyId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "manifestId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "slotNumber": { "type": "integer", "format": "int32" },
+          "custodianId": { "type": "integer", "format": "int32" },
+          "departmentId": { "type": "integer", "format": "int32" },
+          "instructions": { "type": "string", "nullable": true },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "serviceTypeId": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "plate": { "type": "string", "nullable": true },
+          "cityName": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "manifestId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "slotNumber": { "type": "integer", "format": "int32" },
+          "statusName": { "type": "string", "nullable": true },
+          "consecutive": { "type": "string", "nullable": true },
+          "instructions": { "type": "string", "nullable": true },
+          "createdByName": { "type": "string", "nullable": true },
+          "custodianName": { "type": "string", "nullable": true },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "departmentName": { "type": "string", "nullable": true },
+          "serviceTypeName": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "AddObservationDto": {
+        "type": "object",
+        "required": ["observations"],
+        "properties": {
+          "location": { "type": "string", "nullable": true },
+          "observations": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ReportEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "base64": { "type": "string", "nullable": true },
+          "fileType": { "type": "string", "nullable": true },
+          "evidenceTypeId": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "AvailableEscortDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "name": { "type": "string", "nullable": true },
+          "shiftRange": { "type": "string", "nullable": true },
+          "slotNumber": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "CreateShiftSlotDto": {
+        "type": "object",
+        "required": ["endTime", "slotNumber", "startTime"],
+        "properties": {
+          "endTime": { "type": "string", "minLength": 1 },
+          "startTime": { "type": "string", "minLength": 1 },
+          "slotNumber": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "LoginAppRequestDto": {
+        "type": "object",
+        "properties": {
+          "password": { "type": "string", "nullable": true },
+          "userName": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ReportAdminItemDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "client": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "consecutive": { "type": "string", "nullable": true },
+          "custodianName": { "type": "string", "nullable": true },
+          "serviceTypeName": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ShiftMasterListDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "createdByName": { "type": "string", "nullable": true },
+          "effectiveDate": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "CityDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CityDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "MyReportsRequestDto": {
+        "type": "object",
+        "properties": {
+          "toDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "userId": { "type": "integer", "format": "int32" },
+          "fromDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "consecutive": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "serviceTypeIds": {
+            "type": "array",
+            "items": { "type": "integer", "format": "int32" },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReportRecordItemDto": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "nullable": true },
+          "recordedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "CreateShiftMasterDto": {
+        "type": "object",
+        "required": ["effectiveDate", "slots", "userId"],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CreateShiftSlotDto" },
+            "maxItems": 3,
+            "minItems": 3
+          },
+          "userId": { "type": "integer", "format": "int32" },
+          "effectiveDate": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "ShiftMasterDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "slots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ShiftSlotDto" },
+            "nullable": true
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "createdByName": { "type": "string", "nullable": true },
+          "effectiveDate": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "VerifyCodeRequestDto": {
+        "type": "object",
+        "required": ["code", "user"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "user": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      },
+      "AgencyDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AgencyDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "GenerateCodeRequestDto": {
+        "type": "object",
+        "required": ["user"],
+        "properties": { "user": { "type": "string", "minLength": 1 } },
+        "additionalProperties": false
+      },
+      "ShiftCurrentServiceDto": {
+        "type": "object",
+        "properties": {
+          "serviceId": { "type": "integer", "format": "int32" },
+          "statusName": { "type": "string", "nullable": true },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "reportStartedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "serviceTypeName": { "type": "string", "nullable": true },
+          "reportFinalizedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ManifestDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ManifestDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ResetPasswordRequestDto": {
+        "type": "object",
+        "required": ["codeUpdate", "newPassword", "user"],
+        "properties": {
+          "user": { "type": "string", "minLength": 1 },
+          "codeUpdate": { "type": "string", "minLength": 1 },
+          "newPassword": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      },
+      "ShiftSlotDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ShiftSlotDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "detail": { "type": "string", "nullable": true },
+          "errors": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "status": { "type": "integer", "format": "int32", "nullable": true },
+          "instance": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": {}
+      },
+      "DepartmentDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DepartmentDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ReportTypeDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportTypeDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceTypeDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ServiceTypeDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "AvailableEscortDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AvailableEscortDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceListDtoPagedResponseDto": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "format": "int32" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ServiceListDto" },
+            "nullable": true
+          },
+          "pageSize": { "type": "integer", "format": "int32" },
+          "totalCount": { "type": "integer", "format": "int32" },
+          "totalPages": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ShiftMasterListDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ShiftMasterListDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceTodayDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ServiceTodayDto" },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ShiftCurrentDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ShiftCurrentDto" },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ReportAdminItemDtoPagedResponseDto": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "format": "int32" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportAdminItemDto" },
+            "nullable": true
+          },
+          "pageSize": { "type": "integer", "format": "int32" },
+          "totalCount": { "type": "integer", "format": "int32" },
+          "totalPages": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceDetailDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ServiceDetailDto" },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ReportListDtoListBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportListDto" },
+            "nullable": true
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ShiftMasterDetailDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ShiftMasterDetailDto" },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ServiceListDtoPagedResponseDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ServiceListDtoPagedResponseDto"
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      },
+      "ReportAdminItemDtoPagedResponseDtoBaseObjectResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReportAdminItemDtoPagedResponseDto"
+          },
+          "result": { "$ref": "#/components/schemas/Result" },
+          "message": { "type": "string", "nullable": true },
+          "statusCode": { "$ref": "#/components/schemas/HttpStatusCode" },
+          "numberRecord": { "type": "integer", "format": "int32" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Introduce un token JWT válido. Ejemplo: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "x-tagGroups": [
+    {
+      "name": "Documentación",
+      "tags": ["Diagramas de flujo", "Diccionario de datos", "Diagramas BD"]
+    },
+    {
+      "name": "Autenticación y cuenta",
+      "tags": ["Autenticación", "Recuperación de contraseña"]
+    },
+    { "name": "Operación", "tags": ["Servicios", "Turnos", "Reportes"] },
+    { "name": "Administración", "tags": ["Administración"] },
+    { "name": "Datos maestros", "tags": ["Catálogos"] }
+  ]
+}
