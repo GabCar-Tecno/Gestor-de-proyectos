@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="968" viewBox="0 0 1500 968" role="img" aria-labelledby="title desc">
+<title id="title">Formulario de terceros · F14 / F16</title><desc id="desc">Registro, validaciones, documentos y firma.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
+<style>text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:bold}.sub{font-size:15px;fill:#475569}.head{font-size:17px;font-weight:bold}.row{font-size:14px}.edge{fill:none;stroke:#94a3b8;stroke-width:1.8;marker-end:url(#arrow)}.node{fill:#fff;stroke:#334155;stroke-width:1.5}.cap{fill:#e0f2fe;stroke:#334155;stroke-width:1.5}</style>
+<rect width="1500" height="968" fill="#f8fafc"/>
+<text x="30" y="36" class="title">Formulario de terceros · F14 / F16</text>
+<text x="30" y="66" class="sub">Registro, validaciones, documentos y firma.</text>
+<rect class="node" x="220" y="105" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="133">1. Seleccionar formato y vínculo; crear registro</text>
+<text class="row" x="238" y="159">POST registrations: devuelve thirdPartyFormId. F14: tenedor/propietario; F16: conductor.</text>
+<path class="edge" d="M 650 185 V 215"/>
+<rect class="node" x="220" y="215" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="243">2. Consultar y responder autorización</text>
+<text class="row" x="238" y="269">GET questions; POST dataTreatment solo cuando todas las preguntas activas fueron respondidas YES.</text>
+<path class="edge" d="M 650 295 V 325"/>
+<rect class="node" x="220" y="325" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="353">3. Guardar datos del tercero</text>
+<text class="row" x="238" y="379">F14: PUT thirdPartyPerson. F16: PUT driver. El backend valida los bloques y datos obligatorios.</text>
+<path class="edge" d="M 650 405 V 435"/>
+<rect class="node" x="220" y="435" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="463">4. Guardar vehículos cuando la interfaz los solicita</text>
+<text class="row" x="238" y="489">F14 HOLDER/HOLDER_AND_OWNER: catálogos y PUT vehicles. Propietario y F16 omiten esta rama.</text>
+<path class="edge" d="M 650 515 V 545"/>
+<rect class="node" x="220" y="545" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="573">5. Consultar tipos documentales y cargar soportes</text>
+<text class="row" x="238" y="599">GET documentTypes; POST personDocuments y vehicleDocuments cuando aplica. Respuesta: document.</text>
+<path class="edge" d="M 650 625 V 655"/>
+<rect class="node" x="220" y="655" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="683">6. Generar documento e iniciar firma</text>
+<text class="row" x="238" y="709">POST signature sin DTO de cuerpo. Genera/carga PDF, registra SENT y solicita firma al proveedor.</text>
+<path class="edge" d="M 650 735 V 765"/>
+<rect class="node" x="220" y="765" width="860" height="80" rx="9"/>
+<text class="head" x="238" y="793">7. Confirmar inicio al usuario</text>
+<text class="row" x="238" y="819">El usuario firma desde el enlace del proveedor. La solicitud queda pendiente de firma.</text>
+<path class="edge" d="M 1080 255 H 1120"/>
+<rect x="1120" y="215" width="350" height="80" rx="9" fill="#fff1f2" stroke="#be123c"/>
+<text class="row" x="1133" y="240">Alguna respuesta NO:</text>
+<text class="row" x="1133" y="260">interfaz bloquea el avance;</text>
+<text class="row" x="1133" y="280">el backend también rechaza.</text>
+<path class="edge" d="M 1080 475 H 1120"/>
+<rect x="1120" y="435" width="350" height="80" rx="9" fill="#fff1f2" stroke="#be123c"/>
+<text class="row" x="1133" y="460">PUT vehicles sustituye la colección.</text>
+<text class="row" x="1133" y="480">null o [] elimina la anterior.</text>
+<text class="sub" x="30" y="916">El frontend habilita el paso de vehículos según el formato y el tipo de vinculación.</text>
+<text class="sub" x="30" y="940">El formulario consulta países, departamentos, municipios y tipos de identificación en otros servicios.</text>
+</svg>
