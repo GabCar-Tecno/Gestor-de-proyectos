@@ -2551,7 +2551,7 @@
             instrucciones:rowsFor(instructionsOf,c.id).sort(byOrder)
               .map(x=>({id:x.id, text:x.text, sortOrder:x.sort_order||0})),
             contactos:rowsFor(contactsOf,c.id).sort(byOrder)
-              .map(x=>({id:x.id, name:x.name, email:x.email, defaultField:x.default_field||'', sortOrder:x.sort_order||0})),
+              .map(x=>({id:x.id, name:x.name, email:x.email||'', role:x.role||'', defaultField:x.default_field||'', sortOrder:x.sort_order||0})),
             proyectos:rowsFor(projectsOf,c.id).map(p=>{
               const byAmb=this.deployFinderByEnv(rowsFor(deploysOf,p.id));
               const reqs=rowsFor(reqsOf,p.id).map(r=>{
@@ -3044,8 +3044,8 @@
           }catch(e){ this.setState({saveStatus:SAVE_STATUS.error}); console.error(e); }
           finally{ this._busy=false; }
         }
-        addContacto(){ if(!this.isDev()) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.create,title:'Nuevo contacto',form:{name:'',email:'',defaultField:''}}); }
-        editContacto(id){ if(!this.isDev()) return; const k=((this.empresa()||{}).contactos||[]).find(x=>x.id===id); if(!k) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.edit,id,title:'Editar contacto',form:{name:k.name||'',email:k.email||'',defaultField:k.defaultField||''}}); }
+        addContacto(){ if(!this.isDev()) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.create,title:'Nuevo contacto',form:{name:'',email:'',role:'',defaultField:''}}); }
+        editContacto(id){ if(!this.isDev()) return; const k=((this.empresa()||{}).contactos||[]).find(x=>x.id===id); if(!k) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.edit,id,title:'Editar contacto',form:{name:k.name||'',email:k.email||'',role:k.role||'',defaultField:k.defaultField||''}}); }
         async delContacto(id){
           if(!this.isDev()||this._busy) return;
           this._busy=true;
@@ -3104,7 +3104,7 @@
           const ambs=emp.ambientes||[];
           if(!ambs.length){ this.setState({modal:{type:MODAL.notice,title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de armar correos.'}, form:{}}); return; }
           if(!(emp.desplegables||[]).length){ this.setState({modal:{type:MODAL.notice,title:'Sin desplegables',mensaje:'Crea los desplegables de esta empresa antes de armar correos.'}, form:{}}); return; }
-          const ctos=emp.contactos||[];
+          const ctos=BOARD_EXT.emailableContacts(emp.contactos);
           this.openModal({type:MODAL.email,mode:MODAL_MODE.create,title:'Enviar correo despliegue',form:{
             envId: ambs[0].id,
             proyectoIds: [],
@@ -3203,7 +3203,7 @@
             projectNames: nombres, servers: emp.servidores||[], items,
             nota: f.nota||'', hour: new Date().getHours(),
           });
-          const byId={}; (emp.contactos||[]).forEach(k=>{ byId[k.id]=k; });
+          const byId={}; BOARD_EXT.emailableContacts(emp.contactos).forEach(k=>{ byId[k.id]=k; });
           const mails=(ids)=>(ids||[]).map(id=>(byId[id]||{}).email).filter(Boolean);
           const cuerpo = (f.cuerpoEditado==null) ? built.body : f.cuerpoEditado;
           return { subject:built.subject, body:cuerpo, to:mails(f.toIds), cc:mails(f.ccIds), itemsCount:items.length };
@@ -3414,10 +3414,10 @@
             } else if(t===MODAL.contact){
               const name=(f.name||'').trim(); const email=(f.email||'').trim();
               if(!name){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El nombre es obligatorio.'}); return; }
-              if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Escribe un correo válido. Los alias internos de Outlook no funcionan.'}); return; }
+              if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Escribe un correo válido. Los alias internos de Outlook no funcionan.'}); return; }
               const list=(this.empresa()||{}).contactos||[];
-              if(list.some(x=>x.email.toLowerCase()===email.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Ese correo ya está registrado en esta empresa.'}); return; }
-              const payload={ company_id:this.state.empresaId, name, email, default_field:(f.defaultField||null)||null };
+              if(email && list.some(x=>(x.email||'').toLowerCase()===email.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Ese correo ya está registrado en esta empresa.'}); return; }
+              const payload={ company_id:this.state.empresaId, name, email:email||null, role:f.role===BOARD_EXT.CONTACT_ROLE.pm?BOARD_EXT.CONTACT_ROLE.pm:null, default_field:(f.defaultField||null)||null };
               if(m.mode===MODAL_MODE.create){
                 const maxOrder=list.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
                 const { error } = await sb.from(TABLE.companyContacts).insert({ id:this.gid(ID_PREFIX.contact), sort_order:maxOrder+1, ...payload });
@@ -4556,7 +4556,7 @@
               const meta = k.defaultField===EMAIL_FIELD.to ? ['Para','var(--gp-cyan)','var(--gp-cyan-16)']
                          : k.defaultField===EMAIL_FIELD.cc ? ['CC','var(--gp-violet)','var(--gp-violet-16)']
                          : ['Manual','var(--gp-muted)','var(--gp-steel-14)'];
-              return { name:k.name, email:k.email, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
+              return { name:k.name, email:k.email||'Sin correo', isPm:k.role===BOARD_EXT.CONTACT_ROLE.pm, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
                        edit:()=>this.editContacto(k.id), del:()=>this.delContacto(k.id) };
             });
             R.addContacto=()=>this.addContacto();
@@ -4958,7 +4958,7 @@
               [MODAL.environment]:[{label:'Código',key:'code',kind:FIELD_KIND.text,placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:FIELD_KIND.text,placeholder:'Ej: Producción'},{label:'Carpeta de despliegue',key:'deployFolder',kind:FIELD_KIND.text,placeholder:'Ej: Despliegues40'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:FIELD_KIND.select,options:stageOptions}],
               [MODAL.server]:[{label:'Código',key:'code',kind:FIELD_KIND.text,placeholder:'Ej: APPS, DMZ, MZ'},{label:'IP',key:'ip',kind:FIELD_KIND.text,placeholder:'Ej: 172.30.100.11'}],
               [MODAL.instruction]:[{label:'Texto de la instrucción',key:'text',kind:FIELD_KIND.area,placeholder:'Ej: por favor conservar carpeta logs'}],
-              [MODAL.contact]:[{label:'Nombre',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: Pilar Zamora'},{label:'Correo',key:'email',kind:FIELD_KIND.text,placeholder:'nombre@empresa.com'},{label:'Va por defecto en',key:'defaultField',kind:FIELD_KIND.select,options:[{value:'',label:'— No premarcado'},{value:EMAIL_FIELD.to,label:'Para'},{value:EMAIL_FIELD.cc,label:'CC'}]}],
+              [MODAL.contact]:[{label:'Nombre',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: Pilar Zamora'},{label:'Correo (opcional)',key:'email',kind:FIELD_KIND.text,placeholder:'nombre@empresa.com'},{label:'Rol',key:'role',kind:FIELD_KIND.select,options:[{value:'',label:'Sin rol'},{value:BOARD_EXT.CONTACT_ROLE.pm,label:'PM'}]},{label:'Va por defecto en',key:'defaultField',kind:FIELD_KIND.select,options:[{value:'',label:'— No premarcado'},{value:EMAIL_FIELD.to,label:'Para'},{value:EMAIL_FIELD.cc,label:'CC'}]}],
               [MODAL.deployable]:[{label:'Nombre de despliegue',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: AssistanceTySApi'},{label:'Tipo',key:'kind',kind:FIELD_KIND.select,options:[{value:DEPLOYABLE_KIND.api,label:'API'},{value:DEPLOYABLE_KIND.app,label:'App'},{value:DEPLOYABLE_KIND.gateway,label:'Gateway'}]},{label:'Servidor',key:'serverId',kind:FIELD_KIND.select,options:servidorOptions},{label:'Puerto (opcional)',key:'port',kind:FIELD_KIND.text,placeholder:'Ej: 1801 — vacío para instaladores'}],
             };
             R.formFields=(fields[md.type]||[]).map(fd=>{
@@ -5059,7 +5059,7 @@
               const ambs=(emp&&emp.ambientes)||[];
               const deps=(emp&&emp.desplegables)||[];
               const proys=(emp&&emp.proyectos)||[];
-              const ctos=(emp&&emp.contactos)||[];
+              const ctos=BOARD_EXT.emailableContacts(emp&&emp.contactos);
               const srvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ srvById[x.id]=x; });
               const sel=f.itemIds||[];
               const ambSel=ambs.find(a=>a.id===f.envId);
