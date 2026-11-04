@@ -4527,7 +4527,7 @@
           R.redocRef=(el)=>{ this._redocEl=el; };
           R.redocContainerRef=(el)=>{ this._redocContainerEl=el; };
 
-          const empresaLogos={ coltanques:'./assets/logos/coltanques.svg', tecno:'./assets/logos/tecno.svg' };
+          const empresaLogos={ coltanques:'./assets/logos/coltanques.svg', tecno:'./assets/logos/tecno.svg', d1:'./assets/logos/d1.png', 'tiendas d1':'./assets/logos/d1.png' };
           const logoDe=e=>empresaLogos[(e.nombre||'').trim().toLowerCase()]||'';
           R.empresasList=s.data.map(e=>({ id:e.id,nombre:e.nombre,mono:e.mono,color:e.color, logo:logoDe(e), proyectosLabel:`${e.proyectos.length} proyecto${e.proyectos.length===1?'':'s'}`, open:()=>this.openEmpresa(e.id) }));
 
