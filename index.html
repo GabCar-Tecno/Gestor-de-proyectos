@@ -29,6 +29,7 @@
       })();
     </script>
     <script src="./constants.js"></script>
+    <script src="./boardExtended.js"></script>
     <script src="./support.js"></script>
     <script>
       try {
@@ -768,6 +769,70 @@
           }
           .master-cell-label {
             display: none;
+          }
+          @media (min-width: 761px) {
+            .master-table.master-table--extended {
+              overflow-x: auto;
+            }
+            .master-table--extended .master-table-head,
+            .master-table--extended .master-row {
+              grid-template-columns: 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
+              min-width: 2240px;
+              box-sizing: content-box;
+              gap: 12px;
+            }
+            .master-scroll-top {
+              position: relative;
+              height: 12px;
+              margin-bottom: 8px;
+              border-radius: 8px;
+              background: var(--gp-fog);
+              border: 1px solid var(--gp-cloud);
+              cursor: pointer;
+              touch-action: none;
+            }
+            .master-scroll-thumb {
+              position: absolute;
+              top: 1px;
+              bottom: 1px;
+              left: 0;
+              width: 30%;
+              border-radius: 8px;
+              background: #b7c2d2;
+              cursor: grab;
+            }
+            .master-scroll-thumb:hover,
+            .master-scroll-top.dragging .master-scroll-thumb {
+              background: #95a3b8;
+            }
+            .master-table.master-table--extended {
+              scrollbar-width: thin;
+              scrollbar-color: #b7c2d2 transparent;
+            }
+            .master-table--extended::-webkit-scrollbar { height: 10px; }
+            .master-table--extended::-webkit-scrollbar-track { background: var(--gp-fog); border-radius: 8px; }
+            .master-table--extended::-webkit-scrollbar-thumb { background: #b7c2d2; border-radius: 8px; border: 2px solid var(--gp-fog); }
+            .master-table--extended::-webkit-scrollbar-thumb:hover { background: #95a3b8; }
+            .master-table--extended .master-cell-observations {
+              order: 99;
+            }
+            .master-table--extended { --sticky-bg: var(--gp-wisp); }
+            .master-table--extended .master-table-head { --sticky-bg: var(--gp-fog); }
+            .master-table--extended .master-row:hover { --sticky-bg: var(--gp-mist); }
+            .master-board-light .master-table--extended { --sticky-bg: var(--gp-fog); }
+            .master-board-light .master-table--extended .master-table-head { --sticky-bg: var(--gp-vapor); }
+            .master-board-light .master-table--extended .master-row:hover { --sticky-bg: var(--gp-frost); }
+            .master-table--extended .master-sticky {
+              position: sticky;
+              z-index: 1;
+              align-self: stretch;
+              display: flex;
+              align-items: center;
+              background: var(--sticky-bg);
+              box-shadow: 12px 0 0 var(--sticky-bg);
+            }
+            .master-table--extended .master-sticky-1 { left: 0; }
+            .master-table--extended .master-sticky-2 { left: 142px; }
           }
           .master-cell-main {
             min-width: 0;
@@ -1809,7 +1874,7 @@
                 toggleMaestroStatusMenu="{{ toggleMaestroStatusMenu }}" maestroStatusMenuOpen="{{ maestroStatusMenuOpen }}"
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
-                maestroEmpty="{{ maestroEmpty }}" icons="{{ icons }}"
+                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
               />
             </sc-if>
 
@@ -2477,6 +2542,90 @@
         isDev(){ return this.state.profileRole===ROLE.dev||this.isPM(); }
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
+        canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
+        extendedDisplay(company,req){
+          const byId={}; ((company&&company.contactos)||[]).forEach(c=>{ byId[c.id]=c; });
+          const day=v=>v?this.parseLocalDate(v).toLocaleDateString(LOCALE):'—';
+          const pm=req.pmContactId&&byId[req.pmContactId];
+          const d={ pmEntrega:pm?pm.name:'—', fechaSolicitud:day(req.fechaSolicitud), fechaEntregaEstimacion:day(req.fechaEntregaEstimacion),
+            fechaAprobacionEstimacion:day(req.fechaAprobacionEstimacion), fechaInicioDesarrollo:day(req.fechaInicioDesarrollo), fechaEntregaPruebas:day(req.fechaEntregaPruebas),
+            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:req.horas!==''&&req.horas!=null?String(req.horas):'—',
+            facturadoTxt:BOARD_EXT.formatInvoiced(req.facturado,req.mesFacturado,LOCALE), facturadoColor:req.facturado?'var(--gp-success)':'var(--gp-muted-3)' };
+          d.items=[['PM Entrega',d.pmEntrega],['Fecha de solicitud',d.fechaSolicitud],['Fecha entrega estimación',d.fechaEntregaEstimacion],['Fecha aprobación estimación',d.fechaAprobacionEstimacion],
+            ['Fecha inicio desarrollo',d.fechaInicioDesarrollo],['Fecha real entrega a pruebas',d.fechaEntregaPruebas],['Facturado',d.facturadoTxt]].map(([label,value])=>({label,value}));
+          return d;
+        }
+        maestroScrollParts(){
+          const table=document.querySelector('.master-table--extended'), track=document.querySelector('.master-scroll-top');
+          const thumb=track&&track.querySelector('.master-scroll-thumb');
+          return table&&track&&thumb ? {table,track,thumb} : null;
+        }
+        syncMaestroThumb(){
+          const p=this.maestroScrollParts(); if(!p) return;
+          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth, trackW=track.clientWidth;
+          track.style.visibility=max>0?'visible':'hidden';
+          if(max<=0||!trackW) return;
+          const thumbW=Math.max(40,trackW*table.clientWidth/table.scrollWidth);
+          thumb.style.width=thumbW+'px';
+          thumb.style.transform='translateX('+((trackW-thumbW)*table.scrollLeft/max)+'px)';
+        }
+        startMaestroThumbDrag(e){
+          const p=this.maestroScrollParts(); if(!p) return;
+          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth; if(max<=0) return;
+          e.preventDefault();
+          const trackW=track.clientWidth, thumbW=thumb.offsetWidth, travel=Math.max(1,trackW-thumbW);
+          if(e.target!==thumb){
+            const x=e.clientX-track.getBoundingClientRect().left-thumbW/2;
+            table.scrollLeft=Math.min(max,Math.max(0,x/travel*max));
+          }
+          const startX=e.clientX, startLeft=table.scrollLeft;
+          track.classList.add('dragging');
+          const move=ev=>{ table.scrollLeft=Math.min(max,Math.max(0,startLeft+(ev.clientX-startX)/travel*max)); };
+          const up=()=>{ track.classList.remove('dragging'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+          window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+        }
+        reqFormCompany(m,f){ return m&&m.global ? (this.state.data||[]).find(c=>c.id===(f&&f.empresaId))||null : this.empresa()||null; }
+        pmPickerView(company,form){
+          const contacts=(company&&company.contactos)||[];
+          const selected=contacts.find(c=>c.id===form.pmContactId)||null;
+          const editing=form.pmQuery!==undefined, query=editing?form.pmQuery:'';
+          const matches=editing?BOARD_EXT.filterPmContacts(contacts,query).slice(0,8):[];
+          const canAdd=editing&&!!query.trim()&&!BOARD_EXT.findPmContactByName(contacts,query);
+          return { value:editing?query:(selected?selected.name:''), open:editing&&(matches.length>0||canAdd),
+            options:matches.map(c=>({label:c.name, pick:()=>this.pickPmContact(c.id)})),
+            canAdd, addLabel:'Agregar «'+query.trim()+'» como PM', add:()=>this.createPmContact(company&&company.id,query),
+            hasValue:!!selected||editing, clear:()=>this.pickPmContact(''),
+            onInput:e=>this.setPmQuery(e.target.value), onFocus:()=>{ if(!editing) this.setPmQuery(''); },
+            onKeyDown:e=>{ if(e.key==='Enter'){ e.preventDefault(); const exact=BOARD_EXT.findPmContactByName(contacts,query); if(exact) this.pickPmContact(exact.id); else if(canAdd) this.createPmContact(company&&company.id,query); } if(e.key==='Escape') this.setState(s=>({form:{...s.form,pmQuery:undefined}})); } };
+        }
+        monthPickerView(form){
+          const now=new Date(), year=form.mesPickerYear||BOARD_EXT.yearOf(form.mesFacturado,now.getFullYear());
+          const todayValue=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+          const set=patch=>this.setState(s=>({form:{...s.form,...patch}}));
+          const monthText=form.mesFacturado?BOARD_EXT.formatMonth(form.mesFacturado,LOCALE):'';
+          return { label:monthText?monthText.charAt(0).toUpperCase()+monthText.slice(1):'Selecciona el mes', hasValue:!!form.mesFacturado,
+            labelColor:form.mesFacturado?'var(--gp-text)':'var(--gp-muted-2)', open:!!form.mesPickerOpen, year:String(year),
+            toggle:()=>set({mesPickerOpen:!form.mesPickerOpen, mesPickerYear:year}),
+            prev:()=>set({mesPickerYear:year-1}), next:()=>set({mesPickerYear:year+1}),
+            months:BOARD_EXT.monthGrid(year,form.mesFacturado).map(m=>({ label:m.short, pick:()=>set({mesFacturado:m.value,mesPickerOpen:false}),
+              bg:m.selected?'var(--gp-cyan)':'transparent', color:m.selected?'var(--gp-white)':'var(--gp-text)', weight:m.selected?700:500,
+              border:m.value===todayValue&&!m.selected?'var(--gp-cyan-40)':'transparent' })) };
+        }
+        setPmQuery(q){ this.setState(s=>({form:{...s.form,pmQuery:q}})); }
+        pickPmContact(id){ this.setState(s=>({form:{...s.form,pmContactId:id||'',pmQuery:undefined}})); }
+        setFacturado(on){ this.setState(s=>({form:{...s.form,facturado:!!on,mesFacturado:on?s.form.mesFacturado||'':''}})); }
+        async createPmContact(companyId,name){
+          const clean=String(name||'').replace(/\s+/g,' ').trim(); if(!clean||!companyId||!this.isPM()) return;
+          const company=(this.state.data||[]).find(c=>c.id===companyId); if(!company) return;
+          const existing=BOARD_EXT.findPmContactByName(company.contactos,clean);
+          if(existing){ this.pickPmContact(existing.id); return; }
+          const maxOrder=(company.contactos||[]).reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
+          const id=this.gid(ID_PREFIX.contact);
+          const { error } = await this._sb.from(TABLE.companyContacts).insert({ id, company_id:companyId, name:clean, email:null, role:BOARD_EXT.CONTACT_ROLE.pm, default_field:null, sort_order:maxOrder+1 });
+          if(error){ this.setState({modalErr:'No se pudo crear el PM: '+error.message}); return; }
+          await this.loadData();
+          this.pickPmContact(id);
+        }
         groupRowsBy(rows,key){ const groups=new Map(); (rows||[]).forEach(row=>{ const group=groups.get(row[key]); if(group) group.push(row); else groups.set(row[key],[row]); }); return groups; }
         indexById(rows){ const index=new Map(); (rows||[]).forEach(row=>{ if(!index.has(row.id)) index.set(row.id,row); }); return index; }
         deployFinderByEnv(deploys){
@@ -2540,7 +2689,7 @@
             const ambientes=rowsFor(envsOf,c.id).sort(byOrder)
               .map(e=>({id:e.id, code:e.code, label:e.label||e.code, stage:e.stage||'', sortOrder:e.sort_order||0, deployFolder:e.deploy_folder||''}));
             return {
-            id:c.id, nombre:c.name, mono:c.initial, color:c.color, ambientes,
+            id:c.id, nombre:c.name, mono:c.initial, color:c.color, extendedBoard:!!c.extended_board, statusLabels:c.status_labels||{}, ambientes,
             servidores:rowsFor(serversOf,c.id).sort(byOrder)
               .map(x=>({id:x.id, code:x.code, ip:x.ip, sortOrder:x.sort_order||0})),
             desplegables:rowsFor(deployablesOf,c.id).sort(byOrder)
@@ -2549,7 +2698,7 @@
             instrucciones:rowsFor(instructionsOf,c.id).sort(byOrder)
               .map(x=>({id:x.id, text:x.text, sortOrder:x.sort_order||0})),
             contactos:rowsFor(contactsOf,c.id).sort(byOrder)
-              .map(x=>({id:x.id, name:x.name, email:x.email, defaultField:x.default_field||'', sortOrder:x.sort_order||0})),
+              .map(x=>({id:x.id, name:x.name, email:x.email||'', role:x.role||'', defaultField:x.default_field||'', sortOrder:x.sort_order||0})),
             proyectos:rowsFor(projectsOf,c.id).map(p=>{
               const byAmb=this.deployFinderByEnv(rowsFor(deploysOf,p.id));
               const reqs=rowsFor(reqsOf,p.id).map(r=>{
@@ -2557,7 +2706,7 @@
                 const owners=this.parseOwners(r.owner);
                 return {
                 id:r.id, codigos, codigo:codigos[0]||r.code||'', titulo:r.title, responsable:owners.join(', ')||DB_DEFAULT.owner, responsables:owners, estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
-                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'',
+                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'', ...BOARD_EXT.mapExtendedRow(r),
                 documentos:rowsFor(docsOf,r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
                 despliegues:rowsFor(reqDeploysOf,r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
                 bloqueantes:rowsFor(blockersOf,r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
@@ -2677,7 +2826,7 @@
           if(this._statusIndexFor!==list){ this._statusIndexFor=list; this._statusIndex=this.indexById(list); }
           return this._statusIndex.get(id);
         }
-        estMeta(e){ const st=this.statusById(e); return st ? [st.label||e, st.color||'var(--gp-muted-2)', st.color_bg||'var(--gp-steel-16)'] : ['—','var(--gp-muted-2)','var(--gp-steel-16)']; }
+        estMeta(e){ const st=this.statusById(e); return st ? [BOARD_EXT.statusLabel(this.empresa(),e,st.label||e), st.color||'var(--gp-muted-2)', st.color_bg||'var(--gp-steel-16)'] : ['—','var(--gp-muted-2)','var(--gp-steel-16)']; }
         statusOrder(){ const list=(this.state.statuses||[]); const flow=list.filter(st=>!st.is_lateral).map(st=>st.id); const lat=list.filter(st=>st.is_lateral).map(st=>st.id); return {flow, lat, canonical:flow.concat(lat), reversed:flow.slice().reverse().concat(lat)}; }
         iniciales(n){ return (this.parseOwners(n)[0]||n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
         parseOwners(value){ return Array.isArray(value)?value.map(x=>String(x).trim()).filter(Boolean):String(value||'').split(/\s*[,;]\s*/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==DB_DEFAULT.owner.toLowerCase()); }
@@ -2779,7 +2928,7 @@
         addReqGlobal(){
           if(!this.isDev()) return;
           const first=this.statusOrder().flow[0]||REQ_STATUS.development;
-          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}});
+          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}});
         }
         openReqFromMaster(companyId, projectId, reqId){
           const company=(this.state.data||[]).find(c=>c.id===companyId);
@@ -2788,7 +2937,7 @@
           if(!company||!project||!req) return;
           const code=this.reqCodeLabel(req)||'Sin codigo', title=(req.titulo||'').trim()||code;
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
-          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado};
+          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado,...BOARD_EXT.extendedFormFromReq(req)};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:VIEW.master};
           const env=this.reqEnvByStageElseLatestDeploy(company,project,req);
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
@@ -2828,11 +2977,15 @@
               ['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
               ['Horas estimadas',10],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
             ];
+            const extCompany=this.canSeeExtended(this.empresa())?this.empresa():null;
+            const extContacts={}; ((extCompany&&extCompany.contactos)||[]).forEach(c=>{ extContacts[c.id]=c; });
+            if(extCompany) BOARD_EXT.EXTENDED_EXCEL_COLUMNS.forEach(([header,width,kind])=>cols.push(kind==='date'?[header,width,EXCEL.dateFormat]:[header,width]));
             const rows=items.map(({project,req})=>{
               const codes=this.reqCodesOf(req), code=codes.length>1?codes.join(', '):(codes[0]||''), horas=req.horas===''||req.horas==null?null:Number(req.horas);
               return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
                 (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
-                day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt)];
+                day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt),
+                ...(extCompany?BOARD_EXT.extendedExcelValues(req,extContacts).map((v,i)=>BOARD_EXT.EXTENDED_EXCEL_COLUMNS[i][2]==='date'?day(v):v):[])];
             });
             const ws=XLSX.utils.aoa_to_sheet([cols.map(c=>c[0]),...rows]);
             cols.forEach(([,,fmt],c)=>{ if(fmt) rows.forEach((_,r)=>{ const cell=ws[XLSX.utils.encode_cell({r:r+1,c})]; if(cell&&cell.t===EXCEL.numberCellType) cell.z=fmt; }); });
@@ -2959,8 +3112,8 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:MODAL.project,mode:MODAL_MODE.create,title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:MODAL.document,mode:MODAL_MODE.create,title:'Agregar documento',form:{nombre:'',tipo:DB_DEFAULT.documentType,url:''}}); this.setState({documentFileName:''}); }
         setDocumentFile(e){
           this._documentFile=e.target.files&&e.target.files[0]||null;
@@ -3042,8 +3195,8 @@
           }catch(e){ this.setState({saveStatus:SAVE_STATUS.error}); console.error(e); }
           finally{ this._busy=false; }
         }
-        addContacto(){ if(!this.isDev()) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.create,title:'Nuevo contacto',form:{name:'',email:'',defaultField:''}}); }
-        editContacto(id){ if(!this.isDev()) return; const k=((this.empresa()||{}).contactos||[]).find(x=>x.id===id); if(!k) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.edit,id,title:'Editar contacto',form:{name:k.name||'',email:k.email||'',defaultField:k.defaultField||''}}); }
+        addContacto(){ if(!this.isDev()) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.create,title:'Nuevo contacto',form:{name:'',email:'',role:'',defaultField:''}}); }
+        editContacto(id){ if(!this.isDev()) return; const k=((this.empresa()||{}).contactos||[]).find(x=>x.id===id); if(!k) return; this.openModal({type:MODAL.contact,mode:MODAL_MODE.edit,id,title:'Editar contacto',form:{name:k.name||'',email:k.email||'',role:k.role||'',defaultField:k.defaultField||''}}); }
         async delContacto(id){
           if(!this.isDev()||this._busy) return;
           this._busy=true;
@@ -3102,7 +3255,7 @@
           const ambs=emp.ambientes||[];
           if(!ambs.length){ this.setState({modal:{type:MODAL.notice,title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de armar correos.'}, form:{}}); return; }
           if(!(emp.desplegables||[]).length){ this.setState({modal:{type:MODAL.notice,title:'Sin desplegables',mensaje:'Crea los desplegables de esta empresa antes de armar correos.'}, form:{}}); return; }
-          const ctos=emp.contactos||[];
+          const ctos=BOARD_EXT.emailableContacts(emp.contactos);
           this.openModal({type:MODAL.email,mode:MODAL_MODE.create,title:'Enviar correo despliegue',form:{
             envId: ambs[0].id,
             proyectoIds: [],
@@ -3201,7 +3354,7 @@
             projectNames: nombres, servers: emp.servidores||[], items,
             nota: f.nota||'', hour: new Date().getHours(),
           });
-          const byId={}; (emp.contactos||[]).forEach(k=>{ byId[k.id]=k; });
+          const byId={}; BOARD_EXT.emailableContacts(emp.contactos).forEach(k=>{ byId[k.id]=k; });
           const mails=(ids)=>(ids||[]).map(id=>(byId[id]||{}).email).filter(Boolean);
           const cuerpo = (f.cuerpoEditado==null) ? built.body : f.cuerpoEditado;
           return { subject:built.subject, body:cuerpo, to:mails(f.toIds), cc:mails(f.ccIds), itemsCount:items.length };
@@ -3280,16 +3433,20 @@
               if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
               const prevEstado = m.mode===MODAL_MODE.edit ? ((this.req()||{}).estado) : null;
               const statusChanged = m.mode===MODAL_MODE.create ? true : (prevEstado !== f.estado);
+              const extOn=this.canSeeExtended(this.reqFormCompany(m,f));
+              const extErr=extOn?BOARD_EXT.validateExtended(f):null;
+              if(extErr){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:extErr}); return; }
+              const extPayload=extOn?BOARD_EXT.extendedPayload(f):null;
               const targetAmb = ((this.empresa()||{}).ambientes||[]).find(a=>a.stage===f.estado);
               if(!m.global && targetAmb && statusChanged){
                 this.setState({saveStatus:SAVE_STATUS.idle});
-                this.openPromoteConfirm(m, f, targetAmb);
+                this.openPromoteConfirm(m, {...f, extPayload}, targetAmb);
                 return;
               }
               const hoursValue=f.horas===''||f.horas==null?null:Number(f.horas);
               if(hoursValue!==null&&(!Number.isFinite(hoursValue)||hoursValue<0)){ this.setState({saveStatus:SAVE_STATUS.idle,modalErr:'Las horas deben ser un número igual o mayor que cero.'}); return; }
               const ownerNames=(f.responsables||[]).filter(Boolean);
-              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue };
+              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue, ...(extPayload||{}) };
               if(statusChanged) payload.status_updated_at=new Date().toISOString();
               let reqId=m.id;
               const creating=m.mode===MODAL_MODE.create;
@@ -3412,10 +3569,10 @@
             } else if(t===MODAL.contact){
               const name=(f.name||'').trim(); const email=(f.email||'').trim();
               if(!name){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El nombre es obligatorio.'}); return; }
-              if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Escribe un correo válido. Los alias internos de Outlook no funcionan.'}); return; }
+              if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Escribe un correo válido. Los alias internos de Outlook no funcionan.'}); return; }
               const list=(this.empresa()||{}).contactos||[];
-              if(list.some(x=>x.email.toLowerCase()===email.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Ese correo ya está registrado en esta empresa.'}); return; }
-              const payload={ company_id:this.state.empresaId, name, email, default_field:(f.defaultField||null)||null };
+              if(email && list.some(x=>(x.email||'').toLowerCase()===email.toLowerCase() && x.id!==m.id)){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Ese correo ya está registrado en esta empresa.'}); return; }
+              const payload={ company_id:this.state.empresaId, name, email:email||null, role:f.role===BOARD_EXT.CONTACT_ROLE.pm?BOARD_EXT.CONTACT_ROLE.pm:null, default_field:(f.defaultField||null)||null };
               if(m.mode===MODAL_MODE.create){
                 const maxOrder=list.reduce((mx,x)=>Math.max(mx,x.sortOrder||0),0);
                 const { error } = await sb.from(TABLE.companyContacts).insert({ id:this.gid(ID_PREFIX.contact), sort_order:maxOrder+1, ...payload });
@@ -3485,7 +3642,7 @@
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
                 fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'',
                 fechaPasoProduccion:f.fechaPasoProduccion!==undefined?f.fechaPasoProduccion:(req&&req.fechaPasoProduccion)||'',
-                horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null },
+                horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null, extPayload:f.extPayload||null },
               projectUrl:envRow.url||'Sin URL registrada', projectVersion:envRow.version||'Sin version registrada', valueSource:source },
             form:{url,version}, modalErr:'',
           });
@@ -3500,7 +3657,7 @@
             const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[])));
             if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
             if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
-            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso };
+            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso, ...(rp.extPayload||{}) };
             let reqId=rp.id;
             const creating=rp.mode===MODAL_MODE.create;
             if(creating){
@@ -4015,6 +4172,7 @@
               horas:Number.isFinite(hours)?hours:'',
               responsables:pm?[pm]:[],
               estado:this.estimationStatusId(),
+              ...BOARD_EXT.emptyExtendedForm(),
             },
           });
         }
@@ -4454,7 +4612,7 @@
             const q=(s.maestroSearch||'').trim().toLocaleLowerCase(LOCALE);
             const stateText=(id)=>{const st=this.statusById(id);return ((st&&st.label)||id||'').toLocaleLowerCase(LOCALE);};
             const stateGroup=(id)=>{const x=stateText(id);return x.includes(STATUS_LABEL_HINT.blocked)?MASTER_STATUS_GROUP.blocked:x.includes(STATUS_LABEL_HINT.estimation)?MASTER_STATUS_GROUP.estimation:x.includes(STATUS_LABEL_HINT.production)?MASTER_STATUS_GROUP.production:x.includes(STATUS_LABEL_HINT.userTesting)||x.includes(STATUS_LABEL_HINT.testing)||x===STATUS_LABEL_HINT.qa?MASTER_STATUS_GROUP.userTesting:x.includes(STATUS_LABEL_HINT.development)?MASTER_STATUS_GROUP.development:MASTER_STATUS_GROUP.other;};
-            const statusOptions=[{value:FILTER_ALL,label:'Todos los estados',dot:'var(--gp-dot)'},...(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id,dot:st.color||'var(--gp-dot)'}))];
+            const statusOptions=[{value:FILTER_ALL,label:'Todos los estados',dot:'var(--gp-dot)'},...(s.statuses||[]).map(st=>({value:st.id,label:BOARD_EXT.statusLabel(this.empresa(),st.id,st.label||st.id),dot:st.color||'var(--gp-dot)'}))];
             const listedProjects=new Set();
             const projectOptions=all.filter(({project})=>!listedProjects.has(project.id)&&listedProjects.add(project.id)).map(({company,project})=>({value:project.id,label:project.nombre+' · '+company.nombre})).sort((a,b)=>a.label.localeCompare(b.label,LOCALE));
             const allProjectOptions=[{value:FILTER_ALL,label:'Todas las aplicaciones'},...projectOptions];
@@ -4491,6 +4649,14 @@
               {label:'Producción',count:stateCount(MASTER_STATUS_GROUP.production),color:'var(--gp-success)',tint:'var(--gp-metric-prod-tint)'},
               {label:'Bloqueados',count:stateCount(MASTER_STATUS_GROUP.blocked),color:'var(--gp-metric-block)',tint:'var(--gp-metric-block-tint)'},
             ];
+            R.maestroExtended=this.canSeeExtended(this.empresa());
+            R.maestroTableClass=R.maestroExtended?'master-table--extended':'';
+            R.maestroTopScroll=e=>this.startMaestroThumbDrag(e);
+            R.maestroTableScroll=()=>{ if(R.maestroExtended) this.syncMaestroThumb(); };
+            if(R.maestroExtended){
+              requestAnimationFrame(()=>requestAnimationFrame(()=>this.syncMaestroThumb()));
+              if(!this._maestroResizeBound){ this._maestroResizeBound=true; window.addEventListener('resize',()=>this.syncMaestroThumb()); }
+            }
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:envIndexOf.get(company).get(d.environmentId)}));
@@ -4507,13 +4673,14 @@
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'var(--gp-red)':'var(--gp-muted-2)', deliveryColor:req.fechaEntregaUsuario||userDelivery?'var(--gp-success)':'var(--gp-muted-3)',
                 openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:()=>this.openReqFromMaster(company.id,project.id,req.id),
+                ext:R.maestroExtended?this.extendedDisplay(company,req):{},
               };
             });
             R.maestroEmpty=filtered.length===0;
           }
 
           R.viewApidoc=v===VIEW.apiDoc;
-          R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : '1240px');
+          R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : (v===VIEW.master&&R.maestroExtended ? '1600px' : '1240px'));
           R.apiUrlVal=s.apiUrlInput||'';
           R.onApiUrl=(e)=>this.setState({apiUrlInput:e.target.value});
           R.saveApiUrl=()=>this.saveApiUrl();
@@ -4554,7 +4721,7 @@
               const meta = k.defaultField===EMAIL_FIELD.to ? ['Para','var(--gp-cyan)','var(--gp-cyan-16)']
                          : k.defaultField===EMAIL_FIELD.cc ? ['CC','var(--gp-violet)','var(--gp-violet-16)']
                          : ['Manual','var(--gp-muted)','var(--gp-steel-14)'];
-              return { name:k.name, email:k.email, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
+              return { name:k.name, email:k.email||'Sin correo', isPm:k.role===BOARD_EXT.CONTACT_ROLE.pm, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
                        edit:()=>this.editContacto(k.id), del:()=>this.delContacto(k.id) };
             });
             R.addContacto=()=>this.addContacto();
@@ -4680,6 +4847,7 @@
               code:this.reqCodeLabel(req)||this.fallbackReqCode(idx), titulo:req.titulo, responsable:req.responsable, iniciales:this.iniciales(req.responsable),
               descripcionCambios:(req.descripcionCambios||'').trim()||'Sin descripción registrada', observaciones:(req.observaciones||'').trim()||'Sin observaciones',
               fechaEntregaUsuario:req.fechaEntregaUsuario?this.parseLocalDate(req.fechaEntregaUsuario).toLocaleDateString(LOCALE):'Sin fecha registrada',
+              extShow:this.canSeeExtended(emp), extItems:this.canSeeExtended(emp)?this.extendedDisplay(emp,req).items:[],
               estLabel:m[0],estColor:m[1],estBg:m[2],hasStatusDate:!!req.estadoActualizadoAt,statusDate:req.estadoActualizadoAt?new Date(req.estadoActualizadoAt).toLocaleString(LOCALE):'',
               documentos:req.documentos.map(d=>({nombre:d.nombre,tipo:d.tipo,iconHref:this.docIcon(d.tipo),open:()=>this.openDoc(d.url),del:(e)=>{e.stopPropagation();this.delDoc(d.id);}})),
               despliegues:req.despliegues.map(d=>{
@@ -4936,19 +5104,31 @@
               R.recursoOpenLabel = 'Abrir en Drive';
             }
             const ch=(k)=>(e)=>this.setForm(k,e.target.value);
-            const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:st.label||st.id}));
+            const estadoCompany=md.type===MODAL.requirement?this.reqFormCompany(md,s.form):emp;
+            const estadoOptions=(s.statuses||[]).map(st=>({value:st.id,label:BOARD_EXT.statusLabel(estadoCompany,st.id,st.label||st.id)}));
             const ambienteOptions=((emp&&emp.ambientes)||[]).map(a=>({value:a.id,label:(a.label&&a.label!==a.code)?(a.label+' ('+a.code+')'):a.code}));
             const servidorOptions=((emp&&emp.servidores)||[]).map(x=>({value:x.id,label:x.code+' — '+x.ip}));
             const stageOptions=[{value:'',label:'— Sin etapa'}].concat(estadoOptions);
             const companyOptions=[{value:'',label:'Selecciona una empresa'}].concat((s.data||[]).map(c=>({value:c.id,label:c.nombre})));
             const masterCompany=(s.data||[]).find(c=>c.id===s.form.empresaId);
             const masterProjectOptions=[{value:'',label:masterCompany?'Selecciona un proyecto':'Selecciona primero una empresa'}].concat(((masterCompany&&masterCompany.proyectos)||[]).map(p=>({value:p.id,label:p.nombre})));
+            const reqExtCompany=md.type===MODAL.requirement?this.reqFormCompany(md,s.form):null;
+            const reqExtFields=reqExtCompany&&this.canSeeExtended(reqExtCompany)?[
+              {label:'PM Entrega',key:'pmContactId',kind:FIELD_KIND.pmPicker},
+              {label:'Fecha de solicitud',key:'fechaSolicitud',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha entrega estimación',key:'fechaEntregaEstimacion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha aprobación estimación',key:'fechaAprobacionEstimacion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha inicio desarrollo',key:'fechaInicioDesarrollo',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Fecha real entrega a pruebas',key:'fechaEntregaPruebas',kind:FIELD_KIND.text,type:INPUT_TYPE.date},
+              {label:'Facturado',key:'facturado',kind:FIELD_KIND.checkbox},
+              ...(s.form.facturado?[{label:'Mes de facturación',key:'mesFacturado',kind:FIELD_KIND.monthPicker}]:[]),
+            ]:[];
             const responsibleOptions=(s.devProfiles||[]).map(p=>({value:p.label,label:p.label}));
             (s.form.responsables||[]).filter(name=>!responsibleOptions.some(o=>o.value===name)).forEach(name=>responsibleOptions.push({value:name,label:name+' (ya no aparece como DEV)'}));
             const fields={
               [MODAL.company]:[{label:'Nombre de la empresa',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Coltanques'}],
               [MODAL.project]:[{label:'Nombre del proyecto',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:FIELD_KIND.area,placeholder:'Breve descripción'}],
-              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions}],
+              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
               [MODAL.document]:[{label:'Nombre',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:FIELD_KIND.text,placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'}],
               [MODAL.deployment]:[{label:'Ambiente',key:'env',kind:FIELD_KIND.select,options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'},{label:'Versión / release',key:'version',kind:FIELD_KIND.text,placeholder:'v1.0.0'}],
               [MODAL.blocker]:[{label:'Descripción del bloqueante',key:'texto',kind:FIELD_KIND.area,placeholder:'¿Qué está bloqueando el avance?'}],
@@ -4956,7 +5136,7 @@
               [MODAL.environment]:[{label:'Código',key:'code',kind:FIELD_KIND.text,placeholder:'Ej: .25'},{label:'Nombre visible',key:'label',kind:FIELD_KIND.text,placeholder:'Ej: Producción'},{label:'Carpeta de despliegue',key:'deployFolder',kind:FIELD_KIND.text,placeholder:'Ej: Despliegues40'},{label:'Etapa que lo promueve (opcional)',key:'stage',kind:FIELD_KIND.select,options:stageOptions}],
               [MODAL.server]:[{label:'Código',key:'code',kind:FIELD_KIND.text,placeholder:'Ej: APPS, DMZ, MZ'},{label:'IP',key:'ip',kind:FIELD_KIND.text,placeholder:'Ej: 172.30.100.11'}],
               [MODAL.instruction]:[{label:'Texto de la instrucción',key:'text',kind:FIELD_KIND.area,placeholder:'Ej: por favor conservar carpeta logs'}],
-              [MODAL.contact]:[{label:'Nombre',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: Pilar Zamora'},{label:'Correo',key:'email',kind:FIELD_KIND.text,placeholder:'nombre@empresa.com'},{label:'Va por defecto en',key:'defaultField',kind:FIELD_KIND.select,options:[{value:'',label:'— No premarcado'},{value:EMAIL_FIELD.to,label:'Para'},{value:EMAIL_FIELD.cc,label:'CC'}]}],
+              [MODAL.contact]:[{label:'Nombre',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: Pilar Zamora'},{label:'Correo (opcional)',key:'email',kind:FIELD_KIND.text,placeholder:'nombre@empresa.com'},{label:'Rol',key:'role',kind:FIELD_KIND.select,options:[{value:'',label:'Sin rol'},{value:BOARD_EXT.CONTACT_ROLE.pm,label:'PM'}]},{label:'Va por defecto en',key:'defaultField',kind:FIELD_KIND.select,options:[{value:'',label:'— No premarcado'},{value:EMAIL_FIELD.to,label:'Para'},{value:EMAIL_FIELD.cc,label:'CC'}]}],
               [MODAL.deployable]:[{label:'Nombre de despliegue',key:'name',kind:FIELD_KIND.text,placeholder:'Ej: AssistanceTySApi'},{label:'Tipo',key:'kind',kind:FIELD_KIND.select,options:[{value:DEPLOYABLE_KIND.api,label:'API'},{value:DEPLOYABLE_KIND.app,label:'App'},{value:DEPLOYABLE_KIND.gateway,label:'Gateway'}]},{label:'Servidor',key:'serverId',kind:FIELD_KIND.select,options:servidorOptions},{label:'Puerto (opcional)',key:'port',kind:FIELD_KIND.text,placeholder:'Ej: 1801 — vacío para instaladores'}],
             };
             R.formFields=(fields[md.type]||[]).map(fd=>{
@@ -4968,7 +5148,11 @@
               const codeRows=s.form.codigos||[''];
               const storedPrincipal=md.mode===MODAL_MODE.edit ? (this.reqCodesOf(this.req())[0]||'').trim() : '';
               const selectedOwners=s.form.responsables||[];
-              return { label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
+              const isPmPicker=fd.kind===FIELD_KIND.pmPicker;
+              const pmPicker=isPmPicker?this.pmPickerView(reqExtCompany,s.form):null;
+              return { isCheckbox:fd.kind===FIELD_KIND.checkbox, checked:!!s.form[fd.key], onToggle:e=>this.setFacturado(e.target.checked),
+                isPmPicker, pm:pmPicker||{}, isMonthPicker:fd.kind===FIELD_KIND.monthPicker, mp:fd.kind===FIELD_KIND.monthPicker?this.monthPickerView(s.form):{},
+                label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type===MODAL.requirement?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type===MODAL.requirement?'var(--gp-surface)':'transparent', fieldBorder:md.type===MODAL.requirement?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
                 isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
                 codes:isCodes?codeRows.map((value,i)=>{ const locked=i===0&&!!storedPrincipal; return {value:locked?storedPrincipal:value, principal:i===0, locked, editable:!locked, onInput:e=>this.setReqCode(i,e.target.value), canRemove:!locked&&codeRows.length>1, remove:()=>this.removeReqCode(i)}; }):[],
@@ -5057,7 +5241,7 @@
               const ambs=(emp&&emp.ambientes)||[];
               const deps=(emp&&emp.desplegables)||[];
               const proys=(emp&&emp.proyectos)||[];
-              const ctos=(emp&&emp.contactos)||[];
+              const ctos=BOARD_EXT.emailableContacts(emp&&emp.contactos);
               const srvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ srvById[x.id]=x; });
               const sel=f.itemIds||[];
               const ambSel=ambs.find(a=>a.id===f.envId);

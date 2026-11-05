@@ -122,7 +122,7 @@
       discord: 'discord'
     },
     MODAL_MODE: { create: 'crear', edit: 'editar' },
-    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes' },
+    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes', checkbox: 'checkbox', pmPicker: 'pmPicker', monthPicker: 'monthPicker' },
     INPUT_TYPE: inputType,
     TABLE: {
       companies: 'companies',

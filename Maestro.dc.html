@@ -196,13 +196,25 @@
       </sc-if>
     </div>
   </div>
-  <div class="master-table">
+  <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+    ><div class="master-scroll-top" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
+      ><div class="master-scroll-thumb"></div></div
+  ></sc-if>
+  <div class="master-table {{ maestroTableClass }}" onScroll="{{ maestroTableScroll }}">
     <div class="master-table-head">
-      <span>Aplicación</span><span>#Req</span
+      <span class="master-sticky master-sticky-1">Aplicación</span><span class="master-sticky master-sticky-2">#Req</span
       ><span>Título del requerimiento</span><span>Estado</span
-      ><span>Observaciones</span
+      ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+        ><span>PM Entrega</span><span>Fecha solicitud</span><span>Entrega estimación</span
+        ><span>Aprobación estimación</span><span>Inicio desarrollo</span></sc-if
+      ><span class="master-cell-observations">Observaciones</span
       ><span>Entrega usuario</span
-      ><span>Paso a producción</span>
+      ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+        ><span>Responsables</span><span>Horas</span><span>Entrega a pruebas</span></sc-if
+      ><span>Paso a producción</span
+      ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+        ><span>Facturado</span></sc-if
+      >
     </div>
     <sc-for
       list="{{ maestroReqList }}"
@@ -214,12 +226,12 @@
         class="master-row"
         title="Abrir detalle y editar requerimiento"
       >
-        <span class="master-cell-app master-cell-main"
+        <span class="master-cell-app master-cell-main master-sticky master-sticky-1"
           ><span class="master-cell-label">Aplicación</span>{{
           r.proyecto }}</span
         >
         <span
-          class="master-cell-main"
+          class="master-cell-main master-sticky master-sticky-2"
           style="
             font-family: &quot;JetBrains Mono&quot;, monospace;
             font-size: 11.5px;
@@ -244,6 +256,19 @@
             >{{ r.estado }}</span
           ></span
         >
+        <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+          ><span class="master-cell-main" title="{{ r.ext.pmEntrega }}"
+            ><span class="master-cell-label">PM Entrega</span>{{ r.ext.pmEntrega }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Fecha solicitud</span>{{ r.ext.fechaSolicitud }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Entrega estimación</span>{{ r.ext.fechaEntregaEstimacion }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Aprobación estimación</span>{{ r.ext.fechaAprobacionEstimacion }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Inicio desarrollo</span>{{ r.ext.fechaInicioDesarrollo }}</span
+          ></sc-if
+        >
         <span
           class="master-cell-observations master-cell-main"
           title="{{ r.observaciones }}"
@@ -256,11 +281,23 @@
           ><span class="master-cell-label"
             >Entrega usuario</span
           >{{ r.fechaEntregaUsuario }}</span
+        ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+          ><span class="master-cell-main" title="{{ r.ext.responsablesTxt }}"
+            ><span class="master-cell-label">Responsables</span>{{ r.ext.responsablesTxt }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Horas</span>{{ r.ext.horasTxt }}</span
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Entrega a pruebas</span>{{ r.ext.fechaEntregaPruebas }}</span
+          ></sc-if
         ><span
           class="master-cell-main"
           style="font-size:11.5px;color:{{ r.productionDateColor }}"
           ><span class="master-cell-label">Paso a producción</span
           >{{ r.fechaPasoProduccion }}</span
+        ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
+          ><span class="master-cell-main" style="font-size:11.5px;font-weight:600;color:{{ r.ext.facturadoColor }}"
+            ><span class="master-cell-label">Facturado</span>{{ r.ext.facturadoTxt }}</span
+          ></sc-if
         >
       </button>
     </sc-for>
@@ -284,7 +321,7 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false}'>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null}'>
 class Component extends DCLogic {
 }
 </script>
