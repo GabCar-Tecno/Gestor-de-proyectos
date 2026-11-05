@@ -560,3 +560,6 @@ revoke all on table public.requirement_codes from anon, public;
 revoke all on table public.requirement_pbi_tasks from anon, public;
 grant select, insert, update, delete on table public.requirement_codes to authenticated;
 grant select, insert, update, delete on table public.requirement_pbi_tasks to authenticated;
+
+alter table public.requirements
+  add column if not exists requirement_start_date date;
