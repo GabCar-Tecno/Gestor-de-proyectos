@@ -2726,7 +2726,7 @@
                 },
                 requerimientos:reqs,
                 estimaciones:rowsFor(estimationsOf,p.id).map(e=>({
-                  id:e.id, requirementId:e.requirement_id||'', codigo:e.code||'', fecha:e.estimated_on||'', cliente:e.client_name||'', iniciativa:e.initiative_name||'',
+                  id:e.id, requirementId:e.requirement_id||'', codigo:e.code||'', fecha:e.estimated_on||'', cliente:e.client_name||'', iniciativa:e.initiative_name||'', aplicacion:e.application_name||'',
                   solicitante:e.requester_name||'', pm:e.pm_name||'', version:e.version_label||'', complexityId:e.complexity_id, formatVersion:e.format_version||ESTIMATION_DEFAULTS.formatVersion,
                   decimales:Number(e.rounding_decimals), umbral:Number(e.deviation_alert_ratio), horasDia:Number(e.daily_hours), dedicacion:Number(e.dedication),
                   estado:e.status||ESTIMATION_PHASE.created, adicional:e.additional_markdown||'',
@@ -4024,7 +4024,7 @@
             line(ESTIMATION_LINE_KIND.activity,ESTIMATION_ACTIVITY_TYPE.management,'Gestión de proyecto, sesiones con cliente, seguimiento.'),
           ];
           const estDraft={ id:this.gid(ID_PREFIX.estimation), isNew:true, dirty:false, rev:0, savedLineIds:[],
-            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
+            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:p.nombre||'', applicationName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
             versionLabel:ESTIMATION_DEFAULTS.versionLabel, complexityId:(cx.find(c=>c.id===ESTIMATION_DEFAULTS.complexityId)||cx[0]||{}).id||ESTIMATION_DEFAULTS.complexityId, estStatus:ESTIMATION_PHASE.created, requirementId:'',
             roundingDecimals:ESTIMATION_DEFAULTS.roundingDecimals, alertRatio:ESTIMATION_DEFAULTS.alertRatio, dailyHours:ESTIMATION_DEFAULTS.dailyHours, dedicationPct:ESTIMATION_DEFAULTS.dedicationPct, additionalMarkdown:'', additionalFileName:'', lines };
           this.setState(s=>({view:VIEW.estimation,estimacionId:estDraft.id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
@@ -4034,7 +4034,7 @@
           const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
           const num=v=>this.fmtNum(Number(v));
           const estDraft={ id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
-            code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, requesterName:e.solicitante, pmName:e.pm,
+            code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, applicationName:(e.aplicacion||'').trim()||p.nombre||'', requesterName:e.solicitante, pmName:e.pm,
             versionLabel:e.version, complexityId:e.complexityId, estStatus:e.estado||ESTIMATION_PHASE.created, requirementId:e.requirementId,
             roundingDecimals:String(e.decimales), alertRatio:num(e.umbral), dailyHours:num(e.horasDia), dedicationPct:num(e.dedicacion*100), additionalMarkdown:e.adicional||'', additionalFileName:'',
             lines:e.lineas.map(l=>({id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concepto,hours:l.horas==null?'':String(l.horas),autoNext:l.kind===ESTIMATION_LINE_KIND.activity&&!l.concepto})) };
@@ -4137,7 +4137,7 @@
             const sb=this._sb;
             const requirementId=d.requirementId||'';
             const header={ project_id:p.id, requirement_id:requirementId||null, code:(d.code||'').trim(), estimated_on:d.estimatedOn,
-              client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
+              client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), application_name:(d.applicationName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
               version_label:(d.versionLabel||'').trim(), complexity_id:d.complexityId, rounding_decimals:c.params.decimals,
               deviation_alert_ratio:c.params.alertRatio, daily_hours:c.params.dailyHours, dedication:c.params.dedication, additional_markdown:d.additionalMarkdown||'', updated_at:new Date().toISOString() };
             if(d.isNew){
@@ -4236,7 +4236,7 @@
             let version=this.nextVersionLabel(e.version);
             while(used.has(version.toLowerCase())) version=this.nextVersionLabel(version);
             const { error } = await sb.from(TABLE.estimations).insert({ id:newId, project_id:p.id, requirement_id:null, status:ESTIMATION_PHASE.created, code:e.codigo, format_version:e.formatVersion,
-              estimated_on:e.fecha||this.todayIso(), client_name:e.cliente, initiative_name:e.iniciativa, requester_name:e.solicitante, pm_name:e.pm,
+              estimated_on:e.fecha||this.todayIso(), client_name:e.cliente, initiative_name:e.iniciativa, application_name:(e.aplicacion||'').trim()||p.nombre||'', requester_name:e.solicitante, pm_name:e.pm,
               version_label:version, complexity_id:e.complexityId, rounding_decimals:e.decimales, deviation_alert_ratio:e.umbral, daily_hours:e.horasDia,
               dedication:e.dedicacion, additional_markdown:e.adicional||'', created_by:this.state.session.user.id, updated_at:new Date().toISOString() });
             if(error) throw error;
@@ -4463,11 +4463,11 @@
             topValues.forEach(([text,from,to])=>{ put(11,from,text,valueFont,mid,info); ws.mergeCells(11,from,12,to); paint(11,from,to,info); paint(12,from,to,info); });
             height(11,22); height(12,22);
             paint(13,2,11,info); height(13,9);
-            [['SOLICITANTE',2,3],['PM',4,5],['INICIATIVA',6,11]].forEach(([text,from,to])=>{
+            [['SOLICITANTE',2,3],['PM',4,5],['APLICACIÓN',6,11]].forEach(([text,from,to])=>{
               put(14,from,text,label,mid,info); ws.mergeCells(14,from,14,to); paint(14,from,to,info);
             });
             height(14,22);
-            [[this.exportField(d.requesterName),2,3],[this.exportField(d.pmName),4,5],[this.exportField(d.initiativeName),6,11]].forEach(([text,from,to])=>{
+            [[this.exportField(d.requesterName),2,3],[this.exportField(d.pmName),4,5],[this.exportField(d.applicationName),6,11]].forEach(([text,from,to])=>{
               put(15,from,text,valueFont,mid,info); ws.mergeCells(15,from,16,to); paint(15,from,to,info); paint(16,from,to,info);
             });
             height(15,22); height(16,22);
@@ -4646,7 +4646,7 @@
             say(label, x, y-38, 8, bold, C.gray);
             say(wrap(value, bold, 11, i===3?contentW-cols[3]-24:110)[0], x, y-54, 11, bold, C.ink);
           });
-          [['SOLICITANTE', this.exportField(d.requesterName)],['PM', this.exportField(d.pmName)],['INICIATIVA', this.exportField(d.initiativeName)]].forEach(([label,value],i)=>{
+          [['SOLICITANTE', this.exportField(d.requesterName)],['PM', this.exportField(d.pmName)],['APLICACIÓN', this.exportField(d.applicationName)]].forEach(([label,value],i)=>{
             const x=ML+14+cols[i];
             say(label, x, y-76, 8, bold, C.gray);
             say(wrap(value, bold, 11, i===2?contentW-cols[2]-28:110)[0], x, y-92, 11, bold, C.ink);
@@ -5172,7 +5172,7 @@
                 exportScenarios:this.exportHourScenarios().map(x=>({value:x.id,label:x.label})),
                 onExportScenario:e=>this.setExportHourScenario(e.target.value),
                 volver:()=>this.leaveEstimacion(()=>this.goEstimaciones()),
-                code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, requesterName:d.requesterName,
+                code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, applicationName:d.applicationName, requesterName:d.requesterName,
                 pmName:d.pmName, pmOptions:pmOptions, versionLabel:d.versionLabel, complexityId:d.complexityId, complexityOptions:cxList.map(x=>({value:x.id,label:x.label})),
                 roundingDecimals:d.roundingDecimals, decimalOptions:ESTIMATION_DECIMAL_OPTIONS.map(x=>({value:String(x),label:String(x)})),
                 alertRatio:d.alertRatio, dailyHours:d.dailyHours, dedicationPct:d.dedicationPct,
@@ -5180,7 +5180,7 @@
                 onAdditionalFile:e=>this.loadAdditionalMarkdown(e), clearAdditional:()=>this.clearAdditionalMarkdown(),
                 alertBorder:border(p.alertRatio>=0), dailyBorder:border(p.dailyHours>0&&p.dailyHours<ESTIMATION_MAX_DAILY_HOURS), dedicationBorder:border(p.dedication>0&&p.dedication<=1),
                 on:{
-                  code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'),
+                  code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'), applicationName:field('applicationName'),
                   requesterName:field('requesterName'), pmName:field('pmName'), versionLabel:field('versionLabel'), complexityId:field('complexityId'),
                   roundingDecimals:field('roundingDecimals'), alertRatio:field('alertRatio'), dailyHours:field('dailyHours'), dedicationPct:field('dedicationPct'),
                   additionalMarkdown:field('additionalMarkdown'),
