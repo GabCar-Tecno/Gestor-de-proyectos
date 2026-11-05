@@ -4024,7 +4024,7 @@
             line(ESTIMATION_LINE_KIND.activity,ESTIMATION_ACTIVITY_TYPE.management,'Gestión de proyecto, sesiones con cliente, seguimiento.'),
           ];
           const estDraft={ id:this.gid(ID_PREFIX.estimation), isNew:true, dirty:false, rev:0, savedLineIds:[],
-            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:p.nombre||'', applicationName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
+            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:'', applicationName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
             versionLabel:ESTIMATION_DEFAULTS.versionLabel, complexityId:(cx.find(c=>c.id===ESTIMATION_DEFAULTS.complexityId)||cx[0]||{}).id||ESTIMATION_DEFAULTS.complexityId, estStatus:ESTIMATION_PHASE.created, requirementId:'',
             roundingDecimals:ESTIMATION_DEFAULTS.roundingDecimals, alertRatio:ESTIMATION_DEFAULTS.alertRatio, dailyHours:ESTIMATION_DEFAULTS.dailyHours, dedicationPct:ESTIMATION_DEFAULTS.dedicationPct, additionalMarkdown:'', additionalFileName:'', lines };
           this.setState(s=>({view:VIEW.estimation,estimacionId:estDraft.id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
