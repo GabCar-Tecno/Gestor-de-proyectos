@@ -15,6 +15,7 @@
     qa: 'qa',
     users: 'usuarios',
     production: 'produccion',
+    cancelled: 'cancelado',
     estimationFallback: 'Estimacion'
   };
   const estimationActivityType = {
@@ -202,7 +203,8 @@
         [reqStatus.qa]: 0,
         [reqStatus.users]: 1,
         [reqStatus.estimation]: 2,
-        [reqStatus.production]: 4
+        [reqStatus.production]: 4,
+        [reqStatus.cancelled]: 5
       },
       other: 3
     },
