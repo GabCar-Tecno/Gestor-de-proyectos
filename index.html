@@ -4310,14 +4310,17 @@
             return {section:false, concept:l.concept, type:l.typeLabel, hours};
           });
           const days=t.dedicated>0?total/t.dedicated:null;
-          return {scenario, rows, total, days, fileName:base.fileName+'-'+scenario.file};
+          return {scenario, rows, total, days, fileName:base.fileName};
         }
         estExportDataAsOnScreen(d){
           const c=this.estDraftCalc(d), types=this.state.estActivityTypes||[], typeById=this.indexById(types);
           const rows=c.lines.map((l,i)=>({...l,concept:(l.concept||'').trim(),typeLabel:(typeById.get(l.typeId)||{}).label||l.typeId||'',m:c.totals.metrics[i]}))
             .filter(l=>this.isSectionOrFilledActivity(l));
-          const clean=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'-');
-          return {c,t:c.totals,types,rows,fileName:FILE_NAME.estimationPrefix+(clean(d.code)||clean(d.initiativeName)||FILE_NAME.unnamedEstimation)+'-'+(clean(d.versionLabel)||ESTIMATION_DEFAULTS.versionLabel)};
+          const slug=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+          const code=slug(d.code)||FILE_NAME.unnamedEstimation;
+          const initiative=slug(d.initiativeName)||FILE_NAME.unnamedEstimation;
+          const version=slug(d.versionLabel)||ESTIMATION_DEFAULTS.versionLabel;
+          return {c,t:c.totals,types,rows,fileName:FILE_NAME.estimationPrefix+code+'_'+initiative+'_'+version};
         }
         additionalMarkdownBlocks(src){
           const lines=String(src||'').replace(/\r\n/g,'\n').split('\n');
@@ -4424,7 +4427,7 @@
             const ws=wb.addWorksheet('Estimación', {views:[{showGridLines:false}], pageSetup:{paperSize:1, orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0, horizontalCentered:true, margins:{left:0.55, right:0.55, top:0.5, bottom:0.7, header:0.2, footer:0.28}}});
             ws.properties.tabColor={argb:'FF142A59'};
             [3,16,16,19,15,15,15,15,15,12,11,3].forEach((width,i)=>{ ws.getColumn(i+1).width=width; });
-            const navy='FF142A59', white='FFFFFFFF', blue='FF2175B5', gray='FF63738D', ink='FF172641', info='FFF3F6FA', section='FFEAF1F8', hair='FFE3EAF1', soft='FFB9CDE3';
+            const banner='FF0A19A5', navy='FF142A59', white='FFFFFFFF', blue='FF2175B5', gray='FF63738D', ink='FF172641', info='FFF3F6FA', section='FFEAF1F8', hair='FFE3EAF1', soft='FFB9CDE3';
             const solid=argb=>({type:'pattern', pattern:'solid', fgColor:{argb}});
             const face=(size,bold,color)=>({name:'Arial', size, bold:!!bold, color:{argb:color}});
             const mid={vertical:'middle', wrapText:true};
@@ -4439,7 +4442,7 @@
               return cell;
             };
             const height=(row,h)=>{ ws.getRow(row).height=h; };
-            paint(1,1,12,navy); height(1,9);
+            paint(1,1,12,banner); height(1,9);
             paint(2,1,12,white); height(2,8);
             put(3,2,'DOCUMENTO DE ESTIMACIÓN', face(10,true,blue), mid, white);
             ws.mergeCells(3,2,3,9); height(3,23);
@@ -4473,11 +4476,11 @@
             put(19,2,'Detalle del esfuerzo estimado por etapa de trabajo', face(11,false,gray), mid, white);
             ws.mergeCells(19,2,19,11); height(19,20);
             paint(20,1,12,white); height(20,8);
-            put(21,2,'TIPO', face(11,true,white), mid, navy);
-            ws.mergeCells(21,2,21,3); paint(21,2,3,navy);
-            put(21,4,'CONCEPTO', face(11,true,white), mid, navy);
-            ws.mergeCells(21,4,21,10); paint(21,4,10,navy);
-            put(21,11,'HORAS', face(11,true,white), center, navy); height(21,32);
+            put(21,2,'TIPO', face(11,true,white), mid, banner);
+            ws.mergeCells(21,2,21,3); paint(21,2,3,banner);
+            put(21,4,'CONCEPTO', face(11,true,white), mid, banner);
+            ws.mergeCells(21,4,21,10); paint(21,4,10,banner);
+            put(21,11,'HORAS', face(11,true,white), center, banner); height(21,32);
             let row=22;
             pack.rows.forEach(line=>{
               if(line.section){
@@ -4488,8 +4491,7 @@
                 ws.mergeCells(row,2,row,3);
                 put(row,4,line.concept, face(11,false,ink), mid, white);
                 ws.mergeCells(row,4,row,10); paint(row,4,10,white);
-                const hours=put(row,11,line.hours==null?'':line.hours, face(11,true,navy), center, white);
-                if(line.hours!=null) hours.numFmt='0.##';
+                put(row,11,line.hours==null?'':this.fmtNum(line.hours), face(11,true,navy), center, white);
                 height(row,31);
               }
               row++;
@@ -4497,23 +4499,22 @@
             paint(row,1,12,white); height(row,10); row++;
             paint(row,1,12,white); height(row,10); row++;
             const summary=row;
-            const summaryTitle=put(summary,2,'', null, {horizontal:'left', vertical:'middle', wrapText:true, indent:1}, navy);
+            const summaryTitle=put(summary,2,'', null, {horizontal:'left', vertical:'middle', wrapText:true, indent:1}, banner);
             summaryTitle.value={richText:[
               {font:{name:'Arial', size:14, bold:true, color:{argb:white}}, text:'RESUMEN DE LA ESTIMACIÓN\n'},
               {font:{name:'Arial', size:9, color:{argb:soft}}, text:'Esfuerzo total y plazo previsto'},
             ]};
-            ws.mergeCells(summary,2,summary+2,6); paint(summary,2,6,navy); paint(summary+1,2,6,navy); paint(summary+2,2,6,navy);
-            put(summary,7,'TOTAL DE HORAS', face(10,true,soft), center, navy);
-            ws.mergeCells(summary,7,summary,8); paint(summary,7,8,navy);
-            put(summary,9,'ENTREGA ESTIMADA', face(10,true,soft), center, navy);
-            ws.mergeCells(summary,9,summary,11); paint(summary,9,11,navy);
+            ws.mergeCells(summary,2,summary+2,6); paint(summary,2,6,banner); paint(summary+1,2,6,banner); paint(summary+2,2,6,banner);
+            put(summary,7,'TOTAL DE HORAS', face(10,true,soft), center, banner);
+            ws.mergeCells(summary,7,summary,8); paint(summary,7,8,banner);
+            put(summary,9,'ENTREGA ESTIMADA', face(10,true,soft), center, banner);
+            ws.mergeCells(summary,9,summary,11); paint(summary,9,11,banner);
             height(summary,22);
-            const totalCell=put(summary+1,7,pack.total, face(20,true,white), center, navy);
-            totalCell.numFmt='0.##" h"';
-            ws.mergeCells(summary+1,7,summary+2,8); paint(summary+1,7,8,navy); paint(summary+2,7,8,navy);
-            const daysCell=put(summary+1,9,pack.days==null?'—':pack.days, face(20,true,white), center, navy);
+            put(summary+1,7,this.fmtNum(pack.total)+' h', face(20,true,white), center, banner);
+            ws.mergeCells(summary+1,7,summary+2,8); paint(summary+1,7,8,banner); paint(summary+2,7,8,banner);
+            const daysCell=put(summary+1,9,pack.days==null?'—':pack.days, face(20,true,white), center, banner);
             if(pack.days!=null) daysCell.numFmt='0.0" días"';
-            ws.mergeCells(summary+1,9,summary+2,11); paint(summary+1,9,11,navy); paint(summary+2,9,11,navy);
+            ws.mergeCells(summary+1,9,summary+2,11); paint(summary+1,9,11,banner); paint(summary+2,9,11,banner);
             height(summary+1,22); height(summary+2,22);
             const stampExcel=this.formatExportStamp(d).replace(/&/g,'&&');
             ws.headerFooter={
@@ -4539,7 +4540,8 @@
               const logoUrl=new URL('assets/logos/tecno-corp.png', window.location.href).href;
               const logo=await fetch(logoUrl).then(response=>{ if(!response.ok) throw new Error('logo'); return response.arrayBuffer(); });
               const imageId=wb.addImage({buffer:logo, extension:'png'});
-              ws.addImage(imageId, {tl:{col:9.05, row:2.35}, ext:{width:168, height:58}});
+              const px=9525, colPx=w=>Math.floor(((256*w+Math.floor(128/7))/256)*7);
+              ws.addImage(imageId, {tl:{nativeCol:8, nativeColOff:colPx(15)*px-10*px, nativeRow:2, nativeRowOff:80500}, ext:{width:2.18*96, height:0.6*96}});
             }catch(e){ /* el documento se entrega igual si el logo no carga */ }
             const buffer=await wb.xlsx.writeBuffer();
             const blob=new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -4574,7 +4576,7 @@
           const regular=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
           const bold=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
           const hex=h=>PDFLib.rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
-          const C={navy:hex('142A59'), blue:hex('2175B5'), gray:hex('63738D'), ink:hex('172641'), info:hex('F3F6FA'), section:hex('EAF1F8'), white:hex('FFFFFF'), hair:hex('E3EAF1'), line:hex('E6EDF5'), soft:hex('B9CDE3')};
+          const C={banner:hex('0A19A5'), navy:hex('142A59'), blue:hex('2175B5'), gray:hex('63738D'), ink:hex('172641'), info:hex('F3F6FA'), section:hex('EAF1F8'), white:hex('FFFFFF'), hair:hex('E3EAF1'), line:hex('E6EDF5'), soft:hex('B9CDE3')};
           const W=612, H=792, ML=40, MR=40, contentW=W-ML-MR, floorY=52;
           const clean=value=>String(value??'').replace(/[^\u0000-\u00ff]/g, ch=>({'—':'-','–':'-','·':'.'}[ch]||' '));
           let page, y, tableOpen=false;
@@ -4603,7 +4605,7 @@
           const say=(str, x, baseline, size, fnt, color)=>page.drawText(clean(str), {x, y:baseline, size, font:fnt, color});
           const drawTableHead=()=>{
             const h=26;
-            page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.navy});
+            page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.banner});
             say('TIPO', ML+12, y-17, 9, bold, C.white);
             say('CONCEPTO', ML+132, y-17, 9, bold, C.white);
             const hoursLabel='HORAS', hw=bold.widthOfTextAtSize(hoursLabel, 9);
@@ -4616,7 +4618,7 @@
             if(withHead) drawTableHead();
           };
           newPage();
-          page.drawRectangle({x:0, y:H-8, width:W, height:8, color:C.navy});
+          page.drawRectangle({x:0, y:H-8, width:W, height:8, color:C.banner});
           y=H-28;
           say('DOCUMENTO DE ESTIMACIÓN', ML, y-10, 9, bold, C.blue);
           y-=22;
@@ -4684,7 +4686,7 @@
           y-=16;
           const cardH=62;
           ensure(cardH, false);
-          page.drawRectangle({x:ML, y:y-cardH, width:contentW, height:cardH, color:C.navy});
+          page.drawRectangle({x:ML, y:y-cardH, width:contentW, height:cardH, color:C.banner});
           say('RESUMEN DE LA ESTIMACIÓN', ML+16, y-24, 11, bold, C.white);
           say('Esfuerzo total y plazo previsto', ML+16, y-40, 9, regular, C.soft);
           const metricW=128, totalX=ML+contentW-metricW*2, daysX=ML+contentW-metricW;
