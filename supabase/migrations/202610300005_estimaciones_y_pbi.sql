@@ -69,6 +69,7 @@ create table if not exists public.estimations (
   estimated_on date not null default current_date,
   client_name text not null default '',
   initiative_name text not null default '',
+  application_name text not null default '',
   requester_name text not null default '',
   pm_name text not null default '',
   version_label text not null default 'V1',
@@ -560,3 +561,15 @@ revoke all on table public.requirement_codes from anon, public;
 revoke all on table public.requirement_pbi_tasks from anon, public;
 grant select, insert, update, delete on table public.requirement_codes to authenticated;
 grant select, insert, update, delete on table public.requirement_pbi_tasks to authenticated;
+
+alter table public.requirements
+  add column if not exists requirement_start_date date;
+
+alter table public.estimations
+  add column if not exists application_name text not null default '';
+
+update public.estimations as estimation
+set application_name = project.name
+from public.projects as project
+where estimation.project_id = project.id
+  and btrim(coalesce(estimation.application_name, '')) = '';

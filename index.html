@@ -2706,7 +2706,7 @@
                 const owners=this.parseOwners(r.owner);
                 return {
                 id:r.id, codigos, codigo:codigos[0]||r.code||'', titulo:r.title, responsable:owners.join(', ')||DB_DEFAULT.owner, responsables:owners, estado:(r.status_id||r.status), estadoActualizadoAt:r.status_updated_at||null,
-                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'', ...BOARD_EXT.mapExtendedRow(r),
+                descripcionCambios:r.change_description||'', observaciones:r.observations||'', fechaInicioRequerimiento:r.requirement_start_date||'', fechaEntregaUsuario:r.user_delivery_date||'', fechaPasoProduccion:r.production_date||'', horas:r.estimated_hours??'', ...BOARD_EXT.mapExtendedRow(r),
                 documentos:rowsFor(docsOf,r.id).map(d=>({id:d.id,nombre:d.name,tipo:d.type,url:d.url||''})),
                 despliegues:rowsFor(reqDeploysOf,r.id).map(d=>({id:d.id,environmentId:d.environment_id||null,env:envCode(d),url:d.url||'',version:d.version||'',updatedAt:d.updated_at||null})),
                 bloqueantes:rowsFor(blockersOf,r.id).map(b=>({id:b.id,texto:b.text,resuelto:!!b.resolved,fecha:b.date||''})),
@@ -2726,7 +2726,7 @@
                 },
                 requerimientos:reqs,
                 estimaciones:rowsFor(estimationsOf,p.id).map(e=>({
-                  id:e.id, requirementId:e.requirement_id||'', codigo:e.code||'', fecha:e.estimated_on||'', cliente:e.client_name||'', iniciativa:e.initiative_name||'',
+                  id:e.id, requirementId:e.requirement_id||'', codigo:e.code||'', fecha:e.estimated_on||'', cliente:e.client_name||'', iniciativa:e.initiative_name||'', aplicacion:e.application_name||'',
                   solicitante:e.requester_name||'', pm:e.pm_name||'', version:e.version_label||'', complexityId:e.complexity_id, formatVersion:e.format_version||ESTIMATION_DEFAULTS.formatVersion,
                   decimales:Number(e.rounding_decimals), umbral:Number(e.deviation_alert_ratio), horasDia:Number(e.daily_hours), dedicacion:Number(e.dedication),
                   estado:e.status||ESTIMATION_PHASE.created, adicional:e.additional_markdown||'',
@@ -2928,7 +2928,7 @@
         addReqGlobal(){
           if(!this.isDev()) return;
           const first=this.statusOrder().flow[0]||REQ_STATUS.development;
-          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}});
+          this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,global:true,title:'Nuevo requerimiento',form:{empresaId:this.state.empresaId||'',proyectoId:'',codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaInicioRequerimiento:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}});
         }
         openReqFromMaster(companyId, projectId, reqId){
           const company=(this.state.data||[]).find(c=>c.id===companyId);
@@ -2937,7 +2937,7 @@
           if(!company||!project||!req) return;
           const code=this.reqCodeLabel(req)||'Sin codigo', title=(req.titulo||'').trim()||code;
           const context='#'+code+' - '+company.nombre+' / '+project.nombre;
-          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado,...BOARD_EXT.extendedFormFromReq(req)};
+          const form={codigos:this.reqFormCodes(req),titulo:req.titulo||'',descripcionCambios:req.descripcionCambios||'',observaciones:req.observaciones||'',fechaInicioRequerimiento:req.fechaInicioRequerimiento||'',fechaEntregaUsuario:req.fechaEntregaUsuario||'',fechaPasoProduccion:req.fechaPasoProduccion||'',horas:req.horas??'',responsables:req.responsables||this.parseOwners(req.responsable),estado:req.estado,...BOARD_EXT.extendedFormFromReq(req)};
           const ctx={empresaId:companyId,proyectoId:projectId,reqId,view:VIEW.master};
           const env=this.reqEnvByStageElseLatestDeploy(company,project,req);
           const envDetail={companyId,projectId,hasEnv:!!env,envLabel:env?env.label:'',envVersion:env&&env.version?'Versión '+env.version:'',hasEnvVersion:!!(env&&env.version),envUrl:env?env.url:'',hasEnvUrl:!!(env&&env.url),openEnvLabel:env?'Abrir en '+env.label:''};
@@ -3001,16 +3001,16 @@
             const day=v=>{ const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||''); return p?sortableExcelSerial(+p[1],+p[2],+p[3]):null; };
             const stamp=v=>{ const d=v?new Date(v):null; return d&&!isNaN(d)?sortableExcelSerial(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes()):null; };
             const cols=[
-              ['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
-              ['Horas estimadas',10],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
+              ['Fecha de inicio',16,EXCEL.dateFormat],['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Horas estimadas',10],
+              ['Estado',14],['Observaciones',45],['Responsables',28],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
             ];
             const extCompany=this.canSeeExtended(this.empresa())?this.empresa():null;
             const extContacts={}; ((extCompany&&extCompany.contactos)||[]).forEach(c=>{ extContacts[c.id]=c; });
             if(extCompany) BOARD_EXT.EXTENDED_EXCEL_COLUMNS.forEach(([header,width,kind])=>cols.push(kind==='date'?[header,width,EXCEL.dateFormat]:[header,width]));
             const rows=items.map(({project,req})=>{
               const codes=this.reqCodesOf(req), code=codes.length>1?codes.join(', '):(codes[0]||''), horas=req.horas===''||req.horas==null?null:Number(req.horas);
-              return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
-                (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
+              return [day(req.fechaInicioRequerimiento), project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), horas!=null&&isNaN(horas)?req.horas:horas,
+                this.estMeta(req.estado)[0], (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '),
                 day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt),
                 ...(extCompany?BOARD_EXT.extendedExcelValues(req,extContacts).map((v,i)=>BOARD_EXT.EXTENDED_EXCEL_COLUMNS[i][2]==='date'?day(v):v):[])];
             });
@@ -3139,8 +3139,8 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:MODAL.project,mode:MODAL_MODE.create,title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaInicioRequerimiento:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaInicioRequerimiento:r.fechaInicioRequerimiento||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:MODAL.document,mode:MODAL_MODE.create,title:'Agregar documento',form:{nombre:'',tipo:DB_DEFAULT.documentType,url:''}}); this.setState({documentFileName:''}); }
         setDocumentFile(e){
           this._documentFile=e.target.files&&e.target.files[0]||null;
@@ -3473,7 +3473,7 @@
               const hoursValue=f.horas===''||f.horas==null?null:Number(f.horas);
               if(hoursValue!==null&&(!Number.isFinite(hoursValue)||hoursValue<0)){ this.setState({saveStatus:SAVE_STATUS.idle,modalErr:'Las horas deben ser un número igual o mayor que cero.'}); return; }
               const ownerNames=(f.responsables||[]).filter(Boolean);
-              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue, ...(extPayload||{}) };
+              const payload={ title:f.titulo, owner:ownerNames.join(', ')||DB_DEFAULT.owner, status:f.estado, status_id:f.estado, code:cleaned.codes[0]||'', change_description:(f.descripcionCambios||'').trim(), observations:(f.observaciones||'').trim(), requirement_start_date:f.fechaInicioRequerimiento||null, user_delivery_date:f.fechaEntregaUsuario||null, production_date:f.fechaPasoProduccion||null, estimated_hours:hoursValue, ...(extPayload||{}) };
               if(statusChanged) payload.status_updated_at=new Date().toISOString();
               let reqId=m.id;
               const creating=m.mode===MODAL_MODE.create;
@@ -3667,6 +3667,7 @@
               reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigos:f.codigos||(req?this.reqFormCodes(req):['']), codigo:f.codigo, estado:f.estado,
                 descripcionCambios:f.descripcionCambios!==undefined?f.descripcionCambios:(req&&req.descripcionCambios)||'',
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
+                fechaInicioRequerimiento:f.fechaInicioRequerimiento!==undefined?f.fechaInicioRequerimiento:(req&&req.fechaInicioRequerimiento)||'',
                 fechaEntregaUsuario:f.fechaEntregaUsuario!==undefined?f.fechaEntregaUsuario:(req&&req.fechaEntregaUsuario)||'',
                 fechaPasoProduccion:f.fechaPasoProduccion!==undefined?f.fechaPasoProduccion:(req&&req.fechaPasoProduccion)||'',
                 horas:f.horas!==undefined?f.horas:(req&&req.horas), fromEstimacionId:m.fromEstimacionId||null, extPayload:f.extPayload||null },
@@ -3684,7 +3685,7 @@
             const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[])));
             if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
             if(cleaned.duplicate){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Hay códigos PBI repetidos. Cada uno debe ser distinto.'}); return; }
-            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso, ...(rp.extPayload||{}) };
+            const payload={ title:rp.titulo, owner:(rp.responsables||[]).join(', ')||DB_DEFAULT.owner, status:rp.estado, status_id:rp.estado, code:cleaned.codes[0]||'', change_description:rp.descripcionCambios||'', observations:rp.observaciones||'', requirement_start_date:rp.fechaInicioRequerimiento||null, user_delivery_date:rp.fechaEntregaUsuario||null, production_date:rp.fechaPasoProduccion||null, estimated_hours:rp.horas===''||rp.horas==null?null:Number(rp.horas), status_updated_at:nowIso, ...(rp.extPayload||{}) };
             let reqId=rp.id;
             const creating=rp.mode===MODAL_MODE.create;
             if(creating){
@@ -4023,7 +4024,7 @@
             line(ESTIMATION_LINE_KIND.activity,ESTIMATION_ACTIVITY_TYPE.management,'Gestión de proyecto, sesiones con cliente, seguimiento.'),
           ];
           const estDraft={ id:this.gid(ID_PREFIX.estimation), isNew:true, dirty:false, rev:0, savedLineIds:[],
-            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
+            code:'', estimatedOn:this.todayIso(), clientName:(emp&&emp.nombre)||'', initiativeName:'', applicationName:p.nombre||'', requesterName:'', pmName:this.isPM()?(this.state.currentUserName||''):'',
             versionLabel:ESTIMATION_DEFAULTS.versionLabel, complexityId:(cx.find(c=>c.id===ESTIMATION_DEFAULTS.complexityId)||cx[0]||{}).id||ESTIMATION_DEFAULTS.complexityId, estStatus:ESTIMATION_PHASE.created, requirementId:'',
             roundingDecimals:ESTIMATION_DEFAULTS.roundingDecimals, alertRatio:ESTIMATION_DEFAULTS.alertRatio, dailyHours:ESTIMATION_DEFAULTS.dailyHours, dedicationPct:ESTIMATION_DEFAULTS.dedicationPct, additionalMarkdown:'', additionalFileName:'', lines };
           this.setState(s=>({view:VIEW.estimation,estimacionId:estDraft.id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
@@ -4033,7 +4034,7 @@
           const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
           const num=v=>this.fmtNum(Number(v));
           const estDraft={ id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
-            code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, requesterName:e.solicitante, pmName:e.pm,
+            code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, applicationName:(e.aplicacion||'').trim()||p.nombre||'', requesterName:e.solicitante, pmName:e.pm,
             versionLabel:e.version, complexityId:e.complexityId, estStatus:e.estado||ESTIMATION_PHASE.created, requirementId:e.requirementId,
             roundingDecimals:String(e.decimales), alertRatio:num(e.umbral), dailyHours:num(e.horasDia), dedicationPct:num(e.dedicacion*100), additionalMarkdown:e.adicional||'', additionalFileName:'',
             lines:e.lineas.map(l=>({id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concepto,hours:l.horas==null?'':String(l.horas),autoNext:l.kind===ESTIMATION_LINE_KIND.activity&&!l.concepto})) };
@@ -4136,7 +4137,7 @@
             const sb=this._sb;
             const requirementId=d.requirementId||'';
             const header={ project_id:p.id, requirement_id:requirementId||null, code:(d.code||'').trim(), estimated_on:d.estimatedOn,
-              client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
+              client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), application_name:(d.applicationName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
               version_label:(d.versionLabel||'').trim(), complexity_id:d.complexityId, rounding_decimals:c.params.decimals,
               deviation_alert_ratio:c.params.alertRatio, daily_hours:c.params.dailyHours, dedication:c.params.dedication, additional_markdown:d.additionalMarkdown||'', updated_at:new Date().toISOString() };
             if(d.isNew){
@@ -4195,7 +4196,7 @@
             form:{
               codigos:[''],
               titulo:title, descripcionCambios:title, observaciones:'',
-              fechaEntregaUsuario:'', fechaPasoProduccion:'',
+              fechaInicioRequerimiento:'',fechaEntregaUsuario:'', fechaPasoProduccion:'',
               horas:Number.isFinite(hours)?hours:'',
               responsables:pm?[pm]:[],
               estado:this.estimationStatusId(),
@@ -4235,7 +4236,7 @@
             let version=this.nextVersionLabel(e.version);
             while(used.has(version.toLowerCase())) version=this.nextVersionLabel(version);
             const { error } = await sb.from(TABLE.estimations).insert({ id:newId, project_id:p.id, requirement_id:null, status:ESTIMATION_PHASE.created, code:e.codigo, format_version:e.formatVersion,
-              estimated_on:e.fecha||this.todayIso(), client_name:e.cliente, initiative_name:e.iniciativa, requester_name:e.solicitante, pm_name:e.pm,
+              estimated_on:e.fecha||this.todayIso(), client_name:e.cliente, initiative_name:e.iniciativa, application_name:(e.aplicacion||'').trim()||p.nombre||'', requester_name:e.solicitante, pm_name:e.pm,
               version_label:version, complexity_id:e.complexityId, rounding_decimals:e.decimales, deviation_alert_ratio:e.umbral, daily_hours:e.horasDia,
               dedication:e.dedicacion, additional_markdown:e.adicional||'', created_by:this.state.session.user.id, updated_at:new Date().toISOString() });
             if(error) throw error;
@@ -4310,14 +4311,17 @@
             return {section:false, concept:l.concept, type:l.typeLabel, hours};
           });
           const days=t.dedicated>0?total/t.dedicated:null;
-          return {scenario, rows, total, days, fileName:base.fileName+'-'+scenario.file};
+          return {scenario, rows, total, days, fileName:base.fileName};
         }
         estExportDataAsOnScreen(d){
           const c=this.estDraftCalc(d), types=this.state.estActivityTypes||[], typeById=this.indexById(types);
           const rows=c.lines.map((l,i)=>({...l,concept:(l.concept||'').trim(),typeLabel:(typeById.get(l.typeId)||{}).label||l.typeId||'',m:c.totals.metrics[i]}))
             .filter(l=>this.isSectionOrFilledActivity(l));
-          const clean=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'-');
-          return {c,t:c.totals,types,rows,fileName:FILE_NAME.estimationPrefix+(clean(d.code)||clean(d.initiativeName)||FILE_NAME.unnamedEstimation)+'-'+(clean(d.versionLabel)||ESTIMATION_DEFAULTS.versionLabel)};
+          const slug=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+          const code=slug(d.code)||FILE_NAME.unnamedEstimation;
+          const initiative=slug(d.initiativeName)||FILE_NAME.unnamedEstimation;
+          const version=slug(d.versionLabel)||ESTIMATION_DEFAULTS.versionLabel;
+          return {c,t:c.totals,types,rows,fileName:FILE_NAME.estimationPrefix+code+'_'+initiative+'_'+version};
         }
         additionalMarkdownBlocks(src){
           const lines=String(src||'').replace(/\r\n/g,'\n').split('\n');
@@ -4424,7 +4428,7 @@
             const ws=wb.addWorksheet('Estimación', {views:[{showGridLines:false}], pageSetup:{paperSize:1, orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0, horizontalCentered:true, margins:{left:0.55, right:0.55, top:0.5, bottom:0.7, header:0.2, footer:0.28}}});
             ws.properties.tabColor={argb:'FF142A59'};
             [3,16,16,19,15,15,15,15,15,12,11,3].forEach((width,i)=>{ ws.getColumn(i+1).width=width; });
-            const navy='FF142A59', white='FFFFFFFF', blue='FF2175B5', gray='FF63738D', ink='FF172641', info='FFF3F6FA', section='FFEAF1F8', hair='FFE3EAF1', soft='FFB9CDE3';
+            const banner='FF0A19A5', navy='FF142A59', white='FFFFFFFF', blue='FF2175B5', gray='FF63738D', ink='FF172641', info='FFF3F6FA', section='FFEAF1F8', hair='FFE3EAF1', soft='FFB9CDE3';
             const solid=argb=>({type:'pattern', pattern:'solid', fgColor:{argb}});
             const face=(size,bold,color)=>({name:'Arial', size, bold:!!bold, color:{argb:color}});
             const mid={vertical:'middle', wrapText:true};
@@ -4439,7 +4443,7 @@
               return cell;
             };
             const height=(row,h)=>{ ws.getRow(row).height=h; };
-            paint(1,1,12,navy); height(1,9);
+            paint(1,1,12,banner); height(1,9);
             paint(2,1,12,white); height(2,8);
             put(3,2,'DOCUMENTO DE ESTIMACIÓN', face(10,true,blue), mid, white);
             ws.mergeCells(3,2,3,9); height(3,23);
@@ -4459,11 +4463,11 @@
             topValues.forEach(([text,from,to])=>{ put(11,from,text,valueFont,mid,info); ws.mergeCells(11,from,12,to); paint(11,from,to,info); paint(12,from,to,info); });
             height(11,22); height(12,22);
             paint(13,2,11,info); height(13,9);
-            [['SOLICITANTE',2,3],['PM',4,5],['INICIATIVA',6,11]].forEach(([text,from,to])=>{
+            [['SOLICITANTE',2,3],['PM',4,5],['APLICACIÓN',6,11]].forEach(([text,from,to])=>{
               put(14,from,text,label,mid,info); ws.mergeCells(14,from,14,to); paint(14,from,to,info);
             });
             height(14,22);
-            [[this.exportField(d.requesterName),2,3],[this.exportField(d.pmName),4,5],[this.exportField(d.initiativeName),6,11]].forEach(([text,from,to])=>{
+            [[this.exportField(d.requesterName),2,3],[this.exportField(d.pmName),4,5],[this.exportField(d.applicationName),6,11]].forEach(([text,from,to])=>{
               put(15,from,text,valueFont,mid,info); ws.mergeCells(15,from,16,to); paint(15,from,to,info); paint(16,from,to,info);
             });
             height(15,22); height(16,22);
@@ -4473,11 +4477,11 @@
             put(19,2,'Detalle del esfuerzo estimado por etapa de trabajo', face(11,false,gray), mid, white);
             ws.mergeCells(19,2,19,11); height(19,20);
             paint(20,1,12,white); height(20,8);
-            put(21,2,'TIPO', face(11,true,white), mid, navy);
-            ws.mergeCells(21,2,21,3); paint(21,2,3,navy);
-            put(21,4,'CONCEPTO', face(11,true,white), mid, navy);
-            ws.mergeCells(21,4,21,10); paint(21,4,10,navy);
-            put(21,11,'HORAS', face(11,true,white), center, navy); height(21,32);
+            put(21,2,'TIPO', face(11,true,white), mid, banner);
+            ws.mergeCells(21,2,21,3); paint(21,2,3,banner);
+            put(21,4,'CONCEPTO', face(11,true,white), mid, banner);
+            ws.mergeCells(21,4,21,10); paint(21,4,10,banner);
+            put(21,11,'HORAS', face(11,true,white), center, banner); height(21,32);
             let row=22;
             pack.rows.forEach(line=>{
               if(line.section){
@@ -4488,8 +4492,7 @@
                 ws.mergeCells(row,2,row,3);
                 put(row,4,line.concept, face(11,false,ink), mid, white);
                 ws.mergeCells(row,4,row,10); paint(row,4,10,white);
-                const hours=put(row,11,line.hours==null?'':line.hours, face(11,true,navy), center, white);
-                if(line.hours!=null) hours.numFmt='0.##';
+                put(row,11,line.hours==null?'':this.fmtNum(line.hours), face(11,true,navy), center, white);
                 height(row,31);
               }
               row++;
@@ -4497,23 +4500,22 @@
             paint(row,1,12,white); height(row,10); row++;
             paint(row,1,12,white); height(row,10); row++;
             const summary=row;
-            const summaryTitle=put(summary,2,'', null, {horizontal:'left', vertical:'middle', wrapText:true, indent:1}, navy);
+            const summaryTitle=put(summary,2,'', null, {horizontal:'left', vertical:'middle', wrapText:true, indent:1}, banner);
             summaryTitle.value={richText:[
               {font:{name:'Arial', size:14, bold:true, color:{argb:white}}, text:'RESUMEN DE LA ESTIMACIÓN\n'},
               {font:{name:'Arial', size:9, color:{argb:soft}}, text:'Esfuerzo total y plazo previsto'},
             ]};
-            ws.mergeCells(summary,2,summary+2,6); paint(summary,2,6,navy); paint(summary+1,2,6,navy); paint(summary+2,2,6,navy);
-            put(summary,7,'TOTAL DE HORAS', face(10,true,soft), center, navy);
-            ws.mergeCells(summary,7,summary,8); paint(summary,7,8,navy);
-            put(summary,9,'ENTREGA ESTIMADA', face(10,true,soft), center, navy);
-            ws.mergeCells(summary,9,summary,11); paint(summary,9,11,navy);
+            ws.mergeCells(summary,2,summary+2,6); paint(summary,2,6,banner); paint(summary+1,2,6,banner); paint(summary+2,2,6,banner);
+            put(summary,7,'TOTAL DE HORAS', face(10,true,soft), center, banner);
+            ws.mergeCells(summary,7,summary,8); paint(summary,7,8,banner);
+            put(summary,9,'ENTREGA ESTIMADA', face(10,true,soft), center, banner);
+            ws.mergeCells(summary,9,summary,11); paint(summary,9,11,banner);
             height(summary,22);
-            const totalCell=put(summary+1,7,pack.total, face(20,true,white), center, navy);
-            totalCell.numFmt='0.##" h"';
-            ws.mergeCells(summary+1,7,summary+2,8); paint(summary+1,7,8,navy); paint(summary+2,7,8,navy);
-            const daysCell=put(summary+1,9,pack.days==null?'—':pack.days, face(20,true,white), center, navy);
+            put(summary+1,7,this.fmtNum(pack.total)+' h', face(20,true,white), center, banner);
+            ws.mergeCells(summary+1,7,summary+2,8); paint(summary+1,7,8,banner); paint(summary+2,7,8,banner);
+            const daysCell=put(summary+1,9,pack.days==null?'—':pack.days, face(20,true,white), center, banner);
             if(pack.days!=null) daysCell.numFmt='0.0" días"';
-            ws.mergeCells(summary+1,9,summary+2,11); paint(summary+1,9,11,navy); paint(summary+2,9,11,navy);
+            ws.mergeCells(summary+1,9,summary+2,11); paint(summary+1,9,11,banner); paint(summary+2,9,11,banner);
             height(summary+1,22); height(summary+2,22);
             const stampExcel=this.formatExportStamp(d).replace(/&/g,'&&');
             ws.headerFooter={
@@ -4539,7 +4541,8 @@
               const logoUrl=new URL('assets/logos/tecno-corp.png', window.location.href).href;
               const logo=await fetch(logoUrl).then(response=>{ if(!response.ok) throw new Error('logo'); return response.arrayBuffer(); });
               const imageId=wb.addImage({buffer:logo, extension:'png'});
-              ws.addImage(imageId, {tl:{col:9.05, row:2.35}, ext:{width:168, height:58}});
+              const px=9525, colPx=w=>Math.floor(((256*w+Math.floor(128/7))/256)*7);
+              ws.addImage(imageId, {tl:{nativeCol:8, nativeColOff:colPx(15)*px-10*px, nativeRow:2, nativeRowOff:80500}, ext:{width:2.18*96, height:0.6*96}});
             }catch(e){ /* el documento se entrega igual si el logo no carga */ }
             const buffer=await wb.xlsx.writeBuffer();
             const blob=new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -4574,7 +4577,7 @@
           const regular=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
           const bold=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
           const hex=h=>PDFLib.rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
-          const C={navy:hex('142A59'), blue:hex('2175B5'), gray:hex('63738D'), ink:hex('172641'), info:hex('F3F6FA'), section:hex('EAF1F8'), white:hex('FFFFFF'), hair:hex('E3EAF1'), line:hex('E6EDF5'), soft:hex('B9CDE3')};
+          const C={banner:hex('0A19A5'), navy:hex('142A59'), blue:hex('2175B5'), gray:hex('63738D'), ink:hex('172641'), info:hex('F3F6FA'), section:hex('EAF1F8'), white:hex('FFFFFF'), hair:hex('E3EAF1'), line:hex('E6EDF5'), soft:hex('B9CDE3')};
           const W=612, H=792, ML=40, MR=40, contentW=W-ML-MR, floorY=52;
           const clean=value=>String(value??'').replace(/[^\u0000-\u00ff]/g, ch=>({'—':'-','–':'-','·':'.'}[ch]||' '));
           let page, y, tableOpen=false;
@@ -4603,7 +4606,7 @@
           const say=(str, x, baseline, size, fnt, color)=>page.drawText(clean(str), {x, y:baseline, size, font:fnt, color});
           const drawTableHead=()=>{
             const h=26;
-            page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.navy});
+            page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.banner});
             say('TIPO', ML+12, y-17, 9, bold, C.white);
             say('CONCEPTO', ML+132, y-17, 9, bold, C.white);
             const hoursLabel='HORAS', hw=bold.widthOfTextAtSize(hoursLabel, 9);
@@ -4616,7 +4619,7 @@
             if(withHead) drawTableHead();
           };
           newPage();
-          page.drawRectangle({x:0, y:H-8, width:W, height:8, color:C.navy});
+          page.drawRectangle({x:0, y:H-8, width:W, height:8, color:C.banner});
           y=H-28;
           say('DOCUMENTO DE ESTIMACIÓN', ML, y-10, 9, bold, C.blue);
           y-=22;
@@ -4643,7 +4646,7 @@
             say(label, x, y-38, 8, bold, C.gray);
             say(wrap(value, bold, 11, i===3?contentW-cols[3]-24:110)[0], x, y-54, 11, bold, C.ink);
           });
-          [['SOLICITANTE', this.exportField(d.requesterName)],['PM', this.exportField(d.pmName)],['INICIATIVA', this.exportField(d.initiativeName)]].forEach(([label,value],i)=>{
+          [['SOLICITANTE', this.exportField(d.requesterName)],['PM', this.exportField(d.pmName)],['APLICACIÓN', this.exportField(d.applicationName)]].forEach(([label,value],i)=>{
             const x=ML+14+cols[i];
             say(label, x, y-76, 8, bold, C.gray);
             say(wrap(value, bold, 11, i===2?contentW-cols[2]-28:110)[0], x, y-92, 11, bold, C.ink);
@@ -4684,7 +4687,7 @@
           y-=16;
           const cardH=62;
           ensure(cardH, false);
-          page.drawRectangle({x:ML, y:y-cardH, width:contentW, height:cardH, color:C.navy});
+          page.drawRectangle({x:ML, y:y-cardH, width:contentW, height:cardH, color:C.banner});
           say('RESUMEN DE LA ESTIMACIÓN', ML+16, y-24, 11, bold, C.white);
           say('Esfuerzo total y plazo previsto', ML+16, y-40, 9, regular, C.soft);
           const metricW=128, totalX=ML+contentW-metricW*2, daysX=ML+contentW-metricW;
@@ -5169,7 +5172,7 @@
                 exportScenarios:this.exportHourScenarios().map(x=>({value:x.id,label:x.label})),
                 onExportScenario:e=>this.setExportHourScenario(e.target.value),
                 volver:()=>this.leaveEstimacion(()=>this.goEstimaciones()),
-                code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, requesterName:d.requesterName,
+                code:d.code, estimatedOn:d.estimatedOn, clientName:d.clientName, initiativeName:d.initiativeName, applicationName:d.applicationName, requesterName:d.requesterName,
                 pmName:d.pmName, pmOptions:pmOptions, versionLabel:d.versionLabel, complexityId:d.complexityId, complexityOptions:cxList.map(x=>({value:x.id,label:x.label})),
                 roundingDecimals:d.roundingDecimals, decimalOptions:ESTIMATION_DECIMAL_OPTIONS.map(x=>({value:String(x),label:String(x)})),
                 alertRatio:d.alertRatio, dailyHours:d.dailyHours, dedicationPct:d.dedicationPct,
@@ -5177,7 +5180,7 @@
                 onAdditionalFile:e=>this.loadAdditionalMarkdown(e), clearAdditional:()=>this.clearAdditionalMarkdown(),
                 alertBorder:border(p.alertRatio>=0), dailyBorder:border(p.dailyHours>0&&p.dailyHours<ESTIMATION_MAX_DAILY_HOURS), dedicationBorder:border(p.dedication>0&&p.dedication<=1),
                 on:{
-                  code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'),
+                  code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'), applicationName:field('applicationName'),
                   requesterName:field('requesterName'), pmName:field('pmName'), versionLabel:field('versionLabel'), complexityId:field('complexityId'),
                   roundingDecimals:field('roundingDecimals'), alertRatio:field('alertRatio'), dailyHours:field('dailyHours'), dedicationPct:field('dedicationPct'),
                   additionalMarkdown:field('additionalMarkdown'),
@@ -5358,7 +5361,7 @@
             const fields={
               [MODAL.company]:[{label:'Nombre de la empresa',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Coltanques'}],
               [MODAL.project]:[{label:'Nombre del proyecto',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:FIELD_KIND.area,placeholder:'Breve descripción'}],
-              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
+              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha de inicio del requerimiento',key:'fechaInicioRequerimiento',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
               [MODAL.document]:[{label:'Nombre',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:FIELD_KIND.text,placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'}],
               [MODAL.deployment]:[{label:'Ambiente',key:'env',kind:FIELD_KIND.select,options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'},{label:'Versión / release',key:'version',kind:FIELD_KIND.text,placeholder:'v1.0.0'}],
               [MODAL.blocker]:[{label:'Descripción del bloqueante',key:'texto',kind:FIELD_KIND.area,placeholder:'¿Qué está bloqueando el avance?'}],

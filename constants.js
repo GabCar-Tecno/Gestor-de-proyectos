@@ -90,7 +90,7 @@
       roundingDecimals: '1',
       alertRatio: '0.3',
       dailyHours: '8',
-      dedicationPct: '62.5',
+      dedicationPct: '90',
       formatVersion: '4.0',
       duplicateVersionLabel: 'V2'
     },
@@ -157,7 +157,7 @@
       defaultContentType: 'application/octet-stream'
     },
     FILE_NAME: {
-      estimationPrefix: 'estimacion-',
+      estimationPrefix: 'Estimación_Req_',
       requirementsPrefix: 'requerimientos-',
       unnamedEstimation: 'sin-nombre',
       uploadFallback: 'documento'
