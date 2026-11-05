@@ -90,7 +90,7 @@
       roundingDecimals: '1',
       alertRatio: '0.3',
       dailyHours: '8',
-      dedicationPct: '62.5',
+      dedicationPct: '90',
       formatVersion: '4.0',
       duplicateVersionLabel: 'V2'
     },

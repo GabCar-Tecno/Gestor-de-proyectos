@@ -3001,16 +3001,16 @@
             const day=v=>{ const p=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||''); return p?sortableExcelSerial(+p[1],+p[2],+p[3]):null; };
             const stamp=v=>{ const d=v?new Date(v):null; return d&&!isNaN(d)?sortableExcelSerial(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes()):null; };
             const cols=[
-              ['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Estado',14],['Observaciones',45],['Responsables',28],
-              ['Horas estimadas',10],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
+              ['Fecha de inicio',16,EXCEL.dateFormat],['Aplicación',26],['#Req',22],['Título',45],['Descripción de cambios',60],['Horas estimadas',10],
+              ['Estado',14],['Observaciones',45],['Responsables',28],['Entrega usuario',13,EXCEL.dateFormat],['Paso a producción',13,EXCEL.dateFormat],['Último cambio de estado',17,EXCEL.dateTimeFormat],
             ];
             const extCompany=this.canSeeExtended(this.empresa())?this.empresa():null;
             const extContacts={}; ((extCompany&&extCompany.contactos)||[]).forEach(c=>{ extContacts[c.id]=c; });
             if(extCompany) BOARD_EXT.EXTENDED_EXCEL_COLUMNS.forEach(([header,width,kind])=>cols.push(kind==='date'?[header,width,EXCEL.dateFormat]:[header,width]));
             const rows=items.map(({project,req})=>{
               const codes=this.reqCodesOf(req), code=codes.length>1?codes.join(', '):(codes[0]||''), horas=req.horas===''||req.horas==null?null:Number(req.horas);
-              return [project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), this.estMeta(req.estado)[0],
-                (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '), horas!=null&&isNaN(horas)?req.horas:horas,
+              return [day(req.fechaInicioRequerimiento), project.nombre, /^\d+$/.test(code)?Number(code):code, req.titulo||'', (req.descripcionCambios||'').trim(), horas!=null&&isNaN(horas)?req.horas:horas,
+                this.estMeta(req.estado)[0], (req.observaciones||'').trim(), (req.responsables||this.parseOwners(req.responsable)).join(', '),
                 day(req.fechaEntregaUsuario), day(req.fechaPasoProduccion), stamp(req.estadoActualizadoAt),
                 ...(extCompany?BOARD_EXT.extendedExcelValues(req,extContacts).map((v,i)=>BOARD_EXT.EXTENDED_EXCEL_COLUMNS[i][2]==='date'?day(v):v):[])];
             });
