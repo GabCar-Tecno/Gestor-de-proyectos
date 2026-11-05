@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1010" viewBox="0 0 1500 1010" role="img" aria-labelledby="title desc">
+<title id="title">Login de la App Comercial con ManagerCore</title><desc id="desc">Validación en Seguridad, acceso y páginas desde ManagerCore, sincronización con Android y sesión.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
+<style>text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:bold}.sub{font-size:15px;fill:#475569}.head{font-size:17px;font-weight:bold}.row{font-size:14px}.pill{font-size:12px;font-weight:bold;fill:#fff}.edge{fill:none;stroke:#94a3b8;stroke-width:1.8;marker-end:url(#arrow)}.node{fill:#fff;stroke:#334155;stroke-width:1.5}.ok{fill:#ecfdf5;stroke:#047857;stroke-width:1.5}.rej{fill:#fff1f2;stroke:#be123c;stroke-width:1.2}</style>
+<rect width="1500" height="1010" fill="#f8fafc"/>
+<text x="30" y="36" class="title">Login de la App Comercial con ManagerCore</text>
+<text x="30" y="66" class="sub">La clave se valida en Seguridad; el acceso, las páginas, la agencia y la sesión salen de ManagerCore (aplicación 10).</text>
+
+<rect class="node" x="40" y="100" width="1000" height="90" rx="9"/>
+<rect x="830" y="110" width="196" height="22" rx="11" fill="#475569"/><text class="pill" x="928" y="125" text-anchor="middle">Gateway → commercialapi</text>
+<text class="head" x="58" y="130">1. La app envía usuario y clave</text>
+<text class="row" x="58" y="156">POST /webs/apicomercial/api/commercialappusers/login?includeId=true con Username y Password.</text>
+<text class="row" x="58" y="177">El gateway lo reenvía a commercialapi: POST /api/CommercialAppUsers/Login.</text>
+<path class="edge" d="M 540 190 V 210"/>
+
+<rect class="node" x="40" y="210" width="1000" height="90" rx="9"/>
+<rect x="830" y="220" width="196" height="22" rx="11" fill="#7c3aed"/><text class="pill" x="928" y="235" text-anchor="middle">Seguridad</text>
+<text class="head" x="58" y="240">2. Validar la clave</text>
+<text class="row" x="58" y="266">POST /api/Login/Post con la clave cifrada (AES). Actualiza el último acceso y deja el log en Seguridad.</text>
+<text class="row" x="58" y="287">Devuelve el usuario (Codigo = cédula) y sus perfiles.</text>
+<path class="edge" d="M 540 300 V 320"/>
+
+<rect class="node" x="40" y="320" width="1000" height="90" rx="9"/>
+<rect x="830" y="330" width="196" height="22" rx="11" fill="#0369a1"/><text class="pill" x="928" y="345" text-anchor="middle">ManagerCore</text>
+<text class="head" x="58" y="350">3. Revisar el acceso a la App Comercial</text>
+<text class="row" x="58" y="376">GET /api/ApplicationUsers/Get/ByApplicationIdUserId/10/{usuario}/false.</text>
+<text class="row" x="58" y="397">El usuario debe tener asignada la aplicación 10.</text>
+<path class="edge" d="M 540 410 V 430"/>
+
+<rect class="node" x="40" y="430" width="1000" height="90" rx="9"/>
+<rect x="830" y="440" width="196" height="22" rx="11" fill="#0369a1"/><text class="pill" x="928" y="455" text-anchor="middle">ManagerCore</text>
+<text class="head" x="58" y="460">4. Sacar las páginas de sus perfiles</text>
+<text class="row" x="58" y="486">GET /api/ProfilesMenu/10/profiles/{perfil} por cada perfil activo, cruzado con GET /api/Navigations/Get/10.</text>
+<text class="row" x="58" y="507">Cada página es un formulario de la app: Código de la página = FormId, Nombre = FormName.</text>
+<path class="edge" d="M 540 520 V 540"/>
+
+<rect class="node" x="40" y="540" width="1000" height="90" rx="9"/>
+<rect x="830" y="550" width="196" height="22" rx="11" fill="#0369a1"/><text class="pill" x="928" y="565" text-anchor="middle">ManagerCore</text>
+<text class="head" x="58" y="570">5. Sacar la agencia</text>
+<text class="row" x="58" y="596">GET /api/AgencyUsers/Get/ByUserId/{usuario}/includeinactives/false: la agencia activa más reciente.</text>
+<text class="row" x="58" y="617">Su Id en Comercial sale de Seg_EquivalenciaAgencia o del Código de la agencia (GET /api/Agencies/Get/{id}).</text>
+<path class="edge" d="M 540 630 V 650"/>
+
+<rect class="node" x="40" y="650" width="1000" height="90" rx="9"/>
+<rect x="830" y="660" width="196" height="22" rx="11" fill="#b45309"/><text class="pill" x="928" y="675" text-anchor="middle">BD Comercial</text>
+<text class="head" x="58" y="680">6. Mantener Android al día (en una transacción)</text>
+<text class="row" x="58" y="706">Crea o actualiza su fila en Android_Usuarios (nunca la clave), su equivalencia y los formularios que falten.</text>
+<text class="row" x="58" y="727">Si no tiene Vendedor, lo crea con el tipo de su perfil TIPOnn y Cod = el mayor + 1.</text>
+<path class="edge" d="M 540 740 V 760"/>
+
+<rect class="node" x="40" y="760" width="1000" height="90" rx="9"/>
+<rect x="830" y="770" width="196" height="22" rx="11" fill="#0369a1"/><text class="pill" x="928" y="785" text-anchor="middle">ManagerCore</text>
+<text class="head" x="58" y="790">7. Registrar la sesión</text>
+<text class="row" x="58" y="816">POST /api/ApplicationSessions/Create con la aplicación 10 y el usuario de Seguridad.</text>
+<text class="row" x="58" y="837">El tipo de usuario sale de Vendedor.IdTipoUsuario → Android_TipoUsuario.Nombre.</text>
+<path class="edge" d="M 540 850 V 870"/>
+
+<rect class="ok" x="40" y="870" width="1000" height="100" rx="9"/>
+<text class="head" x="58" y="900">8. Respuesta a la app: «Credenciales Correctas»</text>
+<text class="row" x="58" y="926">User trae lo mismo que LoginApp de la 1106 (Id de Android, nombres, cédula, agencia, ciudad, tipo y Forms)</text>
+<text class="row" x="58" y="947">más SecurityUserId y AndroidUsername. La app arma el menú con el nombre de cada página y el tipo de usuario.</text>
+
+<path class="edge" d="M 1040 145 H 1080"/>
+<rect class="rej" x="1080" y="110" width="390" height="70" rx="9"/>
+<text class="row" x="1094" y="138">Usuario o clave vacíos (statusCode 400):</text>
+<text class="row" x="1094" y="160">«La petición está vacía en uno o en todos…»</text>
+
+<path class="edge" d="M 1040 255 H 1080"/>
+<rect class="rej" x="1080" y="220" width="390" height="70" rx="9"/>
+<text class="row" x="1094" y="248">Clave errada, usuario inexistente o inactivo:</text>
+<text class="row" x="1094" y="270">«Credenciales Incorrectas»</text>
+
+<path class="edge" d="M 1040 365 H 1080"/>
+<rect class="rej" x="1080" y="330" width="390" height="70" rx="9"/>
+<text class="row" x="1094" y="358">Sin la aplicación 10:</text>
+<text class="row" x="1094" y="380">«Credenciales Incorrectas»</text>
+
+<path class="edge" d="M 1040 475 H 1080"/>
+<rect class="rej" x="1080" y="430" width="390" height="90" rx="9"/>
+<text class="row" x="1094" y="456">Sin páginas: «Credenciales Incorrectas»</text>
+<text class="row" x="1094" y="480">Sin cédula en Usuario.Codigo:</text>
+<text class="row" x="1094" y="502">«El usuario no tiene cédula en Seguridad»</text>
+
+<path class="edge" d="M 1040 695 H 1080"/>
+<rect class="rej" x="1080" y="660" width="390" height="70" rx="9"/>
+<text class="row" x="1094" y="688">Sin Vendedor y sin perfil TIPOnn: «El usuario</text>
+<text class="row" x="1094" y="710">no tiene tipo de usuario en la App Comercial»</text>
+
+<text class="sub" x="1080" y="790">Todos los rechazos responden HTTP 200 con</text>
+<text class="sub" x="1080" y="812">Response.Success = false y el mensaje.</text>
+<text class="sub" x="1080" y="834">Un fallo de Seguridad o ManagerCore</text>
+<text class="sub" x="1080" y="856">responde HTTP 500.</text>
+</svg>
