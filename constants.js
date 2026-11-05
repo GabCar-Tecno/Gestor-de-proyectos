@@ -157,7 +157,7 @@
       defaultContentType: 'application/octet-stream'
     },
     FILE_NAME: {
-      estimationPrefix: 'estimacion-',
+      estimationPrefix: 'Estimación_Req_',
       requirementsPrefix: 'requerimientos-',
       unnamedEstimation: 'sin-nombre',
       uploadFallback: 'documento'
