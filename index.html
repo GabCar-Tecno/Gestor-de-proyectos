@@ -2816,6 +2816,33 @@
           });
           return this._xlsxP;
         }
+        loadExcelJS(){
+          if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+          if(!this._excelJsP) this._excelJsP=new Promise((resolve,reject)=>{
+            const sc=document.createElement('script');
+            const {src,integrity}=window.APP_CONFIG.cdn.exceljs;
+            sc.src=src;
+            sc.integrity=integrity; sc.crossOrigin='anonymous';
+            sc.onload=()=>resolve(window.ExcelJS);
+            sc.onerror=()=>{ this._excelJsP=null; sc.remove(); reject(new Error('No se pudo cargar la librería de Excel. Revisa tu conexión e intenta de nuevo.')); };
+            document.head.appendChild(sc);
+          });
+          return this._excelJsP;
+        }
+        loadPdfLib(){
+          if(window.PDFLib) return Promise.resolve(window.PDFLib);
+          if(!this._pdfLibP) this._pdfLibP=new Promise((resolve,reject)=>{
+            const sc=document.createElement('script');
+            const cdn=window.APP_CONFIG&&window.APP_CONFIG.cdn&&window.APP_CONFIG.cdn.pdfLib;
+            sc.src=(cdn&&cdn.src)||'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+            sc.integrity=(cdn&&cdn.integrity)||'sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI';
+            sc.crossOrigin='anonymous';
+            sc.onload=()=>window.PDFLib?resolve(window.PDFLib):reject(new Error('La librería de PDF cargó, pero no quedó disponible.'));
+            sc.onerror=()=>{ this._pdfLibP=null; sc.remove(); reject(new Error('No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo.')); };
+            document.head.appendChild(sc);
+          });
+          return this._pdfLibP;
+        }
         async exportMaestroExcel(items){
           if(!this.canDownloadBoardExcel()||this.state.exportingExcel) return;
           this.setState({exportingExcel:true});
@@ -4084,6 +4111,23 @@
           const n=this.fmtNum(x,2);
           return n+(n==='1'?' día':' días');
         }
+        formatSlashDate(iso){
+          if(!iso) return '—';
+          const d=this.parseLocalDate(iso);
+          if(Number.isNaN(d.getTime())) return '—';
+          return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+        }
+        formatExportStamp(d){
+          const months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+          const raw=String(d.versionLabel||'').trim();
+          const version=/^versi[oó]n\b/i.test(raw)?raw:('Versión '+(raw||'—'));
+          if(!d.estimatedOn) return version;
+          const day=this.parseLocalDate(d.estimatedOn);
+          if(Number.isNaN(day.getTime())) return version;
+          const dd=String(day.getDate()).padStart(2,'0');
+          return version+' · '+dd+' '+months[day.getMonth()]+' '+day.getFullYear();
+        }
+        exportField(value){ const text=String(value||'').trim(); return text||'—'; }
         exportHourScenarios(){
           return [
             {id:'optimistic', label:'Optimista', file:'optimista'},
@@ -4210,131 +4254,317 @@
           if(current) lines.push(current);
           return lines;
         }
-        appendAdditionalMarkdown(aoa, merges, src){
-          const blocks=this.additionalMarkdownBlocks(src);
-          if(!blocks.length) return;
-          let span=1;
-          blocks.forEach(block=>{ if(block.type==='table') span=Math.max(span, block.headers.length-1, ...block.rows.map(row=>row.length-1)); });
-          const pushLine=text=>{ merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:span}}); aoa.push([text]); };
-          aoa.push([]);
-          pushLine('Adicional');
-          blocks.forEach(block=>{
-            if(block.type==='h'){
-              if(block.level<=2) aoa.push([]);
-              pushLine(this.plainMarkdown(block.text));
-              return;
-            }
-            if(block.type==='p'){ this.wrapExportLines(this.plainMarkdown(block.text), 96).forEach(pushLine); return; }
-            if(block.type==='ul'){
-              block.items.forEach(item=>{
-                const pad='  '.repeat(item.depth);
-                this.wrapExportLines(this.plainMarkdown(item.text), 92).forEach((line,index)=>pushLine(pad+(index?'   ':'• ')+line));
-              });
-              return;
-            }
-            if(block.type==='code'){ block.text.split('\n').forEach(line=>pushLine(line)); return; }
-            aoa.push(block.headers.map(cell=>this.plainMarkdown(cell)));
-            block.rows.forEach(row=>aoa.push(block.headers.map((_,col)=>this.plainMarkdown(row[col]||''))));
-          });
-        }
         async exportEstimacion(){
           if(!this.isDev()||this.state.exportingEstimacion) return;
           const d=this.state.estDraft; if(!d) return;
           this.setState({exportingEstimacion:true});
           try{
-            const XLSX=await this.loadXlsx();
+            const ExcelJS=await this.loadExcelJS();
             const pack=this.clientExportPack(d);
-            const n=v=>v==null||!Number.isFinite(v)?null:parseFloat(v.toFixed(4));
-            const day=/^(\d{4})-(\d{2})-(\d{2})/.exec(d.estimatedOn||'');
-            const dateCell=day?(Date.UTC(+day[1],+day[2]-1,+day[3])-EXCEL.epochUtc)/MS_PER_DAY:'';
-            const aoa=[
-              ['Estimación de esfuerzo'],[],
-              ['Iniciativa',(d.initiativeName||'').trim()],
-              ['Código',(d.code||'').trim()],
-              ['Cliente',(d.clientName||'').trim()],
-              ['Fecha de la estimación',dateCell],
-              ['Versión',(d.versionLabel||'').trim()],
-              ['Tipo de horas',pack.scenario.label],
-              [],
-            ];
-            const fmts=[[5,1,EXCEL.dateFormat]];
-            const merges=[];
-            aoa.push(['Concepto','Horas '+pack.scenario.label.toLowerCase()]);
-            pack.rows.forEach(l=>{
-              if(l.section){ merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:1}}); aoa.push([l.concept]); return; }
-              aoa.push([l.concept,n(l.hours)]);
+            const wb=new ExcelJS.Workbook();
+            wb.creator='Tecno Corp';
+            const ws=wb.addWorksheet('Estimación', {views:[{showGridLines:false}], pageSetup:{paperSize:1, orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0, horizontalCentered:true, margins:{left:0.55, right:0.55, top:0.5, bottom:0.7, header:0.2, footer:0.28}}});
+            ws.properties.tabColor={argb:'FF142A59'};
+            [3,16,16,19,15,15,15,15,15,12,11,3].forEach((width,i)=>{ ws.getColumn(i+1).width=width; });
+            const navy='FF142A59', white='FFFFFFFF', blue='FF2175B5', gray='FF63738D', ink='FF172641', info='FFF3F6FA', section='FFEAF1F8', hair='FFE3EAF1', soft='FFB9CDE3';
+            const solid=argb=>({type:'pattern', pattern:'solid', fgColor:{argb}});
+            const face=(size,bold,color)=>({name:'Arial', size, bold:!!bold, color:{argb:color}});
+            const mid={vertical:'middle', wrapText:true};
+            const center={horizontal:'center', vertical:'middle', wrapText:true};
+            const paint=(row,from,to,argb)=>{ for(let c=from;c<=to;c++) ws.getCell(row,c).fill=solid(argb); };
+            const put=(row,col,value,font,alignment,argb)=>{
+              const cell=ws.getCell(row,col);
+              cell.value=value;
+              if(font) cell.font=font;
+              if(alignment) cell.alignment=alignment;
+              if(argb) cell.fill=solid(argb);
+              return cell;
+            };
+            const height=(row,h)=>{ ws.getRow(row).height=h; };
+            paint(1,1,12,navy); height(1,9);
+            paint(2,1,12,white); height(2,8);
+            put(3,2,'DOCUMENTO DE ESTIMACIÓN', face(10,true,blue), mid, white);
+            ws.mergeCells(3,2,3,9); height(3,23);
+            put(4,2,(d.initiativeName||'').trim()||'Estimación', face(22,true,navy), mid, white);
+            ws.mergeCells(4,2,5,9); height(4,28); height(5,28);
+            paint(6,1,12,white); height(6,10);
+            paint(7,2,11,hair); height(7,3);
+            paint(8,1,12,white); height(8,8);
+            put(9,2,'INFORMACIÓN DEL REQUERIMIENTO', face(12,true,navy), mid, info);
+            ws.mergeCells(9,2,9,11); paint(9,2,11,info); height(9,31);
+            const label=face(10,true,gray), valueFont=face(12,true,ink);
+            [['CÓDIGO',2,3],['FECHA',4,5],['VERSIÓN',6,7],['CLIENTE',8,11]].forEach(([text,from,to])=>{
+              put(10,from,text,label,mid,info); ws.mergeCells(10,from,10,to); paint(10,from,to,info);
             });
-            aoa.push(['Total de horas',n(pack.total)]);
-            aoa.push(['Entrega estimada',this.formatDayCount(pack.days)]);
-            this.appendAdditionalMarkdown(aoa, merges, d.additionalMarkdown);
-            const ws=XLSX.utils.aoa_to_sheet(aoa);
-            fmts.forEach(([r,col,z])=>{ const cell=ws[XLSX.utils.encode_cell({r,c:col})]; if(cell&&cell.t===EXCEL.numberCellType) cell.z=z; });
-            ws['!merges']=merges;
-            const widths=[72,36];
-            aoa.forEach(row=>(row||[]).forEach((cell,col)=>{ widths[col]=Math.max(widths[col]||14, Math.min(col?48:96, String(cell??'').length+2)); }));
-            ws['!cols']=widths.map(wch=>({wch}));
-            const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Estimación');
-            XLSX.writeFile(wb,pack.fileName+EXCEL.extension);
+            height(10,22);
+            const topValues=[[this.exportField(d.code),2,3],[this.formatSlashDate(d.estimatedOn),4,5],[this.exportField(d.versionLabel),6,7],[this.exportField(d.clientName),8,11]];
+            topValues.forEach(([text,from,to])=>{ put(11,from,text,valueFont,mid,info); ws.mergeCells(11,from,12,to); paint(11,from,to,info); paint(12,from,to,info); });
+            height(11,22); height(12,22);
+            paint(13,2,11,info); height(13,9);
+            [['SOLICITANTE',2,3],['PM',4,5],['INICIATIVA',6,11]].forEach(([text,from,to])=>{
+              put(14,from,text,label,mid,info); ws.mergeCells(14,from,14,to); paint(14,from,to,info);
+            });
+            height(14,22);
+            [[this.exportField(d.requesterName),2,3],[this.exportField(d.pmName),4,5],[this.exportField(d.initiativeName),6,11]].forEach(([text,from,to])=>{
+              put(15,from,text,valueFont,mid,info); ws.mergeCells(15,from,16,to); paint(15,from,to,info); paint(16,from,to,info);
+            });
+            height(15,22); height(16,22);
+            paint(17,1,12,white); height(17,10);
+            put(18,2,'DESGLOSE DE ACTIVIDADES', face(12,true,navy), mid, white);
+            ws.mergeCells(18,2,18,11); height(18,27);
+            put(19,2,'Detalle del esfuerzo estimado por etapa de trabajo', face(11,false,gray), mid, white);
+            ws.mergeCells(19,2,19,11); height(19,20);
+            paint(20,1,12,white); height(20,8);
+            put(21,2,'TIPO', face(11,true,white), mid, navy);
+            ws.mergeCells(21,2,21,3); paint(21,2,3,navy);
+            put(21,4,'CONCEPTO', face(11,true,white), mid, navy);
+            ws.mergeCells(21,4,21,10); paint(21,4,10,navy);
+            put(21,11,'HORAS', face(11,true,white), center, navy); height(21,32);
+            let row=22;
+            pack.rows.forEach(line=>{
+              if(line.section){
+                put(row,2,line.concept, face(11,true,navy), mid, section);
+                ws.mergeCells(row,2,row,11); paint(row,2,11,section); height(row,28);
+              } else {
+                put(row,2,line.type||'', face(11,false,ink), mid, white);
+                ws.mergeCells(row,2,row,3);
+                put(row,4,line.concept, face(11,false,ink), mid, white);
+                ws.mergeCells(row,4,row,10); paint(row,4,10,white);
+                const hours=put(row,11,line.hours==null?'':line.hours, face(11,true,navy), center, white);
+                if(line.hours!=null) hours.numFmt='0.##';
+                height(row,31);
+              }
+              row++;
+            });
+            paint(row,1,12,white); height(row,10); row++;
+            paint(row,1,12,white); height(row,10); row++;
+            const summary=row;
+            const summaryTitle=put(summary,2,'', null, {horizontal:'left', vertical:'middle', wrapText:true, indent:1}, navy);
+            summaryTitle.value={richText:[
+              {font:{name:'Arial', size:14, bold:true, color:{argb:white}}, text:'RESUMEN DE LA ESTIMACIÓN\n'},
+              {font:{name:'Arial', size:9, color:{argb:soft}}, text:'Esfuerzo total y plazo previsto'},
+            ]};
+            ws.mergeCells(summary,2,summary+2,6); paint(summary,2,6,navy); paint(summary+1,2,6,navy); paint(summary+2,2,6,navy);
+            put(summary,7,'TOTAL DE HORAS', face(10,true,soft), center, navy);
+            ws.mergeCells(summary,7,summary,8); paint(summary,7,8,navy);
+            put(summary,9,'ENTREGA ESTIMADA', face(10,true,soft), center, navy);
+            ws.mergeCells(summary,9,summary,11); paint(summary,9,11,navy);
+            height(summary,22);
+            const totalCell=put(summary+1,7,pack.total, face(20,true,white), center, navy);
+            totalCell.numFmt='0.##" h"';
+            ws.mergeCells(summary+1,7,summary+2,8); paint(summary+1,7,8,navy); paint(summary+2,7,8,navy);
+            const daysCell=put(summary+1,9,pack.days==null?'—':pack.days, face(20,true,white), center, navy);
+            if(pack.days!=null) daysCell.numFmt='0.0" días"';
+            ws.mergeCells(summary+1,9,summary+2,11); paint(summary+1,9,11,navy); paint(summary+2,9,11,navy);
+            height(summary+1,22); height(summary+2,22);
+            const stampExcel=this.formatExportStamp(d).replace(/&/g,'&&');
+            ws.headerFooter={
+              oddHeader:'',
+              oddFooter:'&L&"Arial,Bold"&8&K63738DTECNOCORP / ESTIMACIÓN DE ESFUERZO&R&"Arial,Bold"&8&K63738D'+stampExcel,
+            };
+            row=summary+4;
+            if((d.additionalMarkdown||'').trim()){
+              put(row,2,'ADICIONAL', face(12,true,navy), mid, white);
+              ws.mergeCells(row,2,row,11); row+=2;
+              this.additionalMarkdownBlocks(d.additionalMarkdown).forEach(block=>{
+                const write=text=>{ put(row,2,text, face(11,false,ink), mid, white); ws.mergeCells(row,2,row,11); height(row,18); row++; };
+                if(block.type==='h'){ write(this.plainMarkdown(block.text)); return; }
+                if(block.type==='p'){ this.wrapExportLines(this.plainMarkdown(block.text), 110).forEach(write); return; }
+                if(block.type==='ul'){ block.items.forEach(item=>write('• '+this.plainMarkdown(item.text))); return; }
+                if(block.type==='code'){ block.text.split('\n').forEach(write); return; }
+                put(row,2,block.headers.map(cell=>this.plainMarkdown(cell)).join('  |  '), face(11,true,navy), mid, info);
+                ws.mergeCells(row,2,row,11); height(row,18); row++;
+                block.rows.forEach(line=>{ put(row,2,block.headers.map((_,col)=>this.plainMarkdown(line[col]||'')).join('  |  '), face(11,false,ink), mid, white); ws.mergeCells(row,2,row,11); height(row,18); row++; });
+              });
+            }
+            try{
+              const logoUrl=new URL('assets/logos/tecno-corp.png', window.location.href).href;
+              const logo=await fetch(logoUrl).then(response=>{ if(!response.ok) throw new Error('logo'); return response.arrayBuffer(); });
+              const imageId=wb.addImage({buffer:logo, extension:'png'});
+              ws.addImage(imageId, {tl:{col:9.05, row:2.35}, ext:{width:168, height:58}});
+            }catch(e){ /* el documento se entrega igual si el logo no carga */ }
+            const buffer=await wb.xlsx.writeBuffer();
+            const blob=new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+            const link=document.createElement('a');
+            link.href=URL.createObjectURL(blob);
+            link.download=pack.fileName+EXCEL.extension;
+            document.body.appendChild(link); link.click(); link.remove();
+            setTimeout(()=>URL.revokeObjectURL(link.href), 1000);
           }catch(e){ console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
           finally{ this.setState({exportingEstimacion:false}); }
         }
-        exportEstimacionPdfViaPrintDialog(){
-          if(!this.isDev()) return;
+        async exportEstimacionPdfViaPrintDialog(){
+          if(!this.isDev()||this._exportingPdf) return;
           const d=this.state.estDraft; if(!d) return;
-          const w=window.open('',NEW_TAB.target);
-          if(!w){ this.setState({modal:{type:MODAL.notice,title:'No se pudo abrir la vista para PDF',mensaje:'El navegador bloqueó la ventana. Permite ventanas emergentes para este sitio e intenta de nuevo.'},form:{}}); return; }
-          w.document.open(); w.document.write(this.estimacionPrintHtml(d)); w.document.close();
-          w.focus();
-          const logo=w.document.querySelector('.brand');
-          const printWhenReady=()=>{ try{ w.print(); }catch(e){} };
-          if(logo && !logo.complete){ logo.addEventListener('load', printWhenReady, {once:true}); logo.addEventListener('error', ()=>setTimeout(printWhenReady, DELAY_MS.printDialog), {once:true}); }
-          else setTimeout(printWhenReady, DELAY_MS.printDialog);
+          this._exportingPdf=true;
+          try{
+            const bytes=await this.buildClientEstimacionPdf(d);
+            const pack=this.clientExportPack(d);
+            const blob=new Blob([bytes], {type:'application/pdf'});
+            const link=document.createElement('a');
+            link.href=URL.createObjectURL(blob);
+            link.download=pack.fileName+'.pdf';
+            document.body.appendChild(link); link.click(); link.remove();
+            setTimeout(()=>URL.revokeObjectURL(link.href), 1000);
+          }catch(e){ console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo generar el PDF',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
+          finally{ this._exportingPdf=false; }
         }
-        estimacionPrintHtml(d){
-          const pack=this.clientExportPack(d), f=(x,dec)=>this.fmtNum(x,dec);
-          const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-          const date=d.estimatedOn?this.parseLocalDate(d.estimatedOn).toLocaleDateString(LOCALE):'';
-          const info=[['Código',d.code],['Fecha',date],['Versión',d.versionLabel],
-            ['Cliente',d.clientName],['Solicitante',d.requesterName],['PM',d.pmName],['Iniciativa',d.initiativeName]]
-            .map(([k,v])=>'<div><span>'+k+'</span>'+(esc(String(v||'').trim())||'—')+'</div>').join('');
-          const logo=new URL('assets/logos/tecno-corp.png', window.location.href).href;
-          const body=pack.rows.map(l=>l.section
-            ? '<tr class="sec"><td colspan="3">'+(esc(l.concept)||'&nbsp;')+'</td></tr>'
-            : '<tr><td>'+esc(l.type)+'</td><td class="concept">'+esc(l.concept)+'</td><td class="n">'+(l.hours==null?'':f(l.hours))+'</td></tr>').join('');
-          return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Estimación</title><style>'
-            +'@page{size:A4;margin:0}*{box-sizing:border-box}'
-            +'body{margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;line-height:1.45;color:'+PRINT_COLOR.text+';background:'+PRINT_COLOR.paper+';-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-            +'.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-24px -24px 20px;padding:10px 24px;background:'+PRINT_COLOR.panel+';border-bottom:1px solid '+PRINT_COLOR.panelBorder+';font-size:12px;color:'+PRINT_COLOR.label+'}'
-            +'.bar button{font:inherit;font-weight:600;color:'+PRINT_COLOR.paper+';background:'+PRINT_COLOR.brand+';border:0;border-radius:8px;padding:8px 14px;cursor:pointer}'
-            +'.top{display:flex;justify-content:space-between;align-items:center;gap:12px}'
-            +'.brand{height:42px;width:auto;flex:none}'
-            +'.kicker{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:'+PRINT_COLOR.accent+';font-weight:700}'
-            +'h1{margin:2px 0 14px;font-size:20px;color:'+PRINT_COLOR.brand+'}'
-            +'.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px;margin-bottom:16px}'
-            +'.meta span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:'+PRINT_COLOR.muted+'}'
-            +'table{width:100%;border-collapse:collapse}thead{display:table-header-group}tr{break-inside:avoid}'
-            +'th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#fff;text-align:left;background:#1f2471;padding:7px 8px;border-bottom:1px solid #1f2471}'
-            +'td{padding:6px 8px;border-bottom:1px solid '+PRINT_COLOR.rowBorder+';vertical-align:top}'
-            +'.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.concept{white-space:pre-wrap}'
-            +'tr.sec td{background:'+PRINT_COLOR.sectionBg+';font-weight:700;color:'+PRINT_COLOR.brand+';padding-top:9px}'
-            +'tfoot td{font-weight:700;border-top:1.5px solid '+PRINT_COLOR.faint+';border-bottom:0}'
-            +'.delivery{margin-top:18px;break-inside:avoid}'
-            +'.delivery td{background:'+PRINT_COLOR.highlightBg+';color:'+PRINT_COLOR.brand+';font-weight:700;font-size:13px;border-bottom:0;padding:12px 14px}'
-            +'.extra{margin-top:22px}.extra h2{margin:18px 0 8px;font-size:15px;color:'+PRINT_COLOR.brand+'}.extra h3{margin:14px 0 6px;font-size:13px;color:'+PRINT_COLOR.brand+'}.extra h4{margin:12px 0 4px;font-size:12px;color:'+PRINT_COLOR.text+'}'
-            +'.extra p{margin:0 0 8px}.extra ul{margin:0 0 8px;padding-left:18px}.extra li{margin:3px 0}.extra code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:'+PRINT_COLOR.sectionBg+';padding:0 3px;border-radius:3px}'
-            +'.extra pre{margin:0 0 10px;padding:8px 10px;background:'+PRINT_COLOR.sectionBg+';border-radius:6px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}'
-            +'.extra table.md{margin:4px 0 14px;width:auto}.extra table.md th,.extra table.md td{padding:5px 8px}'
-            +'@media print{body{padding:14mm 12mm}.no-print{display:none}}'
-            +'</style></head><body>'
-            +'<div class="bar no-print"><span>En el diálogo de impresión elige <b>Guardar como PDF</b>. Si aún ves fecha o el nombre del archivo, desactiva <b>Encabezados y pies de página</b>.</span><button onclick="window.print()">Imprimir o guardar PDF</button></div>'
-            +'<div class="top"><div class="kicker">Estimación de esfuerzo</div><img class="brand" src="'+esc(logo)+'" alt="Tecno Corp"></div><h1>'+(esc(String(d.initiativeName||'').trim())||'Estimación')+'</h1>'
-            +'<section class="meta">'+info+'</section>'
-            +'<table><colgroup><col style="width:22%"><col><col style="width:16%"></colgroup><thead><tr><th>Tipo</th><th>Concepto</th><th class="n">Horas</th></tr></thead>'
-            +'<tbody>'+body+'</tbody>'
-            +'<tfoot><tr><td></td><td>Total de horas</td><td class="n">'+f(pack.total)+'</td></tr></tfoot></table>'
-            +'<table class="delivery"><tbody><tr><td>Entrega estimada</td><td class="n">'+esc(this.formatDayCount(pack.days))+'</td></tr></tbody></table>'
-            +this.additionalMarkdownHtml(d.additionalMarkdown)
-            +'</body></html>';
+        async buildClientEstimacionPdf(d){
+          const PDFLib=await this.loadPdfLib();
+          const pack=this.clientExportPack(d);
+          const doc=await PDFLib.PDFDocument.create();
+          const regular=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+          const bold=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+          const hex=h=>PDFLib.rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
+          const C={navy:hex('142A59'), blue:hex('2175B5'), gray:hex('63738D'), ink:hex('172641'), info:hex('F3F6FA'), section:hex('EAF1F8'), white:hex('FFFFFF'), hair:hex('E3EAF1'), line:hex('E6EDF5'), soft:hex('B9CDE3')};
+          const W=612, H=792, ML=40, MR=40, contentW=W-ML-MR, floorY=52;
+          const clean=value=>String(value??'').replace(/[^\u0000-\u00ff]/g, ch=>({'—':'-','–':'-','·':'.'}[ch]||' '));
+          let page, y, tableOpen=false;
+          const pages=[];
+          const newPage=()=>{ page=doc.addPage([W,H]); pages.push(page); y=H-32; };
+          const wrap=(text, fnt, size, width)=>{
+            const words=clean(text).split(/\s+/).filter(Boolean);
+            const lines=[];
+            let current='';
+            const take=(word)=>{
+              let chunk='';
+              for(const ch of word){
+                if(fnt.widthOfTextAtSize(chunk+ch, size)<=width) chunk+=ch;
+                else { if(chunk) lines.push(chunk); chunk=ch; }
+              }
+              return chunk;
+            };
+            words.forEach(word=>{
+              const next=current?current+' '+word:word;
+              if(fnt.widthOfTextAtSize(next, size)<=width) current=next;
+              else { if(current) lines.push(current); current=fnt.widthOfTextAtSize(word, size)<=width?word:take(word); }
+            });
+            if(current) lines.push(current);
+            return lines.length?lines:[''];
+          };
+          const say=(str, x, baseline, size, fnt, color)=>page.drawText(clean(str), {x, y:baseline, size, font:fnt, color});
+          const drawTableHead=()=>{
+            const h=26;
+            page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.navy});
+            say('TIPO', ML+12, y-17, 9, bold, C.white);
+            say('CONCEPTO', ML+132, y-17, 9, bold, C.white);
+            const hoursLabel='HORAS', hw=bold.widthOfTextAtSize(hoursLabel, 9);
+            say(hoursLabel, ML+contentW-14-hw, y-17, 9, bold, C.white);
+            y-=h;
+          };
+          const ensure=(h, withHead)=>{
+            if(y-h>=floorY) return;
+            newPage();
+            if(withHead) drawTableHead();
+          };
+          newPage();
+          page.drawRectangle({x:0, y:H-8, width:W, height:8, color:C.navy});
+          y=H-28;
+          say('DOCUMENTO DE ESTIMACIÓN', ML, y-10, 9, bold, C.blue);
+          y-=22;
+          let logo=null;
+          try{
+            const logoUrl=new URL('assets/logos/tecno-corp.png', window.location.href).href;
+            const bytes=await fetch(logoUrl).then(response=>{ if(!response.ok) throw new Error('logo'); return response.arrayBuffer(); });
+            logo=await doc.embedPng(bytes);
+          }catch(e){ /* el PDF se entrega igual si el logo no carga */ }
+          const logoH=34, logoW=logo?logo.width*(logoH/logo.height):0;
+          const titleLines=wrap((d.initiativeName||'').trim()||'Estimación', bold, 18, contentW-logoW-16);
+          titleLines.forEach((line,i)=>say(line, ML, y-18-i*22, 18, bold, C.navy));
+          if(logo) page.drawImage(logo, {x:W-MR-logoW, y:y-logoH+4, width:logoW, height:logoH});
+          y-=Math.max(titleLines.length*22, logoH)+8;
+          page.drawRectangle({x:ML, y:y-3, width:contentW, height:3, color:C.hair});
+          y-=18;
+          const infoH=112;
+          ensure(infoH, false);
+          page.drawRectangle({x:ML, y:y-infoH, width:contentW, height:infoH, color:C.info});
+          say('INFORMACIÓN DEL REQUERIMIENTO', ML+14, y-18, 10, bold, C.navy);
+          const cols=[0, 128, 256, 372];
+          [['CÓDIGO', this.exportField(d.code)],['FECHA', this.formatSlashDate(d.estimatedOn)],['VERSIÓN', this.exportField(d.versionLabel)],['CLIENTE', this.exportField(d.clientName)]].forEach(([label,value],i)=>{
+            const x=ML+14+cols[i];
+            say(label, x, y-38, 8, bold, C.gray);
+            say(wrap(value, bold, 11, i===3?contentW-cols[3]-24:110)[0], x, y-54, 11, bold, C.ink);
+          });
+          [['SOLICITANTE', this.exportField(d.requesterName)],['PM', this.exportField(d.pmName)],['INICIATIVA', this.exportField(d.initiativeName)]].forEach(([label,value],i)=>{
+            const x=ML+14+cols[i];
+            say(label, x, y-76, 8, bold, C.gray);
+            say(wrap(value, bold, 11, i===2?contentW-cols[2]-28:110)[0], x, y-92, 11, bold, C.ink);
+          });
+          y-=infoH+18;
+          ensure(40, false);
+          say('DESGLOSE DE ACTIVIDADES', ML, y-12, 11, bold, C.navy);
+          y-=18;
+          say('Detalle del esfuerzo estimado por etapa de trabajo', ML, y-11, 9, regular, C.gray);
+          y-=20;
+          ensure(26, false);
+          drawTableHead();
+          tableOpen=true;
+          const typeW=118, conceptX=ML+typeW+8, conceptW=contentW-typeW-72;
+          pack.rows.forEach(line=>{
+            if(line.section){
+              const h=24;
+              ensure(h, true);
+              page.drawRectangle({x:ML, y:y-h, width:contentW, height:h, color:C.section});
+              page.drawRectangle({x:ML, y:y-h, width:3, height:h, color:C.blue});
+              say(wrap(line.concept, bold, 10, contentW-24)[0], ML+12, y-16, 10, bold, C.navy);
+              y-=h;
+              return;
+            }
+            const concepts=wrap(line.concept, regular, 10, conceptW);
+            const h=Math.max(24, concepts.length*13+10);
+            ensure(h, true);
+            say(wrap(line.type||'', regular, 10, typeW-16)[0], ML+12, y-16, 10, regular, C.ink);
+            concepts.forEach((text,i)=>say(text, conceptX, y-16-i*13, 10, regular, C.ink));
+            if(line.hours!=null){
+              const label=this.fmtNum(line.hours);
+              say(label, ML+contentW-14-bold.widthOfTextAtSize(clean(label), 11), y-16, 11, bold, C.navy);
+            }
+            page.drawLine({start:{x:ML, y:y-h}, end:{x:ML+contentW, y:y-h}, thickness:0.6, color:C.line});
+            y-=h;
+          });
+          tableOpen=false;
+          y-=16;
+          const cardH=62;
+          ensure(cardH, false);
+          page.drawRectangle({x:ML, y:y-cardH, width:contentW, height:cardH, color:C.navy});
+          say('RESUMEN DE LA ESTIMACIÓN', ML+16, y-24, 11, bold, C.white);
+          say('Esfuerzo total y plazo previsto', ML+16, y-40, 9, regular, C.soft);
+          const metricW=128, totalX=ML+contentW-metricW*2, daysX=ML+contentW-metricW;
+          page.drawLine({start:{x:totalX, y:y-10}, end:{x:totalX, y:y-cardH+10}, thickness:0.6, color:C.soft});
+          page.drawLine({start:{x:daysX, y:y-10}, end:{x:daysX, y:y-cardH+10}, thickness:0.6, color:C.soft});
+          const centered=(label, x, baseline, size, fnt, color)=>{
+            const width=fnt.widthOfTextAtSize(clean(label), size);
+            say(label, x+(metricW-width)/2, baseline, size, fnt, color);
+          };
+          centered('TOTAL DE HORAS', totalX, y-22, 8, bold, C.soft);
+          centered(this.fmtNum(pack.total)+' h', totalX, y-44, 16, bold, C.white);
+          centered('ENTREGA ESTIMADA', daysX, y-22, 8, bold, C.soft);
+          centered(pack.days==null?'-':this.fmtNum(pack.days,1)+' días', daysX, y-44, 16, bold, C.white);
+          y-=cardH+16;
+          const blocks=this.additionalMarkdownBlocks(d.additionalMarkdown);
+          if(blocks.length){
+            ensure(24, false);
+            say('ADICIONAL', ML, y-12, 11, bold, C.navy);
+            y-=22;
+            blocks.forEach(block=>{
+              const write=text=>wrap(this.plainMarkdown(text), regular, 10, contentW).forEach(line=>{
+                ensure(14, false);
+                say(line, ML, y-11, 10, regular, C.ink);
+                y-=14;
+              });
+              if(block.type==='code'){ block.text.split('\n').forEach(write); return; }
+              if(block.type==='ul'){ block.items.forEach(item=>write('• '+item.text)); return; }
+              if(block.type==='table'){ write(block.headers.join(' | ')); block.rows.forEach(row=>write(block.headers.map((_,col)=>row[col]||'').join(' | '))); return; }
+              write(block.text);
+            });
+          }
+          const stamp=clean(this.formatExportStamp(d));
+          pages.forEach(p=>{
+            p.drawLine({start:{x:ML, y:36}, end:{x:W-MR, y:36}, thickness:0.7, color:C.hair});
+            p.drawText('TECNOCORP / ESTIMACIÓN DE ESFUERZO', {x:ML, y:22, size:8, font:bold, color:C.gray});
+            p.drawText(stamp, {x:W-MR-bold.widthOfTextAtSize(stamp, 8), y:22, size:8, font:bold, color:C.gray});
+          });
+          return doc.save();
         }
 
         guardCrumbsAndLogoAgainstUnsavedExit(crumbs,R){
