@@ -38,12 +38,24 @@ function requiredString(value: unknown, label: string, maxLength: number) {
   return value.trim();
 }
 
-function validateRequirementId(value: unknown) {
-  const id = requiredString(value, "Requerimiento", 200);
+function validateId(value: unknown, label: string) {
+  const id = requiredString(value, `${label}: identificador`, 200);
   if (id.includes("/") || id.includes("\\") || id === "." || id === "..") {
-    throw new RequestError(400, "Requerimiento inválido.");
+    throw new RequestError(400, `${label}: identificador inválido.`);
   }
   return id;
+}
+
+// Files belong to a requirement or to an estimation; both live in the same company folder.
+const owners = {
+  requirement: { table: "requirements", label: "Requerimiento", notFound: "No se encontró el requerimiento." },
+  estimation: { table: "estimations", label: "Estimación", notFound: "No se encontró la estimación." },
+} as const;
+type Owner = { kind: keyof typeof owners; id: string };
+
+function readOwner(body: Record<string, unknown>): Owner {
+  if (body.estimationId != null) return { kind: "estimation", id: validateId(body.estimationId, owners.estimation.label) };
+  return { kind: "requirement", id: validateId(body.requirementId, owners.requirement.label) };
 }
 
 function validateFileName(value: unknown) {
@@ -110,20 +122,22 @@ function slug(value: string, maxLength: number) {
     .slice(0, maxLength);
 }
 
-// Resolves where a requirement's files live: requerimientos/<company-name>/ and its main code.
-async function requirementLocation(supabase: ReturnType<typeof createClient>, requirementId: string) {
+// Resolves where an owner's files live: requerimientos/<company-name>/ and its code
+// (the requirement's main PBI or the estimation's number).
+async function ownerLocation(supabase: ReturnType<typeof createClient>, owner: Owner) {
+  const config = owners[owner.kind];
   const { data, error } = await supabase
-    .from("requirements")
+    .from(config.table)
     .select("id, code, projects(companies(name))")
-    .eq("id", requirementId)
+    .eq("id", owner.id)
     .maybeSingle();
-  if (error || !data) throw new RequestError(404, "No se encontró el requerimiento.");
+  if (error || !data) throw new RequestError(404, config.notFound);
   const one = <T>(value: T | T[] | null | undefined) => (Array.isArray(value) ? value[0] : value);
   const company = one(one(data.projects as any)?.companies) as { name?: string } | undefined;
   const companyFolder = slug(typeof company?.name === "string" ? company.name : "", 80);
-  if (!companyFolder) throw new RequestError(404, "No se encontró la empresa del requerimiento.");
+  if (!companyFolder) throw new RequestError(404, "No se encontró la empresa.");
   const code = slug(typeof data.code === "string" ? data.code : "", 40);
-  if (!code) throw new RequestError(400, "El requerimiento no tiene número.");
+  if (!code) throw new RequestError(400, `${config.label} sin número. Asigna un número antes de adjuntar archivos.`);
   return { folder: `${keyPrefix}/${companyFolder}/`, code };
 }
 
@@ -148,8 +162,7 @@ Deno.serve(async (request) => {
     const { s3, bucket } = getS3Config();
 
     if (action === "create-upload") {
-      const requirementId = validateRequirementId(body.requirementId);
-      const { folder, code } = await requirementLocation(supabase, requirementId);
+      const { folder, code } = await ownerLocation(supabase, readOwner(body));
       const { safeName, contentType } = validateFileName(body.fileName);
       if (!Number.isSafeInteger(body.size) || body.size < 1 || body.size > maxFileSize) {
         throw new RequestError(400, "Cada archivo debe pesar entre 1 byte y 50 MB.");
@@ -171,14 +184,12 @@ Deno.serve(async (request) => {
 
     if (action === "download" || action === "delete") {
       const key = validateKey(body.key);
-      // RLS limits this lookup to documents of requirements the caller can see.
-      const { data: documents, error: documentError } = await supabase
-        .from("requirement_documents")
-        .select("id")
-        .eq("url", urlPrefix + key)
-        .limit(1);
-      if (documentError) throw new RequestError(500, "No se pudo verificar el documento.");
-      const isLinked = (documents || []).length > 0;
+      // RLS limits these lookups to documents the caller can see.
+      const lookups = await Promise.all(["requirement_documents", "estimation_documents"].map((table) =>
+        supabase.from(table).select("id").eq("url", urlPrefix + key).limit(1)
+      ));
+      if (lookups.some((result) => result.error)) throw new RequestError(500, "No se pudo verificar el documento.");
+      const isLinked = lookups.some((result) => (result.data || []).length > 0);
 
       if (action === "download") {
         // The visible document row authorizes access, even if the company was renamed later.
@@ -188,9 +199,9 @@ Deno.serve(async (request) => {
       }
 
       // Only unlinked objects (failed uploads or already-removed documents) in the
-      // requirement's company folder can be deleted.
-      const { folder } = await requirementLocation(supabase, validateRequirementId(body.requirementId));
-      if (!key.startsWith(folder)) throw new RequestError(400, "La clave del archivo no corresponde a la empresa del requerimiento.");
+      // owner's company folder can be deleted.
+      const { folder } = await ownerLocation(supabase, readOwner(body));
+      if (!key.startsWith(folder)) throw new RequestError(400, "La clave del archivo no corresponde a la empresa.");
       if (isLinked) throw new RequestError(409, "El archivo sigue asociado a un documento; elimina primero el documento.");
       await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
       return jsonResponse({ ok: true });
