@@ -1,7 +1,7 @@
-import { S3Client, DeleteObjectCommand, GetObjectCommand } from "npm:@aws-sdk/client-s3";
-import { createPresignedPost } from "npm:@aws-sdk/s3-presigned-post";
-import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { S3Client, DeleteObjectCommand, GetObjectCommand } from "npm:@aws-sdk/client-s3@3.1156.0";
+import { createPresignedPost } from "npm:@aws-sdk/s3-presigned-post@3.1156.0";
+import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1156.0";
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
