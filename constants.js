@@ -135,6 +135,7 @@
       environments: 'environments',
       estimations: 'estimations',
       estimationLines: 'estimation_lines',
+      estimationDocuments: 'estimation_documents',
       estimationComplexities: 'estimation_complexities',
       estimationActivityTypes: 'estimation_activity_types',
       profiles: 'profiles',

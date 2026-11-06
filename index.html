@@ -2466,7 +2466,7 @@
           super(props);
           this.state = {
             view:VIEW.companies, empresaId:null, proyectoId:null, reqId:null, estimacionId:null, estDraft:null,
-            estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, exportHourScenario:'mostProbable', estCounter:{lineId:null,count:'1'},
+            estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, estUploading:false, exportHourScenario:'mostProbable', estCounter:{lineId:null,count:'1'},
             reqTab:REQ_TAB.documents, filter:FILTER_ALL, modal:null, form:{},
             projectsView:PROJECTS_VIEW.grid, reqSelectMode:false, reqSelected:{},
             maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
@@ -2639,13 +2639,14 @@
             sb.from(TABLE.estimationActivityTypes).select('*'),
             sb.from(TABLE.estimations).select('*'),
             this.selectAll(TABLE.estimationLines),
+            sb.from(TABLE.estimationDocuments).select('*'),
           ];
         }
 
         async loadData(){
           this.setState({loadError:''});
           const sb=this._sb;
-          const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,rcodes] = await Promise.all([
+          const [co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,edoc,rcodes] = await Promise.all([
             sb.from(TABLE.companies).select('*'),
             sb.from(TABLE.projects).select('*'),
             sb.from(TABLE.projectDeployments).select('*'),
@@ -2666,7 +2667,7 @@
             ...this.estimationQueriesEmptyForClients(sb),
             this.selectAll(TABLE.requirementCodes),
           ]);
-          const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,rcodes].find(r=>r.error);
+          const bad=[co,pr,pd,gh,rq,rdoc,rdep,rblk,env,st,cred,srv,dep,pdep,ins,dins,cto,ecx,eat,est,eln,edoc,rcodes].find(r=>r.error);
           if(bad){ this.setState({loadError: bad.error.message, dataLoaded:true}); return; }
 
           const byOrder=(a,b)=>(a.sort_order||0)-(b.sort_order||0);
@@ -2683,7 +2684,7 @@
           const envsOf=byCompany(env.data), serversOf=byCompany(srv.data), deployablesOf=byCompany(dep.data), instructionsOf=byCompany(ins.data), contactsOf=byCompany(cto.data), projectsOf=byCompany(pr.data);
           const deploysOf=byProject(pd.data), githubOf=byProject(gh.data), credsOf=byProject(cred.data), reqsOf=byProject(rq.data), deployableLinksOf=byProject(pdep.data), estimationsOf=byProject(est.data);
           const docsOf=byReq(rdoc.data), reqDeploysOf=byReq(rdep.data), blockersOf=byReq(rblk.data);
-          const instructionLinksOf=this.groupRowsBy(dins.data,'deployable_id'), linesOf=this.groupRowsBy(eln.data,'estimation_id');
+          const instructionLinksOf=this.groupRowsBy(dins.data,'deployable_id'), linesOf=this.groupRowsBy(eln.data,'estimation_id'), estDocsOf=this.groupRowsBy(edoc.data,'estimation_id');
           const rowsFor=(groups,id)=>groups.get(id)||[];
           const data = (co.data||[]).map(c=>{
             const ambientes=rowsFor(envsOf,c.id).sort(byOrder)
@@ -2733,6 +2734,8 @@
                   createdAt:e.created_at||null, updatedAt:e.updated_at||null,
                   lineas:rowsFor(linesOf,e.id).sort(byOrder)
                     .map(l=>({id:l.id, kind:l.line_kind, typeId:l.activity_type_id||'', concepto:l.concept||'', horas:l.developer_hours==null?null:Number(l.developer_hours)})),
+                  documentos:rowsFor(estDocsOf,e.id).sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')))
+                    .map(d=>({id:d.id, nombre:d.name||'', tipo:d.type||'', url:d.url||''})),
                 })),
               };
             }),
@@ -3176,12 +3179,18 @@
           if(data&&data.error) throw new Error(data.error);
           return data;
         }
-        async deleteS3RequirementFile(requirementId,key){
-          await this.invokeRequirementFiles('delete',{requirementId,key});
+        // Where an S3 document belongs: the Edge Function body and the table row that links it.
+        requirementDocOwner(id){ return {id,body:{requirementId:id},table:TABLE.requirementDocuments,column:'requirement_id'}; }
+        estimationDocOwner(id){ return {id,body:{estimationId:id},table:TABLE.estimationDocuments,column:'estimation_id'}; }
+        async deleteS3Document(owner,key){
+          await this.invokeRequirementFiles('delete',{...owner.body,key});
         }
-        async uploadRequirementFile(requirementId,file,displayName=file.name){
+        async deleteS3RequirementFile(requirementId,key){
+          await this.deleteS3Document(this.requirementDocOwner(requirementId),key);
+        }
+        async uploadS3Document(owner,file,displayName=file.name){
           const contentType=this.requirementFileContentType(file);
-          const {uploadUrl,fields,key}=await this.invokeRequirementFiles('create-upload',{requirementId,fileName:file.name,contentType,size:file.size});
+          const {uploadUrl,fields,key}=await this.invokeRequirementFiles('create-upload',{...owner.body,fileName:file.name,contentType,size:file.size});
           const formData=new FormData();
           Object.entries(fields).forEach(([name,value])=>formData.append(name,value));
           formData.append('file',file);
@@ -3189,18 +3198,21 @@
             const response=await fetch(uploadUrl,{method:'POST',body:formData});
             if(!response.ok) throw new Error('S3 rechazó el archivo (HTTP '+response.status+'). Verifica el bucket y su configuración CORS.');
           }catch(uploadError){
-            try{ await this.deleteS3RequirementFile(requirementId,key); }
+            try{ await this.deleteS3Document(owner,key); }
             catch(cleanupError){ throw new Error('Falló la carga a S3 y no se pudo limpiar el archivo: '+cleanupError.message); }
             throw uploadError;
           }
           const url=REQUIREMENT_FILE.s3UrlPrefix+key;
-          const {error}=await this._sb.from(TABLE.requirementDocuments).insert({id:this.gid(ID_PREFIX.document),requirement_id:requirementId,name:displayName,type:this.requirementFileLabel(file),url});
+          const {error}=await this._sb.from(owner.table).insert({id:this.gid(ID_PREFIX.document),[owner.column]:owner.id,name:displayName,type:this.requirementFileLabel(file),url});
           if(error){
-            try{ await this.deleteS3RequirementFile(requirementId,key); }
+            try{ await this.deleteS3Document(owner,key); }
             catch(cleanupError){ throw new Error('No se pudo registrar el documento y tampoco limpiar el archivo de S3: '+cleanupError.message); }
             throw error;
           }
           return url;
+        }
+        async uploadRequirementFile(requirementId,file,displayName=file.name){
+          return this.uploadS3Document(this.requirementDocOwner(requirementId),file,displayName);
         }
         async uploadPendingRequirementFiles(requirementId,files,onRemaining){
           const pending=files.slice();
@@ -4142,6 +4154,55 @@
           reader.readAsText(file);
         }
         clearAdditionalMarkdown(){ this.editEstDraft(d=>({...d, additionalMarkdown:'', additionalFileName:''})); }
+        async uploadEstimationFiles(e){
+          const input=e.target, files=Array.from(input.files||[]); input.value='';
+          const d=this.state.estDraft;
+          if(!files.length||!d||!this.isDev()||this._busy) return;
+          const notice=(title,mensaje)=>this.setState({modal:{type:MODAL.notice,title,mensaje},form:{}});
+          if(d.isNew){ notice('Guarda la estimación','Guarda la estimación antes de adjuntar documentos.'); return; }
+          try{ files.forEach(file=>this.requirementFileContentType(file)); }
+          catch(err){ notice('Archivo no permitido',err.message); return; }
+          this._busy=true;
+          this.setState({estUploading:true,saveStatus:SAVE_STATUS.saving});
+          const owner=this.estimationDocOwner(d.id);
+          let uploaded=0;
+          try{
+            for(const file of files){ await this.uploadS3Document(owner,file); uploaded++; }
+            this.setState({saveStatus:SAVE_STATUS.saved});
+          }catch(err){
+            console.error(err);
+            this.setState({saveStatus:SAVE_STATUS.error});
+            notice('No se pudo adjuntar el documento',(uploaded?uploaded+' de '+files.length+' archivos se adjuntaron. ':'')+(err.message||'Intenta de nuevo.'));
+          }finally{
+            this._busy=false;
+            this.setState({estUploading:false});
+            await this.loadData();
+          }
+        }
+        async delEstimationDoc(id){
+          if(!this.isDev()||this._busy) return;
+          if(!window.confirm('¿Eliminar este documento de la estimación? Esta acción no se puede deshacer.')) return;
+          this._busy=true;
+          this.setState({saveStatus:SAVE_STATUS.saving});
+          try{
+            const {data:doc,error:lookupError}=await this._sb.from(TABLE.estimationDocuments).select('url,estimation_id').eq('id',id).maybeSingle();
+            if(lookupError) throw lookupError;
+            if(!doc) throw new Error('No se encontró el documento.');
+            const {error}=await this._sb.from(TABLE.estimationDocuments).delete().eq('id',id);
+            if(error) throw error;
+            if(doc.url&&doc.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){
+              try{ await this.deleteS3Document(this.estimationDocOwner(doc.estimation_id),doc.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length)); }
+              catch(cleanupError){ throw new Error('El documento se eliminó, pero no se pudo borrar el archivo de S3: '+cleanupError.message); }
+            }
+            this.setState({saveStatus:SAVE_STATUS.saved});
+          }catch(e){
+            console.error(e);
+            this.setState({saveStatus:SAVE_STATUS.error,modal:{type:MODAL.notice,title:'No se pudo eliminar el documento',mensaje:e.message||'Verifica el acceso al archivo.'},form:{}});
+          }finally{
+            this._busy=false;
+            await this.loadData();
+          }
+        }
         setEstLine(i,key,value){
           this.editEstDraft(d=>{
             const lines=d.lines.slice(); let l={...lines[i],[key]:value};
@@ -4344,11 +4405,18 @@
         }
         async delEstimacion(id){
           if(!this.isDev()||this._busy) return;
-          if(!window.confirm('¿Eliminar esta estimación y todas sus actividades? Esta acción no se puede deshacer.')) return;
+          if(!window.confirm('¿Eliminar esta estimación con sus actividades y documentos? Esta acción no se puede deshacer.')) return;
           this._busy=true;
           this.setState({saveStatus:SAVE_STATUS.saving});
           try{
-            const { error } = await this._sb.from(TABLE.estimations).delete().eq('id',id);
+            const sb=this._sb;
+            const {data:docs,error:docsError}=await sb.from(TABLE.estimationDocuments).select('url').eq('estimation_id',id);
+            if(docsError) throw docsError;
+            const {error:docsDeleteError}=await sb.from(TABLE.estimationDocuments).delete().eq('estimation_id',id);
+            if(docsDeleteError) throw docsDeleteError;
+            const s3Keys=(docs||[]).filter(d=>d.url&&d.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)).map(d=>d.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length));
+            for(const key of s3Keys) await this.deleteS3Document(this.estimationDocOwner(id),key);
+            const { error } = await sb.from(TABLE.estimations).delete().eq('id',id);
             if(error) throw error;
             this.setState({saveStatus:SAVE_STATUS.saved});
             await this.loadData();
@@ -5238,6 +5306,7 @@
               const d=s.estDraft, c=this.estDraftCalc(d), t=c.totals, p=c.params, last=d.lines.length-1;
               const field=key=>e=>this.setEstField(key,e.target.value);
               const border=ok=>ok?'var(--gp-line-22)':'var(--gp-red)';
+              const estDocs=(((this.proyecto()||{}).estimaciones||[]).find(x=>x.id===d.id)||{}).documentos||[];
               const typeOptions=types.map(x=>({value:x.id,label:x.label}));
               const summary={
                 developer:fmt(t.developer)+' h', statistical:fmt(t.statistical)+' h',
@@ -5274,6 +5343,12 @@
                 alertRatio:d.alertRatio, dailyHours:d.dailyHours, dedicationPct:d.dedicationPct,
                 additionalMarkdown:d.additionalMarkdown||'', additionalFileName:d.additionalFileName||'', hasAdditional:!!(d.additionalMarkdown||'').trim(),
                 onAdditionalFile:e=>this.loadAdditionalMarkdown(e), clearAdditional:()=>this.clearAdditionalMarkdown(),
+                documents:estDocs.map(doc=>({nombre:doc.nombre, tipo:doc.tipo, iconHref:this.docIcon(doc.tipo), open:()=>this.openDoc(doc.url), del:ev=>{ ev.stopPropagation(); this.delEstimationDoc(doc.id); }})),
+                hasDocuments:estDocs.length>0, documentsEmpty:!d.isNew&&!estDocs.length,
+                canUploadDocuments:!d.isNew&&!s.estUploading, uploadDocumentsDisabled:d.isNew||!!s.estUploading,
+                uploadDocumentsLabel:s.estUploading?'Subiendo…':'Adjuntar archivos',
+                documentsHint:d.isNew?'Guarda la estimación para poder adjuntar documentos.':'Word (.doc, .docx) o PDF · máximo 50 MB por archivo. Se guardan al seleccionarlos.',
+                onDocumentFiles:e=>this.uploadEstimationFiles(e),
                 alertBorder:border(p.alertRatio>=0), dailyBorder:border(p.dailyHours>0&&p.dailyHours<ESTIMATION_MAX_DAILY_HOURS), dedicationBorder:border(p.dedication>0&&p.dedication<=1),
                 on:{
                   code:field('code'), estimatedOn:field('estimatedOn'), clientName:field('clientName'), initiativeName:field('initiativeName'), applicationName:field('applicationName'),
