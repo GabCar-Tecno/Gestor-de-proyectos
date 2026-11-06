@@ -3195,7 +3195,9 @@
           Object.entries(fields).forEach(([name,value])=>formData.append(name,value));
           formData.append('file',file);
           try{
-            const response=await fetch(uploadUrl,{method:'POST',body:formData});
+            let response;
+            try{ response=await fetch(uploadUrl,{method:'POST',body:formData}); }
+            catch(networkError){ throw new Error('No se pudo enviar el archivo a S3. Revisa tu conexión y que el CORS del bucket permita el origen '+window.location.origin+'.'); }
             if(!response.ok) throw new Error('S3 rechazó el archivo (HTTP '+response.status+'). Verifica el bucket y su configuración CORS.');
           }catch(uploadError){
             try{ await this.deleteS3Document(owner,key); }
