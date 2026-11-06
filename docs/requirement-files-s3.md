@@ -2,6 +2,8 @@
 
 The requirement form accepts multiple Word (`.doc`, `.docx`) and PDF files up to 50 MB each. Files are stored in a private S3 bucket; the app stores an `s3://` key in `requirement_documents`. Supabase Edge Function `requirement-files` issues short-lived upload and download URLs after checking the signed-in user's `dev` or `pm` role and the requirement's access. AWS credentials must never be added to the browser app.
 
+Objects are stored as `requerimientos/<companyId>/<requirementId>/<uuid>_<file>`, so each company has its own folder. The function resolves the company from the requirement on the server; the browser cannot choose the folder. The company id is used instead of its name so renaming a company does not break existing files.
+
 Existing files stored in the private Supabase Storage bucket keep working. New file uploads use S3.
 
 ## AWS setup

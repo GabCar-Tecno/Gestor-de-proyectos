@@ -99,18 +99,25 @@ async function getAuthorizedUser(request: Request) {
   return supabase;
 }
 
-async function requireRequirement(supabase: ReturnType<typeof createClient>, requirementId: string) {
+// Returns the requirement's S3 folder: requerimientos/<companyId>/<requirementId>/
+async function requirementFolder(supabase: ReturnType<typeof createClient>, requirementId: string) {
   const { data, error } = await supabase
     .from("requirements")
-    .select("id")
+    .select("id, projects(company_id)")
     .eq("id", requirementId)
     .maybeSingle();
   if (error || !data) throw new RequestError(404, "No se encontró el requerimiento.");
+  const project = Array.isArray(data.projects) ? data.projects[0] : data.projects;
+  const companyId = project?.company_id;
+  if (typeof companyId !== "string" || !companyId || /[\/\\]|^\.\.?$/.test(companyId)) {
+    throw new RequestError(404, "No se encontró la empresa del requerimiento.");
+  }
+  return `${keyPrefix}/${companyId}/${requirementId}/`;
 }
 
-function validateKey(value: unknown, requirementId: string) {
+function validateKey(value: unknown, folder: string) {
   const key = requiredString(value, "Clave del archivo", 1024);
-  if (!key.startsWith(`${keyPrefix}/${requirementId}/`) || key.includes("..") || key.includes("\\")) {
+  if (!key.startsWith(folder) || key.includes("..") || key.includes("\\")) {
     throw new RequestError(400, "La clave del archivo no corresponde al requerimiento.");
   }
   return key;
@@ -128,13 +135,13 @@ Deno.serve(async (request) => {
 
     if (action === "create-upload") {
       const requirementId = validateRequirementId(body.requirementId);
-      await requireRequirement(supabase, requirementId);
+      const folder = await requirementFolder(supabase, requirementId);
       const { safeName, contentType } = validateFileName(body.fileName);
       if (!Number.isSafeInteger(body.size) || body.size < 1 || body.size > maxFileSize) {
         throw new RequestError(400, "Cada archivo debe pesar entre 1 byte y 50 MB.");
       }
       if (body.contentType !== contentType) throw new RequestError(400, "El tipo de archivo no coincide con su extensión.");
-      const key = `${keyPrefix}/${requirementId}/${crypto.randomUUID()}_${safeName}`;
+      const key = `${folder}${crypto.randomUUID()}_${safeName}`;
       const signedPost = await createPresignedPost(s3, {
         Bucket: bucket,
         Key: key,
@@ -149,9 +156,10 @@ Deno.serve(async (request) => {
     }
 
     if (action === "download" || action === "delete") {
-      const requirementId = validateRequirementId(body.requirementId || String(body.key || "").split("/")[1]);
-      await requireRequirement(supabase, requirementId);
-      const key = validateKey(body.key, requirementId);
+      // Key layout: requerimientos/<companyId>/<requirementId>/<file>
+      const requirementId = validateRequirementId(body.requirementId || String(body.key || "").split("/")[2]);
+      const folder = await requirementFolder(supabase, requirementId);
+      const key = validateKey(body.key, folder);
 
       const { data: documents, error: documentError } = await supabase
         .from("requirement_documents")
