@@ -1,0 +1,111 @@
+<x-dc>
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    "
+  >
+    <div>
+      <h1
+        style="
+          margin: 0 0 5px;
+          font-size: clamp(22px, 3vw, 29px);
+          font-weight: 700;
+          letter-spacing: -0.5px;
+        "
+      >
+        Tablero de requerimientos
+      </h1>
+      <p style="margin: 0; color: var(--gp-muted-5); font-size: 13.5px">
+        Consulta y administra los cambios de todas las
+        aplicaciones.
+      </p>
+    </div>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+      <sc-if value="{{ isPM }}" hint-placeholder-val="{{ true }}">
+        <button
+          type="button"
+          onClick="{{ exportMaestroExcel }}"
+          disabled="{{ exportingExcel }}"
+          title="Descarga en Excel los requerimientos visibles"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            border: 1px solid var(--gp-line-24);
+            background: none;
+            color: var(--gp-muted);
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+          "
+          style-hover="color:var(--gp-success);border-color:var(--gp-success-line)"
+        >
+          <svg width="14" height="14">
+            <use href="#ic-download"></use></svg
+          >{{ exportExcelLabel }}
+        </button>
+      </sc-if>
+      <span
+        style="
+          font-size: 11px;
+          color: var(--gp-muted-6);
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-soft);
+          border-radius: 20px;
+          padding: 7px 12px;
+        "
+        >{{ maestroVisibleCount }} de {{ maestroCount }}
+        requerimientos</span
+      >
+    </div>
+  </div>
+  <div class="master-metrics">
+    <div
+      class="master-metric"
+      style="--metric-color: var(--gp-metric-total); --metric-tint: var(--gp-metric-total-tint)"
+    >
+      <span class="master-metric-copy"
+        ><span class="master-metric-label"
+          >Total de requerimientos</span
+        ><strong class="master-metric-value"
+          >{{ maestroCount }}</strong
+        ></span
+      >
+    </div>
+    <sc-for
+      list="{{ maestroStatusCounts }}"
+      as="st"
+      hint-placeholder-count="4"
+    >
+      <div
+        class="master-metric"
+        style="--metric-color:{{ st.color }};--metric-tint:{{ st.tint }}"
+      >
+        <span class="master-metric-copy"
+          ><span class="master-metric-label">{{ st.label }}</span
+          ><strong class="master-metric-value"
+            >{{ st.count }}</strong
+          ></span
+        >
+      </div>
+    </sc-for>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null}'>
+class Component extends DCLogic {
+}
+</script>

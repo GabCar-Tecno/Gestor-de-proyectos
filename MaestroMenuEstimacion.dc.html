@@ -1,0 +1,31 @@
+<x-dc>
+<button
+  type="button"
+  class="master-dropdown-backdrop"
+  aria-label="Cerrar menú de estimación"
+  onClick="{{ closeMaestroEstMenu }}"
+></button>
+<div
+  class="master-dropdown-menu master-est-menu"
+  role="menu"
+  aria-label="Estimación"
+  style="{{ maestroEstMenuStyle }}"
+>
+  <sc-for
+    list="{{ maestroEstOptions }}"
+    as="op"
+    hint-placeholder-count="3"
+    ><button
+      type="button"
+      class="master-dropdown-option"
+      role="menuitem"
+      onClick="{{ op.choose }}"
+    >
+      <span>{{ op.label }}</span></button
+  ></sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"closeMaestroEstMenu":null,"maestroEstOptions":[{"label":"Descargar Excel","choose":null}],"maestroEstMenuStyle":"--master-est-left:16px;--master-est-top:48px;--master-est-bottom:auto"}'>
+class Component extends DCLogic {
+}
+</script>

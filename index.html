@@ -737,7 +737,7 @@
           .master-table-head,
           .master-row {
             display: grid;
-            grid-template-columns: minmax(110px, 0.95fr) 78px minmax(
+            grid-template-columns: var(--master-lead-col,) minmax(110px, 0.95fr) 78px minmax(
                 210px,
                 2fr
               ) 112px minmax(185px, 1.75fr) 105px 105px;
@@ -753,7 +753,51 @@
             letter-spacing: 0.45px;
             text-transform: uppercase;
           }
+          .master-table--est {
+            --master-est-col: 36px;
+            --master-lead-col: var(--master-est-col);
+          }
+          .master-cell-est {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .master-est-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid var(--gp-line-24);
+            border-radius: 8px;
+            background: none;
+            color: var(--gp-muted);
+            cursor: pointer;
+          }
+          .master-est-trigger:hover,
+          .master-est-trigger[aria-expanded="true"] {
+            border-color: var(--gp-denim);
+            color: var(--gp-denim);
+          }
+          .master-est-trigger:focus-visible {
+            outline: 2px solid var(--gp-denim);
+            outline-offset: 2px;
+          }
+          .master-dropdown-menu.master-est-menu {
+            --master-est-menu-width: 200px;
+            position: fixed;
+            right: auto;
+            width: var(--master-est-menu-width);
+            top: var(--master-est-top);
+            bottom: var(--master-est-bottom);
+            left: min(var(--master-est-left), calc(100vw - var(--master-est-menu-width) - 16px));
+          }
           .master-row {
+            box-sizing: border-box;
+            font-size: 13.3333px;
+            font-weight: 400;
+            line-height: normal;
             width: 100%;
             text-align: left;
             cursor: pointer;
@@ -776,7 +820,7 @@
             }
             .master-table--extended .master-table-head,
             .master-table--extended .master-row {
-              grid-template-columns: 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
+              grid-template-columns: var(--master-lead-col,) 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
               min-width: 2240px;
               box-sizing: content-box;
               gap: 12px;
@@ -831,8 +875,15 @@
               background: var(--sticky-bg);
               box-shadow: 12px 0 0 var(--sticky-bg);
             }
+            .master-table--extended .master-sticky-0 { left: 0; }
             .master-table--extended .master-sticky-1 { left: 0; }
             .master-table--extended .master-sticky-2 { left: 142px; }
+            .master-table--est.master-table--extended .master-table-head,
+            .master-table--est.master-table--extended .master-row {
+              min-width: calc(2240px + var(--master-est-col) + 12px);
+            }
+            .master-table--est.master-table--extended .master-sticky-1 { left: calc(var(--master-est-col) + 12px); }
+            .master-table--est.master-table--extended .master-sticky-2 { left: calc(142px + var(--master-est-col) + 12px); }
           }
           .master-cell-main {
             min-width: 0;
@@ -856,7 +907,7 @@
           @media (max-width: 1000px) {
             .master-table-head,
             .master-row {
-              grid-template-columns: minmax(100px, 0.9fr) 70px minmax(
+              grid-template-columns: var(--master-lead-col,) minmax(100px, 0.9fr) 70px minmax(
                   175px,
                   1.7fr
                 ) 100px minmax(150px, 1.5fr) 95px 100px;
@@ -876,6 +927,7 @@
               display: none;
             }
             .master-row {
+              position: relative;
               grid-template-columns: repeat(2, minmax(0, 1fr));
               gap: 11px 14px;
               background: var(--gp-fog);
@@ -899,6 +951,14 @@
             .master-cell-description,
             .master-cell-observations {
               grid-column: 1/-1;
+            }
+            .master-cell-est {
+              position: absolute;
+              top: 10px;
+              right: 10px;
+            }
+            .master-table--est .master-cell-app {
+              padding-right: 40px;
             }
             .app-header {
               gap: 10px !important;
@@ -1875,6 +1935,8 @@
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
                 maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
+                maestroEstMenuOpen="{{ maestroEstMenuOpen }}" closeMaestroEstMenu="{{ closeMaestroEstMenu }}"
+                maestroEstOptions="{{ maestroEstOptions }}" maestroEstMenuStyle="{{ maestroEstMenuStyle }}"
               />
             </sc-if>
 
@@ -2469,7 +2531,7 @@
             estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, exportHourScenario:'mostProbable', estCounter:{lineId:null,count:'1'},
             reqTab:REQ_TAB.documents, filter:FILTER_ALL, modal:null, form:{},
             projectsView:PROJECTS_VIEW.grid, reqSelectMode:false, reqSelected:{},
-            maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
+            maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, maestroEstMenu:null, exportingExcel:false,
             apiUrlInput:'', apiErr:'', apiHasRender:false,
             session:null, authChecked:false, profileRole:null, devProfiles:[], pmProfiles:[],
             loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
@@ -2910,12 +2972,29 @@
         goProyecto(){ this.setState({view:VIEW.project,reqId:null}); }
         goRequerimientos(){ if(!this.isDev()) return; this.setState({view:VIEW.requirements}); }
         goEstimaciones(){ if(!this.isDev()) return; this.setState({view:VIEW.estimations,estimacionId:null,estDraft:null}); }
-        goMaestro(){ this.setState({view:VIEW.master,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
+        goMaestro(){ this.setState({view:VIEW.master,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{},maestroEstMenu:null}); }
         setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
         toggleMaestroProjectMenu(){ this.setState(s=>({maestroProjectMenuOpen:!s.maestroProjectMenuOpen,maestroStatusMenuOpen:false})); }
         toggleMaestroStatusMenu(){ this.setState(s=>({maestroStatusMenuOpen:!s.maestroStatusMenuOpen,maestroProjectMenuOpen:false})); }
         closeMaestroProjectMenu(){ this.setState({maestroProjectMenuOpen:false}); }
         closeMaestroStatusMenu(){ this.setState({maestroStatusMenuOpen:false}); }
+        closeMaestroEstMenu(){ this.setState({maestroEstMenu:null}); }
+        latestEstimacionOf(project,reqId){ return (project.estimaciones||[]).filter(e=>e.requirementId===reqId).reduce((best,e)=>!best||String(e.updatedAt||'')>String(best.updatedAt||'')?e:best,null); }
+        toggleMaestroEstMenu(e,companyId,projectId,estId){
+          e.stopPropagation();
+          const open=this.state.maestroEstMenu;
+          if(open&&open.estId===estId){ this.setState({maestroEstMenu:null}); return; }
+          const rect=e.currentTarget.getBoundingClientRect(), below=rect.bottom<window.innerHeight/2;
+          this.setState({maestroEstMenu:{companyId,projectId,estId,left:rect.left+'px',top:below?(rect.bottom+8)+'px':'auto',bottom:below?'auto':(window.innerHeight-rect.top+8)+'px'}});
+        }
+        maestroRowKey(e,open){ if(e.target!==e.currentTarget||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); open(); }
+        savedEstDraft(m){
+          const company=(this.state.data||[]).find(c=>c.id===m.companyId), project=company&&(company.proyectos||[]).find(p=>p.id===m.projectId);
+          const e=project&&(project.estimaciones||[]).find(x=>x.id===m.estId);
+          return e?this.estDraftFromSaved(e,project):null;
+        }
+        exportMaestroEstimacion(m,run){ this.setState({maestroEstMenu:null}); if(!this.isPM()) return; const d=this.savedEstDraft(m); if(d) run(d); }
+        openMaestroEstimacion(m){ if(!this.isPM()) return; this.setState({maestroEstMenu:null,empresaId:m.companyId,proyectoId:m.projectId,reqId:null},()=>this.openEstimacion(m.estId)); }
         chooseMaestroProject(value){ this.setState({maestroProject:value,maestroProjectMenuOpen:false,maestroStatusMenuOpen:false}); }
         chooseMaestroStatus(value){ this.setState({maestroStatus:value,maestroStatusMenuOpen:false,maestroProjectMenuOpen:false}); }
         setMasterReqCompany(id){ this.setState(s=>({form:{...s.form,empresaId:id,proyectoId:''}})); }
@@ -4032,13 +4111,16 @@
         openEstimacion(id){
           if(!this.isDev()) return;
           const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
+          const estDraft=this.estDraftFromSaved(e,p);
+          this.setState(s=>({view:VIEW.estimation,estimacionId:id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
+        }
+        estDraftFromSaved(e,p){
           const num=v=>this.fmtNum(Number(v));
-          const estDraft={ id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
+          return { id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
             code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, applicationName:(e.aplicacion||'').trim()||p.nombre||'', requesterName:e.solicitante, pmName:e.pm,
             versionLabel:e.version, complexityId:e.complexityId, estStatus:e.estado||ESTIMATION_PHASE.created, requirementId:e.requirementId,
             roundingDecimals:String(e.decimales), alertRatio:num(e.umbral), dailyHours:num(e.horasDia), dedicationPct:num(e.dedicacion*100), additionalMarkdown:e.adicional||'', additionalFileName:'',
             lines:e.lineas.map(l=>({id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concepto,hours:l.horas==null?'':String(l.horas),autoNext:l.kind===ESTIMATION_LINE_KIND.activity&&!l.concepto})) };
-          this.setState(s=>({view:VIEW.estimation,estimacionId:id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
         }
         editEstDraft(fn,done){ this.setState(s=>{ const d=s.estDraft; if(!d) return null; const next=fn(d); return next?{estDraft:{...next,dirty:true,rev:(d.rev||0)+1}}:null; },done); }
         setEstField(key,value){ this.editEstDraft(d=>({...d,[key]:value})); }
@@ -4173,16 +4255,16 @@
         }
         requirementSeedFromEstimation(d,c){
           const hours=Math.round(c.totals.developer*100)/100;
-          return { hours, title:(d.initiativeName||'').trim()||'Requerimiento', pm:(d.pmName||'').trim() };
+          return { hours, title:(d.initiativeName||'').trim()||'Requerimiento' };
         }
         async resolveEstimationRequirement(sb,d,c,p){
           const code=(d.code||'').trim();
           if(d.requirementId||!code) return {requirementId:d.requirementId||'', createdId:''};
           const existing=this.findProjectRequirementByCode(p,code);
           if(existing) return {requirementId:existing.id, createdId:''};
-          const { hours, title, pm }=this.requirementSeedFromEstimation(d,c);
+          const { hours, title }=this.requirementSeedFromEstimation(d,c);
           const id=this.gid(ID_PREFIX.requirement), now=new Date().toISOString();
-          const { error } = await sb.from(TABLE.requirements).insert({ id, project_id:p.id, title, owner:pm||DB_DEFAULT.owner, status:this.estimationStatusId(), status_id:this.estimationStatusId(), code, change_description:title, observations:'', estimated_hours:Number.isFinite(hours)?hours:null, status_updated_at:now });
+          const { error } = await sb.from(TABLE.requirements).insert({ id, project_id:p.id, title, owner:DB_DEFAULT.owner, status:this.estimationStatusId(), status_id:this.estimationStatusId(), code, change_description:title, observations:'', estimated_hours:Number.isFinite(hours)?hours:null, status_updated_at:now });
           if(error) throw error;
           try{ await this.persistRequirementCodes(sb,id,[code]); }
           catch(err){ await sb.from(TABLE.requirements).delete().eq('id',id); throw err; }
@@ -4216,7 +4298,7 @@
         openRequirementFromEstimation(){
           const d=this.state.estDraft; if(!d||d.requirementId) return;
           const c=this.estDraftCalc(d);
-          const { hours, title, pm }=this.requirementSeedFromEstimation(d,c);
+          const { hours, title }=this.requirementSeedFromEstimation(d,c);
           const code=(d.code||'').trim();
           this.openModal({
             type:MODAL.requirement, mode:MODAL_MODE.create, title:'Crear requerimiento', fromEstimacionId:d.id,
@@ -4225,7 +4307,7 @@
               titulo:title, descripcionCambios:title, observaciones:'',
               fechaInicioRequerimiento:'',fechaEntregaUsuario:'', fechaPasoProduccion:'',
               horas:Number.isFinite(hours)?hours:'',
-              responsables:pm?[pm]:[],
+              responsables:[],
               estado:this.estimationStatusId(),
               ...BOARD_EXT.emptyExtendedForm(),
             },
@@ -4451,9 +4533,9 @@
           if(current) lines.push(current);
           return lines;
         }
-        async exportEstimacion(){
+        async exportEstimacion(draft){
           if(!this.isDev()||this.state.exportingEstimacion) return;
-          const d=this.state.estDraft; if(!d) return;
+          const d=draft||this.state.estDraft; if(!d) return;
           this.setState({exportingEstimacion:true});
           try{
             const ExcelJS=await this.loadExcelJS();
@@ -4594,9 +4676,9 @@
           }catch(e){ console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
           finally{ this.setState({exportingEstimacion:false}); }
         }
-        async exportEstimacionPdfViaPrintDialog(){
+        async exportEstimacionPdfViaPrintDialog(draft){
           if(!this.isDev()||this._exportingPdf) return;
-          const d=this.state.estDraft; if(!d) return;
+          const d=draft||this.state.estDraft; if(!d) return;
           this._exportingPdf=true;
           try{
             const bytes=await this.buildClientEstimacionPdf(d);
@@ -4923,7 +5005,16 @@
               {label:'Bloqueados',count:stateCount(MASTER_STATUS_GROUP.blocked),color:'var(--gp-metric-block)',tint:'var(--gp-metric-block-tint)'},
             ];
             R.maestroExtended=this.canSeeExtended(this.empresa());
-            R.maestroTableClass=R.maestroExtended?'master-table--extended':'';
+            R.maestroTableClass=[R.maestroExtended?'master-table--extended':'',isPM?'master-table--est':''].filter(Boolean).join(' ');
+            const estMenu=isPM?s.maestroEstMenu:null;
+            R.maestroEstMenuOpen=!!estMenu;
+            R.closeMaestroEstMenu=()=>this.closeMaestroEstMenu();
+            R.maestroEstMenuStyle=estMenu?'--master-est-left:'+estMenu.left+';--master-est-top:'+estMenu.top+';--master-est-bottom:'+estMenu.bottom:'';
+            R.maestroEstOptions=estMenu?[
+              {label:'Descargar Excel',choose:()=>this.exportMaestroEstimacion(estMenu,d=>this.exportEstimacion(d))},
+              {label:'Descargar PDF',choose:()=>this.exportMaestroEstimacion(estMenu,d=>this.exportEstimacionPdfViaPrintDialog(d))},
+              {label:'Abrir estimación',choose:()=>this.openMaestroEstimacion(estMenu)},
+            ]:[];
             R.maestroTopScroll=e=>this.startMaestroThumbDrag(e);
             R.maestroTableScroll=()=>{ if(R.maestroExtended) this.syncMaestroThumb(); };
             if(R.maestroExtended){
@@ -4936,7 +5027,12 @@
               const userDelivery=deliveries.find(x=>((x.amb&&this.estMeta(x.amb.stage)[0])||'').toLocaleLowerCase(LOCALE).includes(STATUS_LABEL_HINT.userTesting)||((x.amb&&x.amb.label)||x.d.env||'').toLocaleLowerCase(LOCALE).includes(STATUS_LABEL_HINT.userTesting));
               const explicitDate=req.fechaEntregaUsuario?this.parseLocalDate(req.fechaEntregaUsuario).toLocaleDateString(LOCALE):
                 (userDelivery?new Date(userDelivery.d.updatedAt).toLocaleDateString(LOCALE):'Sin definir');
+              const est=isPM?this.latestEstimacionOf(project,req.id):null;
+              const openReq=()=>this.openReqFromMaster(company.id,project.id,req.id);
               return {
+                hasEstimation:!!est, estMenuOpen:!!est&&!!estMenu&&estMenu.estId===est.id,
+                toggleEstMenu:est?e=>this.toggleMaestroEstMenu(e,company.id,project.id,est.id):null,
+                openKey:e=>this.maestroRowKey(e,openReq),
                 empresa:company.nombre, proyecto:project.nombre,
                 code:this.reqCodeLabel(req)||this.fallbackReqCode((project.requerimientos||[]).findIndex(x=>x.id===req.id)), titulo:req.titulo,
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
@@ -4945,7 +5041,7 @@
                 responsable:req.responsable, estado:meta[0], estadoColor:meta[1], estadoBg:meta[2],
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'var(--gp-red)':'var(--gp-muted-2)', deliveryColor:req.fechaEntregaUsuario||userDelivery?'var(--gp-success)':'var(--gp-muted-3)',
-                openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:()=>this.openReqFromMaster(company.id,project.id,req.id),
+                openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:openReq,
                 ext:R.maestroExtended?this.extendedDisplay(company,req):{},
               };
             });
