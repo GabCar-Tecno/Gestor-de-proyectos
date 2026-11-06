@@ -1,14 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
 
-function loadConstants() {
-  const sandbox = { window: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'constants.js'), 'utf8'), sandbox);
-  return sandbox.window.APP_CONSTANTS;
-}
+const constants = require('../constants.js');
+
+const loadConstants = () => constants;
 
 test('board ranks cancelled requirements after every other stage', () => {
   const { BOARD_RANK } = loadConstants();

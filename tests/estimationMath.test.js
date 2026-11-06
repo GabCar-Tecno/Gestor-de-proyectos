@@ -1,19 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
 
-function loadEstimationMath() {
-  const sandbox = { window: {} };
-  vm.createContext(sandbox);
-  for (const file of ['constants.js', 'estimationMath.js']) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), sandbox);
-  }
-  return sandbox.window.ESTIMATION_MATH;
-}
-
-const { excelRoundUp, lineMetrics, activityWithHoursMetrics, estimationTotals } = loadEstimationMath();
+const { ESTIMATION_LINE_KIND } = require('../constants.js');
+const { excelRoundUp, lineMetrics, activityWithHoursMetrics, estimationTotals } = require('../estimationMath.js');
 
 const complexity = { optimistic_weight: 1, most_probable_weight: 4, pessimistic_weight: 1 };
 const params = { decimals: 1, alertRatio: 0.3, dailyHours: 8, dedication: 0.9 };
@@ -27,6 +16,9 @@ test('excelRoundUp rounds away from zero and ignores float noise', () => {
   assert.equal(excelRoundUp(2, 0), 2);
   assert.equal(excelRoundUp(2.0001, 0), 3);
   assert.equal(excelRoundUp(1.001, 2), 1.01);
+  assert.equal(excelRoundUp(1.000000004, 0), 1);
+  assert.equal(excelRoundUp(1.000000005, 0), 2);
+  assert.equal(excelRoundUp(3.0000000049, 0), 3);
 });
 
 test('lineMetrics returns null for empty or non numeric hours', () => {
@@ -65,20 +57,20 @@ test('lineMetrics flags needsReview only when the deviation is strictly above th
 });
 
 test('activityWithHoursMetrics ignores sections and missing complexity', () => {
-  assert.equal(activityWithHoursMetrics({ kind: 'section', hours: '3' }, complexity, params), null);
-  assert.equal(activityWithHoursMetrics({ kind: 'activity', hours: '3' }, null, params), null);
-  assert.equal(activityWithHoursMetrics({ kind: 'activity', hours: '' }, complexity, params), null);
-  near(activityWithHoursMetrics({ kind: 'activity', hours: '3' }, complexity, params).statistical, 4);
+  assert.equal(activityWithHoursMetrics({ kind: ESTIMATION_LINE_KIND.section, hours: '3' }, complexity, params), null);
+  assert.equal(activityWithHoursMetrics({ kind: ESTIMATION_LINE_KIND.activity, hours: '3' }, null, params), null);
+  assert.equal(activityWithHoursMetrics({ kind: ESTIMATION_LINE_KIND.activity, hours: '' }, complexity, params), null);
+  near(activityWithHoursMetrics({ kind: ESTIMATION_LINE_KIND.activity, hours: '3' }, complexity, params).statistical, 4);
 });
 
 test('estimationTotals sums sections, empty activities and activity types', () => {
   const lines = [
-    { kind: 'section', typeId: '', hours: '' },
-    { kind: 'activity', typeId: 'dev', hours: '4' },
-    { kind: 'activity', typeId: 'dev', hours: '3' },
-    { kind: 'activity', typeId: 'qa', hours: '0' },
-    { kind: 'activity', typeId: 'dev', hours: '' },
-    { kind: 'activity', typeId: 'qa', hours: '2' }
+    { kind: ESTIMATION_LINE_KIND.section, typeId: '', hours: '' },
+    { kind: ESTIMATION_LINE_KIND.activity, typeId: 'dev', hours: '4' },
+    { kind: ESTIMATION_LINE_KIND.activity, typeId: 'dev', hours: '3' },
+    { kind: ESTIMATION_LINE_KIND.activity, typeId: 'qa', hours: '0' },
+    { kind: ESTIMATION_LINE_KIND.activity, typeId: 'dev', hours: '' },
+    { kind: ESTIMATION_LINE_KIND.activity, typeId: 'qa', hours: '2' }
   ];
   const totals = estimationTotals(lines, complexity, params);
   assert.deepEqual(totals.metrics.map((m) => m === null), [true, false, false, false, true, false]);
@@ -92,7 +84,7 @@ test('estimationTotals sums sections, empty activities and activity types', () =
 });
 
 test('estimationTotals with no hours yields zero totals and null days when nothing is dedicated', () => {
-  const totals = estimationTotals([{ kind: 'section' }, { kind: 'activity', typeId: 'dev', hours: '' }], complexity, { ...params, dedication: 0 });
+  const totals = estimationTotals([{ kind: ESTIMATION_LINE_KIND.section }, { kind: ESTIMATION_LINE_KIND.activity, typeId: 'dev', hours: '' }], complexity, { ...params, dedication: 0 });
   assert.equal(totals.developer, 0);
   assert.equal(totals.statistical, 0);
   assert.equal(totals.review, 0);

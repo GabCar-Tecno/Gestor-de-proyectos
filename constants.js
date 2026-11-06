@@ -45,7 +45,7 @@
   };
   const emailField = { to: 'to', cc: 'cc' };
 
-  window.APP_CONSTANTS = deepFreeze({
+  const api = deepFreeze({
     VIEW: {
       companies: 'empresas',
       projects: 'proyectos',
@@ -279,4 +279,7 @@
       highlightBg: '#e8f4fb'
     }
   });
+
+  if (typeof window !== 'undefined') window.APP_CONSTANTS = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
