@@ -737,10 +737,10 @@
           .master-table-head,
           .master-row {
             display: grid;
-            grid-template-columns: minmax(110px, 0.95fr) 78px minmax(
+            grid-template-columns: var(--master-lead-col,) minmax(110px, 0.95fr) 78px minmax(
                 210px,
                 2fr
-              ) 112px minmax(185px, 1.75fr) 105px 105px;
+              ) 112px 90px minmax(185px, 1.75fr) 105px 105px;
             gap: 12px;
             align-items: center;
           }
@@ -753,7 +753,51 @@
             letter-spacing: 0.45px;
             text-transform: uppercase;
           }
+          .master-table--est {
+            --master-est-col: 36px;
+            --master-lead-col: var(--master-est-col);
+          }
+          .master-cell-est {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .master-est-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid var(--gp-line-24);
+            border-radius: 8px;
+            background: none;
+            color: var(--gp-muted);
+            cursor: pointer;
+          }
+          .master-est-trigger:hover,
+          .master-est-trigger[aria-expanded="true"] {
+            border-color: var(--gp-denim);
+            color: var(--gp-denim);
+          }
+          .master-est-trigger:focus-visible {
+            outline: 2px solid var(--gp-denim);
+            outline-offset: 2px;
+          }
+          .master-dropdown-menu.master-est-menu {
+            --master-est-menu-width: 200px;
+            position: fixed;
+            right: auto;
+            width: var(--master-est-menu-width);
+            top: var(--master-est-top);
+            bottom: var(--master-est-bottom);
+            left: min(var(--master-est-left), calc(100vw - var(--master-est-menu-width) - 16px));
+          }
           .master-row {
+            box-sizing: border-box;
+            font-size: 13.3333px;
+            font-weight: 400;
+            line-height: normal;
             width: 100%;
             text-align: left;
             cursor: pointer;
@@ -771,12 +815,26 @@
             display: none;
           }
           @media (min-width: 761px) {
-            .master-table.master-table--extended {
+            .master-table.master-table--scroll {
               overflow-x: auto;
+              --master-row-gap: 12px;
+              --master-sticky-2-left: 122px;
+              --master-base-min: 1111px;
+            }
+            .master-table--est {
+              --master-lead-extra: calc(var(--master-est-col) + var(--master-row-gap));
+            }
+            .master-table--scroll:not(.master-table--extended) .master-table-head,
+            .master-table--scroll:not(.master-table--extended) .master-row {
+              box-sizing: border-box;
+              min-width: calc(var(--master-base-min) + var(--master-lead-extra, 0px));
+            }
+            .master-table.master-table--extended {
+              --master-sticky-2-left: 142px;
             }
             .master-table--extended .master-table-head,
             .master-table--extended .master-row {
-              grid-template-columns: 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
+              grid-template-columns: var(--master-lead-col,) 130px 80px minmax(220px, 2fr) 120px 160px 110px 110px 110px 110px 110px 150px 80px 110px 110px 130px minmax(220px, 1.5fr);
               min-width: 2240px;
               box-sizing: content-box;
               gap: 12px;
@@ -805,24 +863,27 @@
             .master-scroll-top.dragging .master-scroll-thumb {
               background: #95a3b8;
             }
-            .master-table.master-table--extended {
+            .master-table.master-table--scroll {
               scrollbar-width: thin;
               scrollbar-color: #b7c2d2 transparent;
             }
-            .master-table--extended::-webkit-scrollbar { height: 10px; }
-            .master-table--extended::-webkit-scrollbar-track { background: var(--gp-fog); border-radius: 8px; }
-            .master-table--extended::-webkit-scrollbar-thumb { background: #b7c2d2; border-radius: 8px; border: 2px solid var(--gp-fog); }
-            .master-table--extended::-webkit-scrollbar-thumb:hover { background: #95a3b8; }
+            .master-table--scroll::-webkit-scrollbar { height: 10px; }
+            .master-table--scroll::-webkit-scrollbar-track { background: var(--gp-fog); border-radius: 8px; }
+            .master-table--scroll::-webkit-scrollbar-thumb { background: #b7c2d2; border-radius: 8px; border: 2px solid var(--gp-fog); }
+            .master-table--scroll::-webkit-scrollbar-thumb:hover { background: #95a3b8; }
             .master-table--extended .master-cell-observations {
               order: 99;
             }
-            .master-table--extended { --sticky-bg: var(--gp-wisp); }
-            .master-table--extended .master-table-head { --sticky-bg: var(--gp-fog); }
-            .master-table--extended .master-row:hover { --sticky-bg: var(--gp-mist); }
-            .master-board-light .master-table--extended { --sticky-bg: var(--gp-fog); }
-            .master-board-light .master-table--extended .master-table-head { --sticky-bg: var(--gp-vapor); }
-            .master-board-light .master-table--extended .master-row:hover { --sticky-bg: var(--gp-frost); }
-            .master-table--extended .master-sticky {
+            .master-table--scroll { --sticky-bg: var(--gp-wisp); }
+            .master-table--scroll .master-table-head { --sticky-bg: var(--gp-fog); }
+            .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-mist); }
+            .master-board-light .master-table--scroll { --sticky-bg: var(--gp-fog); }
+            .master-board-light .master-table--scroll .master-table-head { --sticky-bg: var(--gp-vapor); }
+            .master-board-light .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-frost); }
+            html.dark-mode .master-board-light .master-table--scroll { --sticky-bg: var(--gp-surface); }
+            html.dark-mode .master-board-light .master-table--scroll .master-table-head { --sticky-bg: var(--gp-abyss); }
+            html.dark-mode .master-board-light .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-dusk); }
+            .master-table--scroll .master-sticky {
               position: sticky;
               z-index: 1;
               align-self: stretch;
@@ -831,8 +892,21 @@
               background: var(--sticky-bg);
               box-shadow: 12px 0 0 var(--sticky-bg);
             }
-            .master-table--extended .master-sticky-1 { left: 0; }
-            .master-table--extended .master-sticky-2 { left: 142px; }
+            .master-table--scroll:not(.master-table--extended) .master-cell-app-text {
+              display: block;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .master-table--scroll .master-sticky-0 { left: 0; }
+            .master-table--scroll .master-sticky-1 { left: 0; }
+            .master-table--scroll .master-sticky-2 { left: var(--master-sticky-2-left); }
+            .master-table--est.master-table--extended .master-table-head,
+            .master-table--est.master-table--extended .master-row {
+              min-width: calc(2240px + var(--master-est-col) + 12px);
+            }
+            .master-table--est.master-table--scroll .master-sticky-1 { left: calc(var(--master-est-col) + 12px); }
+            .master-table--est.master-table--scroll .master-sticky-2 { left: calc(var(--master-sticky-2-left) + var(--master-est-col) + 12px); }
           }
           .master-cell-main {
             min-width: 0;
@@ -854,12 +928,17 @@
             overflow-wrap: anywhere;
           }
           @media (max-width: 1000px) {
+            .master-table.master-table--scroll:not(.master-table--extended) {
+              --master-row-gap: 8px;
+              --master-sticky-2-left: 108px;
+              --master-base-min: 956px;
+            }
             .master-table-head,
             .master-row {
-              grid-template-columns: minmax(100px, 0.9fr) 70px minmax(
+              grid-template-columns: var(--master-lead-col,) minmax(100px, 0.9fr) 70px minmax(
                   175px,
                   1.7fr
-                ) 100px minmax(150px, 1.5fr) 95px 100px;
+                ) 100px 86px minmax(150px, 1.5fr) 95px 100px;
               gap: 8px;
               padding-left: 12px;
               padding-right: 12px;
@@ -876,6 +955,7 @@
               display: none;
             }
             .master-row {
+              position: relative;
               grid-template-columns: repeat(2, minmax(0, 1fr));
               gap: 11px 14px;
               background: var(--gp-fog);
@@ -899,6 +979,14 @@
             .master-cell-description,
             .master-cell-observations {
               grid-column: 1/-1;
+            }
+            .master-cell-est {
+              position: absolute;
+              top: 10px;
+              right: 10px;
+            }
+            .master-table--est .master-cell-app {
+              padding-right: 40px;
             }
             .app-header {
               gap: 10px !important;
@@ -1874,7 +1962,9 @@
                 toggleMaestroStatusMenu="{{ toggleMaestroStatusMenu }}" maestroStatusMenuOpen="{{ maestroStatusMenuOpen }}"
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
-                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
+                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroNormal="{{ maestroNormal }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
+                maestroEstMenuOpen="{{ maestroEstMenuOpen }}" closeMaestroEstMenu="{{ closeMaestroEstMenu }}"
+                maestroEstOptions="{{ maestroEstOptions }}" maestroEstMenuStyle="{{ maestroEstMenuStyle }}"
               />
             </sc-if>
 
@@ -2469,7 +2559,7 @@
             estComplexities:[], estActivityTypes:[], currentUserName:'', exportingEstimacion:false, estUploading:false, exportHourScenario:'mostProbable', estCounter:{lineId:null,count:'1'},
             reqTab:REQ_TAB.documents, filter:FILTER_ALL, modal:null, form:{},
             projectsView:PROJECTS_VIEW.grid, reqSelectMode:false, reqSelected:{},
-            maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, exportingExcel:false,
+            maestroSearch:'', maestroStatus:FILTER_ALL, maestroProject:FILTER_ALL, maestroProjectMenuOpen:false, maestroStatusMenuOpen:false, maestroEstMenu:null, exportingExcel:false,
             apiUrlInput:'', apiErr:'', apiHasRender:false,
             session:null, authChecked:false, profileRole:null, devProfiles:[], pmProfiles:[],
             loginEmail:'', loginPassword:'', loginError:'', loginNotice:'', loginLoading:false,
@@ -2543,27 +2633,29 @@
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
         canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
+        hoursText(req){ return req.horas!==''&&req.horas!=null?String(req.horas):'—'; }
         extendedDisplay(company,req){
           const byId={}; ((company&&company.contactos)||[]).forEach(c=>{ byId[c.id]=c; });
           const day=v=>v?this.parseLocalDate(v).toLocaleDateString(LOCALE):'—';
           const pm=req.pmContactId&&byId[req.pmContactId];
           const d={ pmEntrega:pm?pm.name:'—', fechaSolicitud:day(req.fechaSolicitud), fechaEntregaEstimacion:day(req.fechaEntregaEstimacion),
             fechaAprobacionEstimacion:day(req.fechaAprobacionEstimacion), fechaInicioDesarrollo:day(req.fechaInicioDesarrollo), fechaEntregaPruebas:day(req.fechaEntregaPruebas),
-            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:req.horas!==''&&req.horas!=null?String(req.horas):'—',
+            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:this.hoursText(req),
             facturadoTxt:BOARD_EXT.formatInvoiced(req.facturado,req.mesFacturado,LOCALE), facturadoColor:req.facturado?'var(--gp-success)':'var(--gp-muted-3)' };
           d.items=[['PM Entrega',d.pmEntrega],['Fecha de solicitud',d.fechaSolicitud],['Fecha entrega estimación',d.fechaEntregaEstimacion],['Fecha aprobación estimación',d.fechaAprobacionEstimacion],
             ['Fecha inicio desarrollo',d.fechaInicioDesarrollo],['Fecha real entrega a pruebas',d.fechaEntregaPruebas],['Facturado',d.facturadoTxt]].map(([label,value])=>({label,value}));
           return d;
         }
         maestroScrollParts(){
-          const table=document.querySelector('.master-table--extended'), track=document.querySelector('.master-scroll-top');
+          const table=document.querySelector('.master-table--scroll'), track=document.querySelector('.master-scroll-top');
           const thumb=track&&track.querySelector('.master-scroll-thumb');
           return table&&track&&thumb ? {table,track,thumb} : null;
         }
         syncMaestroThumb(){
           const p=this.maestroScrollParts(); if(!p) return;
-          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth, trackW=track.clientWidth;
-          track.style.visibility=max>0?'visible':'hidden';
+          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth;
+          track.style.display=max>0?'block':'none';
+          const trackW=track.clientWidth;
           if(max<=0||!trackW) return;
           const thumbW=Math.max(40,trackW*table.clientWidth/table.scrollWidth);
           thumb.style.width=thumbW+'px';
@@ -2913,12 +3005,29 @@
         goProyecto(){ this.setState({view:VIEW.project,reqId:null}); }
         goRequerimientos(){ if(!this.isDev()) return; this.setState({view:VIEW.requirements}); }
         goEstimaciones(){ if(!this.isDev()) return; this.setState({view:VIEW.estimations,estimacionId:null,estDraft:null}); }
-        goMaestro(){ this.setState({view:VIEW.master,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{}}); }
+        goMaestro(){ this.setState({view:VIEW.master,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{},maestroEstMenu:null}); }
         setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
         toggleMaestroProjectMenu(){ this.setState(s=>({maestroProjectMenuOpen:!s.maestroProjectMenuOpen,maestroStatusMenuOpen:false})); }
         toggleMaestroStatusMenu(){ this.setState(s=>({maestroStatusMenuOpen:!s.maestroStatusMenuOpen,maestroProjectMenuOpen:false})); }
         closeMaestroProjectMenu(){ this.setState({maestroProjectMenuOpen:false}); }
         closeMaestroStatusMenu(){ this.setState({maestroStatusMenuOpen:false}); }
+        closeMaestroEstMenu(){ this.setState({maestroEstMenu:null}); }
+        latestEstimacionOf(project,reqId){ return (project.estimaciones||[]).filter(e=>e.requirementId===reqId).reduce((best,e)=>!best||String(e.updatedAt||'')>String(best.updatedAt||'')?e:best,null); }
+        toggleMaestroEstMenu(e,companyId,projectId,estId){
+          e.stopPropagation();
+          const open=this.state.maestroEstMenu;
+          if(open&&open.estId===estId){ this.setState({maestroEstMenu:null}); return; }
+          const rect=e.currentTarget.getBoundingClientRect(), below=rect.bottom<window.innerHeight/2;
+          this.setState({maestroEstMenu:{companyId,projectId,estId,left:rect.left+'px',top:below?(rect.bottom+8)+'px':'auto',bottom:below?'auto':(window.innerHeight-rect.top+8)+'px'}});
+        }
+        maestroRowKey(e,open){ if(e.target!==e.currentTarget||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); open(); }
+        savedEstDraft(m){
+          const company=(this.state.data||[]).find(c=>c.id===m.companyId), project=company&&(company.proyectos||[]).find(p=>p.id===m.projectId);
+          const e=project&&(project.estimaciones||[]).find(x=>x.id===m.estId);
+          return e?this.estDraftFromSaved(e,project):null;
+        }
+        exportMaestroEstimacion(m,run){ this.setState({maestroEstMenu:null}); if(!this.isPM()) return; const d=this.savedEstDraft(m); if(d) run(d); }
+        openMaestroEstimacion(m){ if(!this.isPM()) return; this.setState({maestroEstMenu:null,empresaId:m.companyId,proyectoId:m.projectId,reqId:null},()=>this.openEstimacion(m.estId)); }
         chooseMaestroProject(value){ this.setState({maestroProject:value,maestroProjectMenuOpen:false,maestroStatusMenuOpen:false}); }
         chooseMaestroStatus(value){ this.setState({maestroStatus:value,maestroStatusMenuOpen:false,maestroProjectMenuOpen:false}); }
         setMasterReqCompany(id){ this.setState(s=>({form:{...s.form,empresaId:id,proyectoId:''}})); }
@@ -4137,13 +4246,16 @@
         openEstimacion(id){
           if(!this.isDev()) return;
           const p=this.proyecto(), e=p&&(p.estimaciones||[]).find(x=>x.id===id); if(!e) return;
+          const estDraft=this.estDraftFromSaved(e,p);
+          this.setState(s=>({view:VIEW.estimation,estimacionId:id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
+        }
+        estDraftFromSaved(e,p){
           const num=v=>this.fmtNum(Number(v));
-          const estDraft={ id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
+          return { id:e.id, isNew:false, dirty:false, rev:0, savedLineIds:e.lineas.map(l=>l.id),
             code:e.codigo, estimatedOn:e.fecha||this.todayIso(), clientName:e.cliente, initiativeName:e.iniciativa, applicationName:(e.aplicacion||'').trim()||p.nombre||'', requesterName:e.solicitante, pmName:e.pm,
             versionLabel:e.version, complexityId:e.complexityId, estStatus:e.estado||ESTIMATION_PHASE.created, requirementId:e.requirementId,
             roundingDecimals:String(e.decimales), alertRatio:num(e.umbral), dailyHours:num(e.horasDia), dedicationPct:num(e.dedicacion*100), additionalMarkdown:e.adicional||'', additionalFileName:'',
             lines:e.lineas.map(l=>({id:l.id,kind:l.kind,typeId:l.typeId,concept:l.concepto,hours:l.horas==null?'':String(l.horas),autoNext:l.kind===ESTIMATION_LINE_KIND.activity&&!l.concepto})) };
-          this.setState(s=>({view:VIEW.estimation,estimacionId:id,estDraft,estCounter:{...s.estCounter,lineId:null}}));
         }
         editEstDraft(fn,done){ this.setState(s=>{ const d=s.estDraft; if(!d) return null; const next=fn(d); return next?{estDraft:{...next,dirty:true,rev:(d.rev||0)+1}}:null; },done); }
         setEstField(key,value){ this.editEstDraft(d=>({...d,[key]:value})); }
@@ -4289,19 +4401,26 @@
           const patchDraft=patch=>this.setState(s=>s.estDraft&&s.estDraft.id===d.id?{estDraft:{...s.estDraft,...patch}}:null);
           try{
             const sb=this._sb;
-            const requirementId=d.requirementId||'';
+            const resolved=await this.resolveEstimationRequirement(sb,d,c,p);
+            const requirementId=resolved.requirementId;
             const header={ project_id:p.id, requirement_id:requirementId||null, code:(d.code||'').trim(), estimated_on:d.estimatedOn,
               client_name:(d.clientName||'').trim(), initiative_name:(d.initiativeName||'').trim(), application_name:(d.applicationName||'').trim(), requester_name:(d.requesterName||'').trim(), pm_name:(d.pmName||'').trim(),
               version_label:(d.versionLabel||'').trim(), complexity_id:d.complexityId, rounding_decimals:c.params.decimals,
               deviation_alert_ratio:c.params.alertRatio, daily_hours:c.params.dailyHours, dedication:c.params.dedication, additional_markdown:d.additionalMarkdown||'', updated_at:new Date().toISOString() };
-            if(d.isNew){
-              const { error } = await sb.from(TABLE.estimations).insert({ id:d.id, created_by:this.state.session.user.id, status:ESTIMATION_PHASE.created, ...header });
-              if(error) throw error;
-              patchDraft({isNew:false, estStatus:ESTIMATION_PHASE.created});
-            } else {
-              const { error } = await sb.from(TABLE.estimations).update(header).eq('id',d.id);
-              if(error) throw error;
+            try{
+              if(d.isNew){
+                const { error } = await sb.from(TABLE.estimations).insert({ id:d.id, created_by:this.state.session.user.id, status:ESTIMATION_PHASE.created, ...header });
+                if(error) throw error;
+                patchDraft({isNew:false, estStatus:ESTIMATION_PHASE.created});
+              } else {
+                const { error } = await sb.from(TABLE.estimations).update(header).eq('id',d.id);
+                if(error) throw error;
+              }
+            }catch(headerError){
+              if(resolved.createdId) await sb.from(TABLE.requirements).delete().eq('id',resolved.createdId);
+              throw headerError;
             }
+            if(requirementId&&!d.requirementId) patchDraft({requirementId});
             const idsOwnedEvenIfSaveFails=[...new Set([...d.savedLineIds,...d.lines.map(l=>l.id)])];
             patchDraft({savedLineIds:idsOwnedEvenIfSaveFails});
             await this.saveEstimationLines(d.id,c.lines,d.savedLineIds);
@@ -4313,6 +4432,27 @@
             await this.loadData();
           }catch(e){ console.error(e); this.setState({saveStatus:SAVE_STATUS.error,modal:{type:MODAL.notice,title:'No se pudo guardar la estimación',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
           finally{ this._busy=false; }
+        }
+        findProjectRequirementByCode(p,code){
+          const key=String(code||'').trim().toLocaleLowerCase(LOCALE);
+          return ((p&&p.requerimientos)||[]).find(r=>this.reqCodesOf(r).some(x=>String(x).trim().toLocaleLowerCase(LOCALE)===key))||null;
+        }
+        requirementSeedFromEstimation(d,c){
+          const hours=Math.round(c.totals.developer*100)/100;
+          return { hours, title:(d.initiativeName||'').trim()||'Requerimiento' };
+        }
+        async resolveEstimationRequirement(sb,d,c,p){
+          const code=(d.code||'').trim();
+          if(d.requirementId||!code) return {requirementId:d.requirementId||'', createdId:''};
+          const existing=this.findProjectRequirementByCode(p,code);
+          if(existing) return {requirementId:existing.id, createdId:''};
+          const { hours, title }=this.requirementSeedFromEstimation(d,c);
+          const id=this.gid(ID_PREFIX.requirement), now=new Date().toISOString();
+          const { error } = await sb.from(TABLE.requirements).insert({ id, project_id:p.id, title, owner:DB_DEFAULT.owner, status:this.estimationStatusId(), status_id:this.estimationStatusId(), code, change_description:title, observations:'', estimated_hours:Number.isFinite(hours)?hours:null, status_updated_at:now });
+          if(error) throw error;
+          try{ await this.persistRequirementCodes(sb,id,[code]); }
+          catch(err){ await sb.from(TABLE.requirements).delete().eq('id',id); throw err; }
+          return {requirementId:id, createdId:id};
         }
         async saveEstimationLines(estimationId,lines,knownIds){
           const sb=this._sb;
@@ -4342,37 +4482,44 @@
         openRequirementFromEstimation(){
           const d=this.state.estDraft; if(!d||d.requirementId) return;
           const c=this.estDraftCalc(d);
-          const hours=Math.round(c.totals.developer*100)/100;
-          const title=(d.initiativeName||'').trim()||'Requerimiento';
-          const pm=(d.pmName||'').trim();
+          const { hours, title }=this.requirementSeedFromEstimation(d,c);
+          const code=(d.code||'').trim();
           this.openModal({
             type:MODAL.requirement, mode:MODAL_MODE.create, title:'Crear requerimiento', fromEstimacionId:d.id,
             form:{
-              codigos:[''],
+              codigos:[code],
               titulo:title, descripcionCambios:title, observaciones:'',
               fechaInicioRequerimiento:'',fechaEntregaUsuario:'', fechaPasoProduccion:'',
               horas:Number.isFinite(hours)?hours:'',
-              responsables:pm?[pm]:[],
+              responsables:[],
               estado:this.estimationStatusId(),
               ...BOARD_EXT.emptyExtendedForm(),
             },
           });
         }
+        approvalLinkTarget(d,p){
+          const code=(d.code||'').trim();
+          return code?this.findProjectRequirementByCode(p,code):null;
+        }
         async advanceEstimacion(next){
           if(!this.isDev()||this._busy) return;
           const d=this.state.estDraft, p=this.proyecto(); if(!d||!p||d.isNew||d.dirty) return;
           if(ESTIMATION_PHASE_ORDER.indexOf(next)!==ESTIMATION_PHASE_ORDER.indexOf(d.estStatus)+1) return;
-          if(next===ESTIMATION_PHASE.approved && !d.requirementId){ this.openRequirementFromEstimation(); return; }
+          const linkable=next===ESTIMATION_PHASE.approved&&!d.requirementId?this.approvalLinkTarget(d,p):null;
+          if(next===ESTIMATION_PHASE.approved && !d.requirementId && !linkable){ this.openRequirementFromEstimation(); return; }
           this._busy=true;
           this.setState({saveStatus:SAVE_STATUS.saving});
           try{
-            const patch={ status:next, updated_at:new Date().toISOString() };
-            const { error } = await this._sb.from(TABLE.estimations).update(patch).eq('id', d.id);
-            if(error) throw error;
+            if(linkable) await this.linkApprovedEstimacion(this._sb, d.id, linkable.id);
+            else {
+              const patch={ status:next, updated_at:new Date().toISOString() };
+              const { error } = await this._sb.from(TABLE.estimations).update(patch).eq('id', d.id);
+              if(error) throw error;
+            }
             this.setState(s=>{
               const cur=s.estDraft;
               if(!cur||cur.id!==d.id) return {saveStatus:SAVE_STATUS.saved};
-              return {saveStatus:SAVE_STATUS.saved, estDraft:{...cur, estStatus:next}};
+              return {saveStatus:SAVE_STATUS.saved, estDraft:{...cur, estStatus:next, requirementId:linkable?linkable.id:cur.requirementId}};
             });
             await this.loadData();
           }catch(e){ console.error(e); this.setState({saveStatus:SAVE_STATUS.error, modal:{type:MODAL.notice, title:'No se pudo cambiar el estado', mensaje:e.message||'Intenta de nuevo.'}, form:{}}); }
@@ -4577,9 +4724,9 @@
           if(current) lines.push(current);
           return lines;
         }
-        async exportEstimacion(){
+        async exportEstimacion(draft){
           if(!this.isDev()||this.state.exportingEstimacion) return;
-          const d=this.state.estDraft; if(!d) return;
+          const d=draft||this.state.estDraft; if(!d) return;
           this.setState({exportingEstimacion:true});
           try{
             const ExcelJS=await this.loadExcelJS();
@@ -4720,9 +4867,9 @@
           }catch(e){ console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo generar el Excel',mensaje:e.message||'Intenta de nuevo.'},form:{}}); }
           finally{ this.setState({exportingEstimacion:false}); }
         }
-        async exportEstimacionPdfViaPrintDialog(){
+        async exportEstimacionPdfViaPrintDialog(draft){
           if(!this.isDev()||this._exportingPdf) return;
-          const d=this.state.estDraft; if(!d) return;
+          const d=draft||this.state.estDraft; if(!d) return;
           this._exportingPdf=true;
           try{
             const bytes=await this.buildClientEstimacionPdf(d);
@@ -5049,20 +5196,33 @@
               {label:'Bloqueados',count:stateCount(MASTER_STATUS_GROUP.blocked),color:'var(--gp-metric-block)',tint:'var(--gp-metric-block-tint)'},
             ];
             R.maestroExtended=this.canSeeExtended(this.empresa());
-            R.maestroTableClass=R.maestroExtended?'master-table--extended':'';
+            R.maestroNormal=!R.maestroExtended;
+            R.maestroTableClass=['master-table--scroll',R.maestroExtended?'master-table--extended':'',isPM?'master-table--est':''].filter(Boolean).join(' ');
+            const estMenu=isPM?s.maestroEstMenu:null;
+            R.maestroEstMenuOpen=!!estMenu;
+            R.closeMaestroEstMenu=()=>this.closeMaestroEstMenu();
+            R.maestroEstMenuStyle=estMenu?'--master-est-left:'+estMenu.left+';--master-est-top:'+estMenu.top+';--master-est-bottom:'+estMenu.bottom:'';
+            R.maestroEstOptions=estMenu?[
+              {label:'Descargar Excel',choose:()=>this.exportMaestroEstimacion(estMenu,d=>this.exportEstimacion(d))},
+              {label:'Descargar PDF',choose:()=>this.exportMaestroEstimacion(estMenu,d=>this.exportEstimacionPdfViaPrintDialog(d))},
+              {label:'Abrir estimación',choose:()=>this.openMaestroEstimacion(estMenu)},
+            ]:[];
             R.maestroTopScroll=e=>this.startMaestroThumbDrag(e);
-            R.maestroTableScroll=()=>{ if(R.maestroExtended) this.syncMaestroThumb(); };
-            if(R.maestroExtended){
-              requestAnimationFrame(()=>requestAnimationFrame(()=>this.syncMaestroThumb()));
-              if(!this._maestroResizeBound){ this._maestroResizeBound=true; window.addEventListener('resize',()=>this.syncMaestroThumb()); }
-            }
+            R.maestroTableScroll=()=>this.syncMaestroThumb();
+            requestAnimationFrame(()=>requestAnimationFrame(()=>this.syncMaestroThumb()));
+            if(!this._maestroResizeBound){ this._maestroResizeBound=true; window.addEventListener('resize',()=>this.syncMaestroThumb()); }
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:envIndexOf.get(company).get(d.environmentId)}));
               const userDelivery=deliveries.find(x=>((x.amb&&this.estMeta(x.amb.stage)[0])||'').toLocaleLowerCase(LOCALE).includes(STATUS_LABEL_HINT.userTesting)||((x.amb&&x.amb.label)||x.d.env||'').toLocaleLowerCase(LOCALE).includes(STATUS_LABEL_HINT.userTesting));
               const explicitDate=req.fechaEntregaUsuario?this.parseLocalDate(req.fechaEntregaUsuario).toLocaleDateString(LOCALE):
                 (userDelivery?new Date(userDelivery.d.updatedAt).toLocaleDateString(LOCALE):'Sin definir');
+              const est=isPM?this.latestEstimacionOf(project,req.id):null;
+              const openReq=()=>this.openReqFromMaster(company.id,project.id,req.id);
               return {
+                hasEstimation:!!est, estMenuOpen:!!est&&!!estMenu&&estMenu.estId===est.id,
+                toggleEstMenu:est?e=>this.toggleMaestroEstMenu(e,company.id,project.id,est.id):null,
+                openKey:e=>this.maestroRowKey(e,openReq),
                 empresa:company.nombre, proyecto:project.nombre,
                 code:this.reqCodeLabel(req)||this.fallbackReqCode((project.requerimientos||[]).findIndex(x=>x.id===req.id)), titulo:req.titulo,
                 descripcion:(req.descripcionCambios||'').trim()||req.titulo||'Sin descripción registrada',
@@ -5071,7 +5231,8 @@
                 responsable:req.responsable, estado:meta[0], estadoColor:meta[1], estadoBg:meta[2],
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'var(--gp-red)':'var(--gp-muted-2)', deliveryColor:req.fechaEntregaUsuario||userDelivery?'var(--gp-success)':'var(--gp-muted-3)',
-                openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:()=>this.openReqFromMaster(company.id,project.id,req.id),
+                openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:openReq,
+                horasTxt:this.hoursText(req),
                 ext:R.maestroExtended?this.extendedDisplay(company,req):{},
               };
             });
@@ -5329,9 +5490,9 @@
                 clientLine:(d.clientName||'').trim(), statusShow:d.isNew||d.dirty, statusLabel:d.isNew?'Sin guardar':'Cambios sin guardar',
                 phaseLabel:phase.label, phaseColor:phase.color, phaseBg:phase.bg,
                 phaseHint:d.isNew?'Al guardar queda en Creada.':(d.dirty&&nextPhase?'Guarda los cambios antes de cambiar el estado.':(d.estStatus===ESTIMATION_PHASE.approved&&d.requirementId?'Aprobada. El requerimiento ya está enlazado.':'')),
-                canAdvance, advanceLabel:nextPhase===ESTIMATION_PHASE.approved?(d.requirementId?'Aprobar':'Aprobar y crear requerimiento'):'Marcar como enviada',
+                canAdvance, advanceLabel:nextPhase===ESTIMATION_PHASE.approved?(d.requirementId||this.approvalLinkTarget(d,this.proyecto())?'Aprobar':'Aprobar y crear requerimiento'):'Marcar como enviada',
                 advance:()=>this.advanceEstimacion(nextPhase),
-                advanceTitle:nextPhase===ESTIMATION_PHASE.approved?(d.requirementId?'Pasa la estimación a Aprobada':'Abre el requerimiento para escribir sus PBI. El número de la estimación queda aparte.'):'Pasa la estimación a Enviada',
+                advanceTitle:nextPhase===ESTIMATION_PHASE.approved?(d.requirementId?'Pasa la estimación a Aprobada':this.approvalLinkTarget(d,this.proyecto())?'Aprueba la estimación y la enlaza al requerimiento que ya tiene ese PBI':(String(d.code||'').trim()?'Abre el requerimiento para confirmar sus datos y aprobar la estimación':'Abre el requerimiento para escribir sus PBI. El número de la estimación queda aparte.')):'Pasa la estimación a Enviada',
                 save:()=>this.saveEstimacion(), saveLabel:s.saveStatus===SAVE_STATUS.saving?'Guardando…':'Guardar',
                 exportar:()=>this.exportEstimacion(), exporting:!!s.exportingEstimacion, exportLabel:s.exportingEstimacion?'Generando…':'Exportar Excel',
                 exportarPdf:()=>this.exportEstimacionPdfViaPrintDialog(),

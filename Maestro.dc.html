@@ -1,110 +1,11 @@
 <x-dc>
 <div class="master-board-light" style="animation: vwIn 0.3s ease">
-  <div
-    style="
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    "
-  >
-    <div>
-      <h1
-        style="
-          margin: 0 0 5px;
-          font-size: clamp(22px, 3vw, 29px);
-          font-weight: 700;
-          letter-spacing: -0.5px;
-        "
-      >
-        Tablero de requerimientos
-      </h1>
-      <p style="margin: 0; color: var(--gp-muted-5); font-size: 13.5px">
-        Consulta y administra los cambios de todas las
-        aplicaciones.
-      </p>
-    </div>
-    <div
-      style="
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      "
-    >
-      <sc-if value="{{ isPM }}" hint-placeholder-val="{{ true }}">
-        <button
-          type="button"
-          onClick="{{ exportMaestroExcel }}"
-          disabled="{{ exportingExcel }}"
-          title="Descarga en Excel los requerimientos visibles"
-          style="
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            cursor: pointer;
-            border: 1px solid var(--gp-line-24);
-            background: none;
-            color: var(--gp-muted);
-            padding: 7px 13px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-          "
-          style-hover="color:var(--gp-success);border-color:var(--gp-success-line)"
-        >
-          <svg width="14" height="14">
-            <use href="#ic-download"></use></svg
-          >{{ exportExcelLabel }}
-        </button>
-      </sc-if>
-      <span
-        style="
-          font-size: 11px;
-          color: var(--gp-muted-6);
-          background: var(--gp-surface);
-          border: 1px solid var(--gp-line-soft);
-          border-radius: 20px;
-          padding: 7px 12px;
-        "
-        >{{ maestroVisibleCount }} de {{ maestroCount }}
-        requerimientos</span
-      >
-    </div>
-  </div>
-  <div class="master-metrics">
-    <div
-      class="master-metric"
-      style="--metric-color: var(--gp-metric-total); --metric-tint: var(--gp-metric-total-tint)"
-    >
-      <span class="master-metric-copy"
-        ><span class="master-metric-label"
-          >Total de requerimientos</span
-        ><strong class="master-metric-value"
-          >{{ maestroCount }}</strong
-        ></span
-      >
-    </div>
-    <sc-for
-      list="{{ maestroStatusCounts }}"
-      as="st"
-      hint-placeholder-count="4"
-    >
-      <div
-        class="master-metric"
-        style="--metric-color:{{ st.color }};--metric-tint:{{ st.tint }}"
-      >
-        <span class="master-metric-copy"
-          ><span class="master-metric-label">{{ st.label }}</span
-          ><strong class="master-metric-value"
-            >{{ st.count }}</strong
-          ></span
-        >
-      </div>
-    </sc-for>
-  </div>
+  <dc-import name="MaestroEncabezado"
+    isPM="{{ isPM }}" exportMaestroExcel="{{ exportMaestroExcel }}"
+    exportingExcel="{{ exportingExcel }}" exportExcelLabel="{{ exportExcelLabel }}"
+    maestroVisibleCount="{{ maestroVisibleCount }}" maestroCount="{{ maestroCount }}"
+    maestroStatusCounts="{{ maestroStatusCounts }}"
+  ></dc-import>
   <div class="master-filter-bar">
     <label
       class="master-filter-control master-search-control"
@@ -196,14 +97,16 @@
       </sc-if>
     </div>
   </div>
-  <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
-    ><div class="master-scroll-top" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
-      ><div class="master-scroll-thumb"></div></div
-  ></sc-if>
+  <div class="master-scroll-top" style="display:none" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
+    ><div class="master-scroll-thumb"></div></div>
   <div class="master-table {{ maestroTableClass }}" onScroll="{{ maestroTableScroll }}">
     <div class="master-table-head">
-      <span class="master-sticky master-sticky-1">Aplicación</span><span class="master-sticky master-sticky-2">#Req</span
+      <sc-if value="{{ isPM }}" hint-placeholder-val="{{ false }}"
+        ><span class="master-cell-est master-sticky master-sticky-0"></span></sc-if
+      ><span class="master-sticky master-sticky-1">Aplicación</span><span class="master-sticky master-sticky-2">#Req</span
       ><span>Título del requerimiento</span><span>Estado</span
+      ><sc-if value="{{ maestroNormal }}" hint-placeholder-val="{{ true }}"
+        ><span>Horas estimadas</span></sc-if
       ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
         ><span>PM Entrega</span><span>Fecha solicitud</span><span>Entrega estimación</span
         ><span>Aprobación estimación</span><span>Inicio desarrollo</span></sc-if
@@ -221,14 +124,32 @@
       as="r"
       hint-placeholder-count="5"
     >
-      <button
+      <div
+        role="button"
+        tabindex="0"
         onClick="{{ r.open }}"
+        onKeyDown="{{ r.openKey }}"
         class="master-row"
         title="Abrir detalle y editar requerimiento"
       >
+        <sc-if value="{{ isPM }}" hint-placeholder-val="{{ false }}"
+          ><span class="master-cell-est master-sticky master-sticky-0"
+            ><sc-if value="{{ r.hasEstimation }}" hint-placeholder-val="{{ false }}"
+              ><button
+                type="button"
+                class="master-est-trigger"
+                title="Estimación del requerimiento"
+                aria-label="Estimación del requerimiento"
+                aria-haspopup="menu"
+                aria-expanded="{{ r.estMenuOpen }}"
+                onClick="{{ r.toggleEstMenu }}"
+                ><svg width="16" height="16" aria-hidden="true"><use href="#ic-download"></use></svg></button
+            ></sc-if></span
+          ></sc-if
+        >
         <span class="master-cell-app master-cell-main master-sticky master-sticky-1"
-          ><span class="master-cell-label">Aplicación</span>{{
-          r.proyecto }}</span
+          ><span class="master-cell-label">Aplicación</span
+          ><span class="master-cell-app-text">{{ r.proyecto }}</span></span
         >
         <span
           class="master-cell-main master-sticky master-sticky-2"
@@ -255,6 +176,11 @@
             ></span
             >{{ r.estado }}</span
           ></span
+        >
+        <sc-if value="{{ maestroNormal }}" hint-placeholder-val="{{ true }}"
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Horas estimadas</span>{{ r.horasTxt }}</span
+          ></sc-if
         >
         <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
           ><span class="master-cell-main" title="{{ r.ext.pmEntrega }}"
@@ -299,7 +225,7 @@
             ><span class="master-cell-label">Facturado</span>{{ r.ext.facturadoTxt }}</span
           ></sc-if
         >
-      </button>
+      </div>
     </sc-for>
     <sc-if
       value="{{ maestroEmpty }}"
@@ -319,9 +245,14 @@
       </div></sc-if
     >
   </div>
+  <sc-if value="{{ maestroEstMenuOpen }}" hint-placeholder-val="{{ false }}">
+    <dc-import name="MaestroMenuEstimacion"
+      closeMaestroEstMenu="{{ closeMaestroEstMenu }}" maestroEstOptions="{{ maestroEstOptions }}" maestroEstMenuStyle="{{ maestroEstMenuStyle }}"
+    ></dc-import>
+  </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null}'>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroNormal":true,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null,"maestroEstMenuOpen":false,"closeMaestroEstMenu":null,"maestroEstOptions":[],"maestroEstMenuStyle":""}'>
 class Component extends DCLogic {
 }
 </script>
