@@ -3994,14 +3994,16 @@
             const {data:doc,error:lookupError}=await this._sb.from(TABLE.requirementDocuments).select('url,requirement_id').eq('id',id).maybeSingle();
             if(lookupError) throw lookupError;
             if(!doc) throw new Error('No se encontró el documento.');
-            if(doc.url&&doc.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){
-              await this.deleteS3RequirementFile(doc.requirement_id,doc.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length));
-            }else if(doc.url&&doc.url.startsWith(STORAGE.urlPrefix)){
+            if(doc.url&&doc.url.startsWith(STORAGE.urlPrefix)){
               const {error:storageError}=await this._sb.storage.from(STORAGE.requirementDocuments).remove([doc.url.slice(STORAGE.urlPrefix.length)]);
               if(storageError) throw storageError;
             }
             const { error } = await this._sb.from(TABLE.requirementDocuments).delete().eq('id',id);
             if(error) throw error;
+            if(doc.url&&doc.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){
+              try{ await this.deleteS3RequirementFile(doc.requirement_id,doc.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length)); }
+              catch(cleanupError){ await this.loadData(); throw new Error('El documento se eliminó, pero no se pudo borrar el archivo de S3: '+cleanupError.message); }
+            }
             this.setState({saveStatus:SAVE_STATUS.saved});
             await this.loadData();
           }catch(e){
@@ -4021,8 +4023,10 @@
             const paths=(docs||[]).filter(d=>d.url&&d.url.startsWith(STORAGE.urlPrefix)).map(d=>d.url.slice(STORAGE.urlPrefix.length));
             if(paths.length){ const {error}=await sb.storage.from(STORAGE.requirementDocuments).remove(paths); if(error) throw error; }
             const s3Keys=(docs||[]).filter(d=>d.url&&d.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)).map(d=>d.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length));
+            const { error:docsDeleteError } = await sb.from(TABLE.requirementDocuments).delete().eq('requirement_id',id);
+            if(docsDeleteError) throw docsDeleteError;
             for(const key of s3Keys) await this.deleteS3RequirementFile(id,key);
-            for(const table of [TABLE.requirementDocuments,TABLE.requirementDeployments,TABLE.requirementBlockers]){
+            for(const table of [TABLE.requirementDeployments,TABLE.requirementBlockers]){
               const { error } = await sb.from(table).delete().eq('requirement_id',id);
               if(error) throw error;
             }

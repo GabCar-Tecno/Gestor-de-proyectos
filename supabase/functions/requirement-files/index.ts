@@ -152,18 +152,23 @@ Deno.serve(async (request) => {
       await requireRequirement(supabase, requirementId);
       const key = validateKey(body.key, requirementId);
 
+      const { data: documents, error: documentError } = await supabase
+        .from("requirement_documents")
+        .select("id")
+        .eq("requirement_id", requirementId)
+        .eq("url", urlPrefix + key)
+        .limit(1);
+      if (documentError) throw new RequestError(500, "No se pudo verificar el documento.");
+      const isLinked = (documents || []).length > 0;
+
       if (action === "download") {
-        const { data: document, error } = await supabase
-          .from("requirement_documents")
-          .select("id")
-          .eq("requirement_id", requirementId)
-          .eq("url", urlPrefix + key)
-          .maybeSingle();
-        if (error || !document) throw new RequestError(404, "No se encontró el documento.");
+        if (!isLinked) throw new RequestError(404, "No se encontró el documento.");
         const downloadUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 });
         return jsonResponse({ downloadUrl });
       }
 
+      // Only unlinked objects (failed uploads or already-removed documents) can be deleted.
+      if (isLinked) throw new RequestError(409, "El archivo sigue asociado a un documento; elimina primero el documento.");
       await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
       return jsonResponse({ ok: true });
     }
