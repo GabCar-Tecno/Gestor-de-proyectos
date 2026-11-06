@@ -30,7 +30,7 @@ Existing files stored in the private Supabase Storage bucket keep working. New f
        {
          "Effect": "Allow",
          "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
-         "Resource": "arn:aws:s3:::YOUR_BUCKET/requirements/*"
+         "Resource": "arn:aws:s3:::YOUR_BUCKET/requerimientos/*"
        }
      ]
    }

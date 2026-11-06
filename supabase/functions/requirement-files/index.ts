@@ -16,6 +16,7 @@ const contentTypes: Record<string, string> = {
 };
 const maxFileSize = 50 * 1024 * 1024;
 const urlPrefix = "s3://";
+const keyPrefix = "requerimientos";
 
 class RequestError extends Error {
   constructor(readonly status: number, message: string) {
@@ -109,7 +110,7 @@ async function requireRequirement(supabase: ReturnType<typeof createClient>, req
 
 function validateKey(value: unknown, requirementId: string) {
   const key = requiredString(value, "Clave del archivo", 1024);
-  if (!key.startsWith(`requirements/${requirementId}/`) || key.includes("..") || key.includes("\\")) {
+  if (!key.startsWith(`${keyPrefix}/${requirementId}/`) || key.includes("..") || key.includes("\\")) {
     throw new RequestError(400, "La clave del archivo no corresponde al requerimiento.");
   }
   return key;
@@ -133,7 +134,7 @@ Deno.serve(async (request) => {
         throw new RequestError(400, "Cada archivo debe pesar entre 1 byte y 50 MB.");
       }
       if (body.contentType !== contentType) throw new RequestError(400, "El tipo de archivo no coincide con su extensión.");
-      const key = `requirements/${requirementId}/${crypto.randomUUID()}_${safeName}`;
+      const key = `${keyPrefix}/${requirementId}/${crypto.randomUUID()}_${safeName}`;
       const signedPost = await createPresignedPost(s3, {
         Bucket: bucket,
         Key: key,
