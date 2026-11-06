@@ -325,6 +325,28 @@
           style-focus="border-color:var(--gp-cyan)"
         ></textarea>
       </sc-if>
+      <sc-if value="{{ f.isRequirementFiles }}" hint-placeholder-val="{{ false }}">
+        <input
+          id="{{ f.fieldId }}"
+          type="file"
+          multiple
+          accept=".doc,.docx,.pdf"
+          onChange="{{ f.onFilesChange }}"
+          style="width:100%;box-sizing:border-box;background:var(--gp-field);border:1px solid var(--gp-line-22);border-radius:10px;padding:10px 12px;color:var(--gp-text-2);font-size:12px"
+        />
+        <span style="font-size:11px;color:var(--gp-muted-2)">Word (.doc, .docx) o PDF · máximo 50 MB por archivo.</span>
+        <sc-if value="{{ f.hasFiles }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ f.files }}" as="file" hint-placeholder-count="1">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gp-text-2)">
+                <span style="flex:1;min-width:0;overflow-wrap:anywhere">{{ file.name }}</span>
+                <span style="color:var(--gp-muted-2)">{{ file.size }}</span>
+                <button type="button" onClick="{{ file.remove }}" style="flex:none;background:none;border:0;color:var(--gp-muted-2);cursor:pointer;padding:3px 6px" style-hover="color:var(--gp-red)">Quitar</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
     </div>
   </sc-for>
   <sc-if

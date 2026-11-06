@@ -13,10 +13,11 @@
       font-weight: 500;
       color: var(--gp-muted);
     "
-    >Adjuntar archivo a Supabase Storage</span
+    >Adjuntar archivo privado</span
   >
   <input
     type="file"
+    accept=".doc,.docx,.pdf"
     onChange="{{ onDocumentFile }}"
     style="
       background: var(--gp-field);
@@ -31,9 +32,7 @@
     >{{ documentFileName }}</span
   >
   <span style="font-size: 11px; color: var(--gp-muted-2)"
-    >Puedes adjuntar un archivo o usar el enlace existente.
-    El almacenamiento privado requiere aplicar la migración
-    incluida en supabase/migrations.</span
+    >Puedes adjuntar Word o PDF (máximo 50 MB) o usar un enlace externo.</span
   >
 </label>
 </x-dc>

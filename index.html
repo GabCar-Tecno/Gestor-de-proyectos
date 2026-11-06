@@ -2410,7 +2410,7 @@
       </sc-if>
     </x-dc>
     <script type="text/x-dc" data-dc-script>
-      const { VIEW, REQ_TAB, API_TAB, PROJECTS_VIEW, FILTER_ALL, ROLE, SAVE_STATUS, SEND_STATUS, THEME, LOCALE, NARROW_MAX_WIDTH, PASSWORD_INPUT, ICON, PASSWORD_ICON, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, ESTIMATION_PHASE_ORDER, ESTIMATION_DECIMAL_OPTIONS, ESTIMATION_LINE_KIND, ESTIMATION_ACTIVITY_TYPE, ESTIMATION_DEFAULTS, ESTIMATION_MAX_DAILY_HOURS, MODAL, MODAL_MODE, FIELD_KIND, INPUT_TYPE, TABLE, STORAGE, FILE_NAME, NEW_TAB, LOCAL_DATE_SUFFIX, DELAY_MS, COPY_KEY, SHOW_PASS_KEY, TEXT_LIST_TYPE, EDGE_FUNCTION, AUTH_EVENT, ID_PREFIX, REQ_STATUS, BOARD_RANK, MASTER_STATUS_GROUP, STATUS_LABEL_HINT, REQ_CODE_FALLBACK, DEPLOYABLE_KIND, EMAIL_KIND_FILTER, EMAIL_FIELD, EMAIL_PANEL, MAILTO_WARN_LENGTH, CREDENTIAL_GROUP, DB_DEFAULT, SHORT_DAY_MONTH, MS_PER_DAY, EXCEL, PRINT_COLOR } = window.APP_CONSTANTS;
+      const { VIEW, REQ_TAB, API_TAB, PROJECTS_VIEW, FILTER_ALL, ROLE, SAVE_STATUS, SEND_STATUS, THEME, LOCALE, NARROW_MAX_WIDTH, PASSWORD_INPUT, ICON, PASSWORD_ICON, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, ESTIMATION_PHASE_ORDER, ESTIMATION_DECIMAL_OPTIONS, ESTIMATION_LINE_KIND, ESTIMATION_ACTIVITY_TYPE, ESTIMATION_DEFAULTS, ESTIMATION_MAX_DAILY_HOURS, MODAL, MODAL_MODE, FIELD_KIND, INPUT_TYPE, TABLE, STORAGE, REQUIREMENT_FILE, FILE_NAME, NEW_TAB, LOCAL_DATE_SUFFIX, DELAY_MS, COPY_KEY, SHOW_PASS_KEY, TEXT_LIST_TYPE, EDGE_FUNCTION, AUTH_EVENT, ID_PREFIX, REQ_STATUS, BOARD_RANK, MASTER_STATUS_GROUP, STATUS_LABEL_HINT, REQ_CODE_FALLBACK, DEPLOYABLE_KIND, EMAIL_KIND_FILTER, EMAIL_FIELD, EMAIL_PANEL, MAILTO_WARN_LENGTH, CREDENTIAL_GROUP, DB_DEFAULT, SHORT_DAY_MONTH, MS_PER_DAY, EXCEL, PRINT_COLOR } = window.APP_CONSTANTS;
       function dropFloatNoise(value) {
         return Math.round(value * 1e8) / 1e8;
       }
@@ -2860,7 +2860,7 @@
           if(days>1 && days<=7) return 'hace '+days+' días';
           return d.toLocaleDateString(LOCALE,SHORT_DAY_MONTH);
         }
-        docIcon(t){ t=(t||'').toLowerCase(); if(t.includes('pdf'))return ICON.fileText; if(t.includes('fig')||t.includes('imag'))return ICON.image; if(t.includes('diag'))return ICON.diagram; if(t.includes('cálc')||t.includes('xls'))return ICON.chart; return ICON.file; }
+        docIcon(t){ t=(t||'').toLowerCase(); if(t.includes('pdf')||t.includes('word')||t==='doc'||t==='docx')return ICON.fileText; if(t.includes('fig')||t.includes('imag'))return ICON.image; if(t.includes('diag'))return ICON.diagram; if(t.includes('cálc')||t.includes('xls'))return ICON.chart; return ICON.file; }
         activeBloq(r){ return (r.bloqueantes||[]).filter(b=>!b.resuelto).length; }
         fmtDeployItem(i){
           let s=i.name||'';
@@ -3139,23 +3139,93 @@
 
         addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); }
         addProyecto(){ if(!this.isDev()) return; this.openModal({type:MODAL.project,mode:MODAL_MODE.create,title:'Nuevo proyecto',form:{nombre:'',descripcion:''}}); }
-        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',observaciones:'',fechaInicioRequerimiento:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
-        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',observaciones:r.observaciones||'',fechaInicioRequerimiento:r.fechaInicioRequerimiento||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
+        addReq(){ if(!this.isDev()) return; const first=(this.statusOrder().flow[0])||REQ_STATUS.development; this.openModal({type:MODAL.requirement,mode:MODAL_MODE.create,title:'Nuevo requerimiento',form:{codigos:[''],titulo:'',descripcionCambios:'',requirementFiles:[],observaciones:'',fechaInicioRequerimiento:'',fechaEntregaUsuario:'',fechaPasoProduccion:'',horas:'',responsables:[],estado:first,...BOARD_EXT.emptyExtendedForm(),}}); }
+        editReq(){ if(!this.isDev()) return; const r=this.req(); this.openModal({type:MODAL.requirement,mode:MODAL_MODE.edit,id:r.id,title:'Editar requerimiento',form:{codigos:this.reqFormCodes(r),titulo:r.titulo,descripcionCambios:r.descripcionCambios||'',requirementFiles:[],observaciones:r.observaciones||'',fechaInicioRequerimiento:r.fechaInicioRequerimiento||'',fechaEntregaUsuario:r.fechaEntregaUsuario||'',fechaPasoProduccion:r.fechaPasoProduccion||'',horas:r.horas??'',responsables:r.responsables||this.parseOwners(r.responsable),estado:r.estado,...BOARD_EXT.extendedFormFromReq(r)}}); }
         addDoc(){ if(!this.isDev()) return; this._documentFile=null; this.openModal({type:MODAL.document,mode:MODAL_MODE.create,title:'Agregar documento',form:{nombre:'',tipo:DB_DEFAULT.documentType,url:''}}); this.setState({documentFileName:''}); }
+        requirementFileContentType(file){
+          const extension=(file.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+          const contentType=REQUIREMENT_FILE.contentTypes[extension];
+          if(!contentType) throw new Error('Solo se permiten archivos Word (.doc, .docx) o PDF.');
+          if(file.size<1) throw new Error('El archivo no puede estar vacío.');
+          if(file.size>REQUIREMENT_FILE.maxSizeBytes) throw new Error('Cada archivo debe pesar máximo 50 MB.');
+          return contentType;
+        }
+        requirementFileLabel(file){ return (file.name.match(/\.[^.]+$/)||[''])[0].slice(1).toUpperCase(); }
         setDocumentFile(e){
-          this._documentFile=e.target.files&&e.target.files[0]||null;
-          const file=this._documentFile, current=this.state.form||{};
-          this.setState({documentFileName:file?file.name:'',form:file?{...current,nombre:current.nombre||file.name.replace(/\.[^.]+$/,''),tipo:current.tipo===DB_DEFAULT.documentType?(file.type||current.tipo):current.tipo}:current});
+          const file=e.target.files&&e.target.files[0]||null;
+          try{ if(file) this.requirementFileContentType(file); }
+          catch(error){ this._documentFile=null; e.target.value=''; this.setState({documentFileName:'',modalErr:error.message}); return; }
+          this._documentFile=file;
+          const current=this.state.form||{};
+          this.setState({documentFileName:file?file.name:'',modalErr:'',form:file?{...current,nombre:current.nombre||file.name.replace(/\.[^.]+$/,''),tipo:current.tipo===DB_DEFAULT.documentType?this.requirementFileLabel(file):current.tipo}:current});
+        }
+        setRequirementFiles(e){
+          const selected=Array.from(e.target.files||[]), existing=this.state.form.requirementFiles||[];
+          try{ selected.forEach(file=>this.requirementFileContentType(file)); }
+          catch(error){ e.target.value=''; this.setState({modalErr:error.message}); return; }
+          const unique=selected.filter(file=>!existing.some(item=>item.name===file.name&&item.size===file.size&&item.lastModified===file.lastModified));
+          this.setState({form:{...this.state.form,requirementFiles:[...existing,...unique]},modalErr:''});
+          e.target.value='';
+        }
+        removeRequirementFile(file){
+          this.setState(s=>({form:{...s.form,requirementFiles:(s.form.requirementFiles||[]).filter(item=>item!==file)}}));
+        }
+        async invokeRequirementFiles(action,body){
+          const {data,error}=await this._sb.functions.invoke(EDGE_FUNCTION.requirementFiles,{body:{action,...body}});
+          if(error) throw new Error(await this.readEdgeFunctionErrorBody(error,EDGE_FUNCTION.requirementFiles));
+          if(data&&data.error) throw new Error(data.error);
+          return data;
+        }
+        async deleteS3RequirementFile(requirementId,key){
+          await this.invokeRequirementFiles('delete',{requirementId,key});
+        }
+        async uploadRequirementFile(requirementId,file,displayName=file.name){
+          const contentType=this.requirementFileContentType(file);
+          const {uploadUrl,fields,key}=await this.invokeRequirementFiles('create-upload',{requirementId,fileName:file.name,contentType,size:file.size});
+          const formData=new FormData();
+          Object.entries(fields).forEach(([name,value])=>formData.append(name,value));
+          formData.append('file',file);
+          try{
+            const response=await fetch(uploadUrl,{method:'POST',body:formData});
+            if(!response.ok) throw new Error('S3 rechazó el archivo (HTTP '+response.status+'). Verifica el bucket y su configuración CORS.');
+          }catch(uploadError){
+            try{ await this.deleteS3RequirementFile(requirementId,key); }
+            catch(cleanupError){ throw new Error('Falló la carga a S3 y no se pudo limpiar el archivo: '+cleanupError.message); }
+            throw uploadError;
+          }
+          const url=REQUIREMENT_FILE.s3UrlPrefix+key;
+          const {error}=await this._sb.from(TABLE.requirementDocuments).insert({id:this.gid(ID_PREFIX.document),requirement_id:requirementId,name:displayName,type:this.requirementFileLabel(file),url});
+          if(error){
+            try{ await this.deleteS3RequirementFile(requirementId,key); }
+            catch(cleanupError){ throw new Error('No se pudo registrar el documento y tampoco limpiar el archivo de S3: '+cleanupError.message); }
+            throw error;
+          }
+          return url;
+        }
+        async uploadPendingRequirementFiles(requirementId,files,onRemaining){
+          const pending=files.slice();
+          while(pending.length){
+            await this.uploadRequirementFile(requirementId,pending[0]);
+            pending.shift();
+            onRemaining(pending.slice());
+          }
         }
         async openDoc(url){
           if(!url) return;
-          if(!url.startsWith(STORAGE.urlPrefix)){ this.openExt(url); return; }
+          if(!url.startsWith(STORAGE.urlPrefix)&&!url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){ this.openExt(url); return; }
           const tab=window.open(NEW_TAB.blankUrl,NEW_TAB.target);
           try{
-            const path=url.slice(STORAGE.urlPrefix.length);
-            const {data,error}=await this._sb.storage.from(STORAGE.requirementDocuments).createSignedUrl(path,STORAGE.signedUrlTtlSeconds);
-            if(error) throw error;
-            if(tab) tab.location=data.signedUrl; else this.openExt(data.signedUrl);
+            let signedUrl;
+            if(url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){
+              const {downloadUrl}=await this.invokeRequirementFiles('download',{key:url.slice(REQUIREMENT_FILE.s3UrlPrefix.length)});
+              signedUrl=downloadUrl;
+            }else{
+              const path=url.slice(STORAGE.urlPrefix.length);
+              const {data,error}=await this._sb.storage.from(STORAGE.requirementDocuments).createSignedUrl(path,STORAGE.signedUrlTtlSeconds);
+              if(error) throw error;
+              signedUrl=data.signedUrl;
+            }
+            if(tab) tab.location=signedUrl; else this.openExt(signedUrl);
           }catch(e){ if(tab) tab.close(); console.error(e); this.setState({modal:{type:MODAL.notice,title:'No se pudo abrir el archivo',mensaje:e.message||'Verifica el acceso al almacenamiento.'},form:{}}); }
         }
         addDespliegue(){ if(!this.isDev()) return; const ambs=(this.empresa()||{}).ambientes||[]; if(!ambs.length){ this.setState({modal:{type:MODAL.notice,title:'Sin ambientes',mensaje:'Define ambientes para esta empresa antes de agregar despliegues.'}, form:{}}); return; } const envId=ambs[0].id, row=(((this.proyecto()||{}).recursos||{}).despliegues||[]).find(d=>d.environmentId===envId)||{}; this.openModal({type:MODAL.deployment,mode:MODAL_MODE.create,title:'Agregar despliegue',form:{env:envId,url:row.url||'',version:row.version||''}}); }
@@ -3183,7 +3253,7 @@
             if(error) throw error;
             this.setState({saveStatus:SAVE_STATUS.saved});
             await this.loadData();
-          }catch(e){ this.setState({saveStatus:SAVE_STATUS.error}); console.error(e); }
+          }catch(e){ this.setState({saveStatus:SAVE_STATUS.error,modal:{type:MODAL.notice,title:'No se pudo eliminar el requerimiento',mensaje:e.message||'Verifica el acceso a sus documentos.'},form:{}}); console.error(e); }
           finally{ this._busy=false; }
         }
         addServidor(){ if(!this.isDev()) return; this.openModal({type:MODAL.server,mode:MODAL_MODE.create,title:'Nuevo servidor',form:{code:'',ip:''}}); }
@@ -3427,6 +3497,7 @@
           if(this._busy) return; this._busy=true;
           this.setState({saveStatus:SAVE_STATUS.saving, modalErr:''});
           let approvedEstimacion=null;
+          let requirementSaved=false;
           try{
             if(t===MODAL.password){
               if(!f.newPassword || f.newPassword.length<PASSWORD_MIN_LENGTH){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'Mínimo 6 caracteres.'}); return; }
@@ -3495,19 +3566,19 @@
                 if(creating) await sb.from(TABLE.requirements).delete().eq('id', reqId);
                 throw err;
               }
+              requirementSaved=true;
+              if(creating) this.setState({modal:{...m,mode:MODAL_MODE.edit,id:reqId,title:'Editar requerimiento'}});
+              await this.uploadPendingRequirementFiles(reqId,f.requirementFiles||[],remaining=>this.setState(s=>({form:{...s.form,requirementFiles:remaining}})));
             } else if(t===MODAL.document){
               if(!f.nombre) return;
               let url=f.url||'';
               const file=this._documentFile;
               if(file){
-                const safeName=file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||FILE_NAME.uploadFallback;
-                const path=this.state.reqId+'/'+Date.now()+'_'+safeName;
-                const {error:uploadError}=await sb.storage.from(STORAGE.requirementDocuments).upload(path,file,{contentType:file.type||STORAGE.defaultContentType,upsert:false});
-                if(uploadError) throw uploadError;
-                url=STORAGE.urlPrefix+path;
+                url=await this.uploadRequirementFile(this.state.reqId,file,f.nombre);
+              }else{
+                const { error } = await sb.from(TABLE.requirementDocuments).insert({ id:this.gid(ID_PREFIX.document), requirement_id:this.state.reqId, name:f.nombre, type:f.tipo||DB_DEFAULT.documentType, url });
+                if(error) throw error;
               }
-              const { error } = await sb.from(TABLE.requirementDocuments).insert({ id:this.gid(ID_PREFIX.document), requirement_id:this.state.reqId, name:f.nombre, type:f.tipo||((file&&file.type)||DB_DEFAULT.documentType), url });
-              if(error) throw error;
               this._documentFile=null;
               this.setState({documentFileName:''});
             } else if(t===MODAL.deployment){
@@ -3643,7 +3714,8 @@
             this.closeModal();
             await this.loadData();
           }catch(e){
-            this.setState({saveStatus:SAVE_STATUS.error, modalErr: t===MODAL.password ? (e.message||'No se pudo cambiar la contraseña.') : (t===MODAL.requirement ? (e.message||'No se pudo guardar el requerimiento.') : '')});
+            const requirementError=requirementSaved?'El requerimiento ya quedó guardado, pero no se completó el guardado de documentos. Puedes reintentar; los archivos cargados correctamente no se duplicarán. ':'';
+            this.setState({saveStatus:SAVE_STATUS.error, modalErr: t===MODAL.password ? (e.message||'No se pudo cambiar la contraseña.') : (t===MODAL.requirement ? requirementError+(e.message||'No se pudo guardar el requerimiento.') : '')});
             console.error(e);
           } finally {
             this._busy=false;
@@ -3664,7 +3736,7 @@
           this.setState({
             modal:{ type:MODAL.promoteConfirm, title:'Avanzar requerimiento',
               targetEnv:targetAmb.code, targetEnvId:targetAmb.id, estLabel:this.estMeta(f.estado)[0],
-              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigos:f.codigos||(req?this.reqFormCodes(req):['']), codigo:f.codigo, estado:f.estado,
+              reqPending:{ mode:m.mode, id:m.id, titulo:f.titulo, responsables:f.responsables||this.parseOwners(f.responsable||(req&&req.responsable)), codigos:f.codigos||(req?this.reqFormCodes(req):['']), codigo:f.codigo, estado:f.estado, requirementFiles:f.requirementFiles||[],
                 descripcionCambios:f.descripcionCambios!==undefined?f.descripcionCambios:(req&&req.descripcionCambios)||'',
                 observaciones:f.observaciones!==undefined?f.observaciones:(req&&req.observaciones)||'',
                 fechaInicioRequerimiento:f.fechaInicioRequerimiento!==undefined?f.fechaInicioRequerimiento:(req&&req.fechaInicioRequerimiento)||'',
@@ -3681,6 +3753,7 @@
           this.setState({saveStatus:SAVE_STATUS.saving, modalErr:''});
           const md=this.state.modal, rp=md.reqPending, sb=this._sb, nowIso=new Date().toISOString();
           let approvedEstimacion=null;
+          let requirementSaved=false;
           try{
             const cleaned=this.cleanReqCodes(this.codesKeepingPrincipal(rp.codigos!=null?rp.codigos:(rp.codigo?[rp.codigo]:[])));
             if(!cleaned.codes.length){ this.setState({saveStatus:SAVE_STATUS.idle, modalErr:'El requerimiento necesita al menos un PBI. El primero es el principal.'}); return; }
@@ -3706,6 +3779,9 @@
               if(creating) await sb.from(TABLE.requirements).delete().eq('id', reqId);
               throw err;
             }
+            requirementSaved=true;
+            if(creating) this.setState({modal:{...md,reqPending:{...rp,mode:MODAL_MODE.edit,id:reqId}}});
+            await this.uploadPendingRequirementFiles(reqId,rp.requirementFiles||[],remaining=>this.setState(s=>s.modal&&s.modal.reqPending?{modal:{...s.modal,reqPending:{...s.modal.reqPending,requirementFiles:remaining}}}:{}));
             if(approvedEstimacion){
               this.setState(s=>s.estDraft&&s.estDraft.id===approvedEstimacion.id?{estDraft:{...s.estDraft, estStatus:ESTIMATION_PHASE.approved, requirementId:approvedEstimacion.requirementId}}:null);
             }
@@ -3730,7 +3806,7 @@
               this.closeModal();
             }
           }catch(e){
-            this.setState({saveStatus:SAVE_STATUS.error, modalErr:'No se pudo guardar: '+e.message});
+            this.setState({saveStatus:SAVE_STATUS.error, modalErr:(requirementSaved?'El requerimiento ya quedó guardado, pero falló una operación posterior. Puedes reintentar sin duplicar los documentos cargados. ':'')+'No se pudo guardar: '+e.message});
             console.error(e);
           } finally {
             this._busy=false;
@@ -3771,14 +3847,14 @@
           if(users.length){ lines.push(''); users.forEach(u=>lines.push('Usuario: '+u.username+'  Contraseña: '+u.secret)); }
           return lines.join('\n');
         }
-        async readEdgeFunctionErrorBody(error){
+        async readEdgeFunctionErrorBody(error,functionName=EDGE_FUNCTION.discordNotify){
           const ctx = error && error.context;
           if(!ctx || typeof ctx.text!=='function') return error.message || String(error);
           let cuerpo='';
           try{ cuerpo = await ctx.text(); }catch(_){}
           let detalle=cuerpo;
           if(cuerpo){ try{ const j=JSON.parse(cuerpo); detalle = j.error || j.message || j.msg || cuerpo; }catch(_){} }
-          console.error(EDGE_FUNCTION.discordNotify, ctx.status, cuerpo);
+          console.error(functionName, ctx.status, cuerpo);
           return 'HTTP '+(ctx.status||'?')+' — '+(detalle || error.message || 'sin cuerpo de respuesta');
         }
         async sendDiscord(){
@@ -3915,14 +3991,22 @@
           if(!this.isDev()||this._busy) return; this._busy=true;
           try{
             this.setState({saveStatus:SAVE_STATUS.saving});
-            const {data:doc}=await this._sb.from(TABLE.requirementDocuments).select('url').eq('id',id).maybeSingle();
-            if(doc&&doc.url&&doc.url.startsWith(STORAGE.urlPrefix)){
+            const {data:doc,error:lookupError}=await this._sb.from(TABLE.requirementDocuments).select('url,requirement_id').eq('id',id).maybeSingle();
+            if(lookupError) throw lookupError;
+            if(!doc) throw new Error('No se encontró el documento.');
+            if(doc.url&&doc.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)){
+              await this.deleteS3RequirementFile(doc.requirement_id,doc.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length));
+            }else if(doc.url&&doc.url.startsWith(STORAGE.urlPrefix)){
               const {error:storageError}=await this._sb.storage.from(STORAGE.requirementDocuments).remove([doc.url.slice(STORAGE.urlPrefix.length)]);
               if(storageError) throw storageError;
             }
             const { error } = await this._sb.from(TABLE.requirementDocuments).delete().eq('id',id);
-            this.setState({saveStatus:error?SAVE_STATUS.error:SAVE_STATUS.saved});
-            if(!error) await this.loadData();
+            if(error) throw error;
+            this.setState({saveStatus:SAVE_STATUS.saved});
+            await this.loadData();
+          }catch(e){
+            this.setState({saveStatus:SAVE_STATUS.error,modal:{type:MODAL.notice,title:'No se pudo eliminar el documento',mensaje:e.message||'Verifica el acceso al archivo.'},form:{}});
+            console.error(e);
           } finally { this._busy=false; }
         }
         async delReq(id){
@@ -3932,9 +4016,12 @@
           this.setState({saveStatus:SAVE_STATUS.saving});
           try{
             const sb=this._sb;
-            const {data:docs}=await sb.from(TABLE.requirementDocuments).select('url').eq('requirement_id',id);
+            const {data:docs,error:docsError}=await sb.from(TABLE.requirementDocuments).select('url').eq('requirement_id',id);
+            if(docsError) throw docsError;
             const paths=(docs||[]).filter(d=>d.url&&d.url.startsWith(STORAGE.urlPrefix)).map(d=>d.url.slice(STORAGE.urlPrefix.length));
             if(paths.length){ const {error}=await sb.storage.from(STORAGE.requirementDocuments).remove(paths); if(error) throw error; }
+            const s3Keys=(docs||[]).filter(d=>d.url&&d.url.startsWith(REQUIREMENT_FILE.s3UrlPrefix)).map(d=>d.url.slice(REQUIREMENT_FILE.s3UrlPrefix.length));
+            for(const key of s3Keys) await this.deleteS3RequirementFile(id,key);
             for(const table of [TABLE.requirementDocuments,TABLE.requirementDeployments,TABLE.requirementBlockers]){
               const { error } = await sb.from(table).delete().eq('requirement_id',id);
               if(error) throw error;
@@ -5366,7 +5453,7 @@
             const fields={
               [MODAL.company]:[{label:'Nombre de la empresa',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Coltanques'}],
               [MODAL.project]:[{label:'Nombre del proyecto',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Portal de Clientes'},{label:'Descripción',key:'descripcion',kind:FIELD_KIND.area,placeholder:'Breve descripción'}],
-              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha de inicio del requerimiento',key:'fechaInicioRequerimiento',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
+              [MODAL.requirement]:[...(md.global?[{label:'Empresa',key:'empresaId',kind:FIELD_KIND.select,options:companyOptions,onChange:e=>this.setMasterReqCompany(e.target.value)},{label:'Aplicación / proyecto',key:'proyectoId',kind:FIELD_KIND.select,options:masterProjectOptions,onChange:e=>this.setMasterReqProject(e.target.value)}]:[]),{label:'PBI del requerimiento',key:'codigos',kind:FIELD_KIND.codes,help:'El primero es el principal. Agrega los demás PBI de esta solicitud.'},{label:'Título del requerimiento',key:'titulo',kind:FIELD_KIND.text,placeholder:'Título corto del requerimiento'},{label:'Detalle de cambios',key:'descripcionCambios',kind:FIELD_KIND.area,placeholder:'Describe los cambios solicitados'},{label:'Documentos de soporte',key:'requirementFiles',kind:FIELD_KIND.files},{label:'Estado',key:'estado',kind:FIELD_KIND.select,options:estadoOptions},{label:'Observaciones',key:'observaciones',kind:FIELD_KIND.area,placeholder:'Notas, bloqueos o comentarios de seguimiento'},{label:'Fecha de inicio del requerimiento',key:'fechaInicioRequerimiento',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha entrega usuario',key:'fechaEntregaUsuario',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Fecha paso a producción',key:'fechaPasoProduccion',kind:FIELD_KIND.text,type:INPUT_TYPE.date},{label:'Horas estimadas',key:'horas',kind:FIELD_KIND.text,type:INPUT_TYPE.number,placeholder:'Ej: 8',step:'0.5',min:'0'},{label:'Personas responsables',key:'responsables',kind:FIELD_KIND.checklist,options:responsibleOptions},...reqExtFields],
               [MODAL.document]:[{label:'Nombre',key:'nombre',kind:FIELD_KIND.text,placeholder:'Ej: Especificación técnica'},{label:'Tipo',key:'tipo',kind:FIELD_KIND.text,placeholder:'PDF, Figma, Documento...'},{label:'Enlace externo (opcional)',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'}],
               [MODAL.deployment]:[{label:'Ambiente',key:'env',kind:FIELD_KIND.select,options:ambienteOptions,onChange:e=>this.setDeploymentEnvironment(e.target.value)},{label:'URL',key:'url',kind:FIELD_KIND.text,placeholder:'https://...'},{label:'Versión / release',key:'version',kind:FIELD_KIND.text,placeholder:'v1.0.0'}],
               [MODAL.blocker]:[{label:'Descripción del bloqueante',key:'texto',kind:FIELD_KIND.area,placeholder:'¿Qué está bloqueando el avance?'}],
@@ -5380,9 +5467,11 @@
             R.formFields=(fields[md.type]||[]).map(fd=>{
               const isPassword = fd.type===PASSWORD_INPUT.hidden;
               const shown = !!s.modalShowPass[fd.key];
-              const fullReqField=md.type===MODAL.requirement && ['titulo','descripcionCambios','observaciones','responsables','codigos'].includes(fd.key);
+              const fullReqField=md.type===MODAL.requirement && ['titulo','descripcionCambios','requirementFiles','observaciones','responsables','codigos'].includes(fd.key);
               const isChecklist=fd.kind===FIELD_KIND.checklist;
               const isCodes=fd.kind===FIELD_KIND.codes;
+              const isRequirementFiles=fd.kind===FIELD_KIND.files;
+              const selectedFiles=s.form.requirementFiles||[];
               const codeRows=s.form.codigos||[''];
               const storedPrincipal=md.mode===MODAL_MODE.edit ? (this.reqCodesOf(this.req())[0]||'').trim() : '';
               const selectedOwners=s.form.responsables||[];
@@ -5392,7 +5481,7 @@
                 isPmPicker, pm:pmPicker||{}, isMonthPicker:fd.kind===FIELD_KIND.monthPicker, mp:fd.kind===FIELD_KIND.monthPicker?this.monthPickerView(s.form):{},
                 label:fd.label, fieldId:'modal-field-'+fd.key, value:isChecklist||isCodes?'':(s.form[fd.key]??''), help:fd.key==='codigos'&&storedPrincipal?'El código principal no es modificable':(fd.help!=null?fd.help:(fd.key==='responsables'?((s.devProfiles||[]).length?'': 'No hay usuarios con rol DEV para asignar.'): '')), onChange:fd.onChange||ch(fd.key), placeholder:fd.placeholder||'',
                 gridColumn:md.type===MODAL.requirement?(fullReqField?'1 / -1':'span 1'):'1 / -1', fieldBg:md.type===MODAL.requirement?'var(--gp-surface)':'transparent', fieldBorder:md.type===MODAL.requirement?'var(--gp-line-16)':'transparent', rows:fd.key==='descripcionCambios'?9:(fd.key==='observaciones'?3:4), maxAreaHeight:fd.key==='descripcionCambios'?'280px':'180px',
-                isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
+                isSelect:fd.kind===FIELD_KIND.select, isChecklist, isCodes, isRequirementFiles, files:isRequirementFiles?selectedFiles.map(file=>({name:file.name,size:file.size>=1048576?(file.size/1048576).toFixed(1)+' MB':Math.max(1,Math.ceil(file.size/1024))+' KB',remove:()=>this.removeRequirementFile(file)})):[], hasFiles:selectedFiles.length>0, onFilesChange:e=>this.setRequirementFiles(e), noOptions:isChecklist&&!(fd.options||[]).length, optionCountLabel:(fd.options||[]).length+' disponibles', hasSelectedOwners:selectedOwners.length>0, selectedCountLabel:selectedOwners.length===1?'1 persona seleccionada':selectedOwners.length+' personas seleccionadas', selectedOwnerTags:selectedOwners.map(name=>({label:name,initials:this.iniciales(name)})), isText:fd.kind===FIELD_KIND.text, isArea:fd.kind===FIELD_KIND.area, options:isChecklist?(fd.options||[]).map(o=>({...o,selected:selectedOwners.includes(o.value),selectedClass:selectedOwners.includes(o.value)?'is-selected':'',checkboxClass:selectedOwners.includes(o.value)?'is-selected':'',initials:this.iniciales(o.label),toggle:()=>this.toggleRequirementOwner(o.value)})):(fd.options||[]),
                 codes:isCodes?codeRows.map((value,i)=>{ const locked=i===0&&!!storedPrincipal; return {value:locked?storedPrincipal:value, principal:i===0, locked, editable:!locked, onInput:e=>this.setReqCode(i,e.target.value), canRemove:!locked&&codeRows.length>1, remove:()=>this.removeReqCode(i)}; }):[],
                 addCode:()=>this.addReqCode(),
                 inputType: isPassword ? this.passwordInputType(shown) : (fd.type||INPUT_TYPE.text), min:fd.min||'', step:fd.step||'1',
