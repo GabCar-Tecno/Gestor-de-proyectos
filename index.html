@@ -38,6 +38,9 @@
     <script src="./constants.js"></script>
     <script src="./boardExtended.js"></script>
     <script src="./estimationMath.js"></script>
+    <script src="./root/mixins.js"></script>
+    <script src="./root/format.js"></script>
+    <script src="./root/navigation.js"></script>
     <script src="./support.js"></script>
     <script>
       try {
@@ -1055,7 +1058,7 @@
       </sc-if>
     </x-dc>
     <script type="text/x-dc" data-dc-script>
-      const { VIEW, REQ_TAB, API_TAB, PROJECTS_VIEW, FILTER_ALL, ROLE, SAVE_STATUS, SEND_STATUS, THEME, LOCALE, NARROW_MAX_WIDTH, PASSWORD_INPUT, ICON, PASSWORD_ICON, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, ESTIMATION_PHASE_ORDER, ESTIMATION_DECIMAL_OPTIONS, ESTIMATION_LINE_KIND, ESTIMATION_ACTIVITY_TYPE, ESTIMATION_DEFAULTS, ESTIMATION_MAX_DAILY_HOURS, MODAL, MODAL_MODE, FIELD_KIND, INPUT_TYPE, TABLE, STORAGE, REQUIREMENT_FILE, FILE_NAME, NEW_TAB, LOCAL_DATE_SUFFIX, DELAY_MS, COPY_KEY, SHOW_PASS_KEY, TEXT_LIST_TYPE, EDGE_FUNCTION, AUTH_EVENT, ID_PREFIX, REQ_STATUS, BOARD_RANK, MASTER_STATUS_GROUP, STATUS_LABEL_HINT, REQ_CODE_FALLBACK, DEPLOYABLE_KIND, EMAIL_KIND_FILTER, EMAIL_FIELD, EMAIL_PANEL, MAILTO_WARN_LENGTH, CREDENTIAL_GROUP, DB_DEFAULT, SHORT_DAY_MONTH, MS_PER_DAY, EXCEL, PRINT_COLOR } = window.APP_CONSTANTS;
+      const { VIEW, REQ_TAB, API_TAB, PROJECTS_VIEW, FILTER_ALL, ROLE, SAVE_STATUS, SEND_STATUS, THEME, LOCALE, NARROW_MAX_WIDTH, PASSWORD_INPUT, ICON, PASSWORD_ICON, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, ESTIMATION_PHASE_ORDER, ESTIMATION_DECIMAL_OPTIONS, ESTIMATION_LINE_KIND, ESTIMATION_ACTIVITY_TYPE, ESTIMATION_DEFAULTS, ESTIMATION_MAX_DAILY_HOURS, MODAL, MODAL_MODE, FIELD_KIND, INPUT_TYPE, TABLE, STORAGE, REQUIREMENT_FILE, FILE_NAME, NEW_TAB, DELAY_MS, COPY_KEY, SHOW_PASS_KEY, TEXT_LIST_TYPE, EDGE_FUNCTION, AUTH_EVENT, ID_PREFIX, REQ_STATUS, BOARD_RANK, MASTER_STATUS_GROUP, STATUS_LABEL_HINT, REQ_CODE_FALLBACK, DEPLOYABLE_KIND, EMAIL_KIND_FILTER, EMAIL_FIELD, EMAIL_PANEL, MAILTO_WARN_LENGTH, CREDENTIAL_GROUP, DB_DEFAULT, SHORT_DAY_MONTH, MS_PER_DAY, EXCEL } = window.APP_CONSTANTS;
       const { dropFloatNoise, excelRoundUp, lineMetrics, activityWithHoursMetrics, estimationTotals } = window.ESTIMATION_MATH;
 
       class Component extends DCLogic {
@@ -1140,7 +1143,6 @@
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
         canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
-        hoursText(req){ return req.horas!==''&&req.horas!=null?String(req.horas):'—'; }
         extendedDisplay(company,req){
           const byId={}; ((company&&company.contactos)||[]).forEach(c=>{ byId[c.id]=c; });
           const day=v=>v?this.parseLocalDate(v).toLocaleDateString(LOCALE):'—';
@@ -1225,8 +1227,6 @@
           await this.loadData();
           this.pickPmContact(id);
         }
-        groupRowsBy(rows,key){ const groups=new Map(); (rows||[]).forEach(row=>{ const group=groups.get(row[key]); if(group) group.push(row); else groups.set(row[key],[row]); }); return groups; }
-        indexById(rows){ const index=new Map(); (rows||[]).forEach(row=>{ if(!index.has(row.id)) index.set(row.id,row); }); return index; }
         deployFinderByEnv(deploys){
           const envKey=v=>String(v||'').trim().toLocaleLowerCase(LOCALE), byEnvId=new Map(), byEnvCode=new Map();
           deploys.forEach(d=>{ if(d.environment_id&&!byEnvId.has(d.environment_id)) byEnvId.set(d.environment_id,d); if(!byEnvCode.has(envKey(d.env))) byEnvCode.set(envKey(d.env),d); });
@@ -1422,7 +1422,6 @@
         closeUserMenu(){ this.setState({userMenuOpen:false}); }
         openPasswordModalFromMenu(){ this.setState({userMenuOpen:false}); this.openPasswordModal(); }
 
-        gid(p){ return p+'-'+(window.crypto&&crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2)); }
         statusById(id){
           const list=this.state.statuses||[];
           if(this._statusIndexFor!==list){ this._statusIndexFor=list; this._statusIndex=this.indexById(list); }
@@ -1430,7 +1429,6 @@
         }
         estMeta(e){ const st=this.statusById(e); return st ? [BOARD_EXT.statusLabel(this.empresa(),e,st.label||e), st.color||'var(--gp-muted-2)', st.color_bg||'var(--gp-steel-16)'] : ['—','var(--gp-muted-2)','var(--gp-steel-16)']; }
         statusOrder(){ const list=(this.state.statuses||[]); const flow=list.filter(st=>!st.is_lateral).map(st=>st.id); const lat=list.filter(st=>st.is_lateral).map(st=>st.id); return {flow, lat, canonical:flow.concat(lat), reversed:flow.slice().reverse().concat(lat)}; }
-        iniciales(n){ return (this.parseOwners(n)[0]||n||'').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
         parseOwners(value){ return Array.isArray(value)?value.map(x=>String(x).trim()).filter(Boolean):String(value||'').split(/\s*[,;]\s*/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==DB_DEFAULT.owner.toLowerCase()); }
         formatRequirementDescription(value){
           const blocks=[]; let paragraph=[], listType='', listItems=[];
@@ -1452,17 +1450,6 @@
           flushParagraph();flushList(); return blocks;
         }
         toggleRequirementOwner(name){ this.setState(s=>{ const selected=(s.form.responsables||[]).slice(), i=selected.indexOf(name); if(i>=0) selected.splice(i,1); else selected.push(name); return {form:{...s.form,responsables:selected}}; }); }
-        emailInitials(email){ if(!email) return '?'; const local=email.split('@')[0]; const parts=local.split(/[._-]/).filter(Boolean); if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase(); return local.slice(0,2).toUpperCase(); }
-        relDate(iso){
-          if(!iso) return null;
-          const d=new Date(iso), now=new Date();
-          const days=Math.floor((now.setHours(0,0,0,0)-new Date(d).setHours(0,0,0,0))/MS_PER_DAY);
-          if(days===0) return 'hoy';
-          if(days===1) return 'ayer';
-          if(days>1 && days<=7) return 'hace '+days+' días';
-          return d.toLocaleDateString(LOCALE,SHORT_DAY_MONTH);
-        }
-        docIcon(t){ t=(t||'').toLowerCase(); if(t.includes('pdf')||t.includes('word')||t==='doc'||t==='docx')return ICON.fileText; if(t.includes('fig')||t.includes('imag'))return ICON.image; if(t.includes('diag'))return ICON.diagram; if(t.includes('cálc')||t.includes('xls'))return ICON.chart; return ICON.file; }
         activeBloq(r){ return (r.bloqueantes||[]).filter(b=>!b.resuelto).length; }
         fmtDeployItem(i){
           let s=i.name||'';
@@ -1500,19 +1487,7 @@
           return {subject, body:lines.join('\r\n')};
         }
 
-        empresa(){ return this.state.data.find(e=>e.id===this.state.empresaId); }
-        proyecto(){ const e=this.empresa(); return e && e.proyectos.find(p=>p.id===this.state.proyectoId); }
-        req(){ const p=this.proyecto(); return p && p.requerimientos.find(r=>r.id===this.state.reqId); }
 
-        goHome(){ this.setState({view:VIEW.companies,proyectoId:null,reqId:null}); }
-        openEmpresa(id){ this.setState({empresaId:id,view:VIEW.projects,proyectoId:null,reqId:null}); }
-        openProyecto(id){ this.setState({proyectoId:id,view:VIEW.project,reqId:null}); }
-        goProyectos(){ this.setState({view:VIEW.projects,proyectoId:null,reqId:null}); }
-        goConfiguracion(){ if(!this.isDev()) return; this.setState({view:VIEW.settings,proyectoId:null,reqId:null}); }
-        goProyecto(){ this.setState({view:VIEW.project,reqId:null}); }
-        goRequerimientos(){ if(!this.isDev()) return; this.setState({view:VIEW.requirements}); }
-        goEstimaciones(){ if(!this.isDev()) return; this.setState({view:VIEW.estimations,estimacionId:null,estDraft:null}); }
-        goMaestro(){ this.setState({view:VIEW.master,proyectoId:null,reqId:null,reqSelectMode:false,reqSelected:{},maestroEstMenu:null}); }
         setMaestroSearch(e){ this.setState({maestroSearch:e.target.value}); }
         toggleMaestroProjectMenu(){ this.setState(s=>({maestroProjectMenuOpen:!s.maestroProjectMenuOpen,maestroStatusMenuOpen:false})); }
         toggleMaestroStatusMenu(){ this.setState(s=>({maestroStatusMenuOpen:!s.maestroStatusMenuOpen,maestroProjectMenuOpen:false})); }
@@ -1650,22 +1625,6 @@
           if(label.includes(STATUS_LABEL_HINT.productionStrict)) return 'El cambio ya esta disponible en produccion.';
           if(label.includes(STATUS_LABEL_HINT.blocked)) return 'El avance esta detenido hasta resolver un bloqueo.';
           return 'Esta es la etapa actual del requerimiento.';
-        }
-        openReq(id){ if(!this.isDev()) return; this.setState({reqId:id,view:VIEW.requirement,reqTab:REQ_TAB.documents}); }
-        setReqTab(t){ this.setState({reqTab:t}); }
-        setFilter(f){ this.setState({filter:f}); }
-        openExt(u){ if(u) window.open(u,NEW_TAB.target); }
-        goProyectoFromMaster(companyId,projectId){ this._documentFile=null; this.setState({modal:null,form:{},documentFileName:'',empresaId:companyId,proyectoId:projectId,view:VIEW.project,reqId:null}); }
-        copyToClipboard(text,key){
-          if(!text) return;
-          const done=()=>{ this.setState({copiedKey:key}); clearTimeout(this._copyT); this._copyT=setTimeout(()=>this.setState({copiedKey:''}),DELAY_MS.copiedFeedback); };
-          if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(done); }
-          else{
-            const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
-            document.body.appendChild(ta); ta.select();
-            try{ document.execCommand('copy'); }catch(e){}
-            document.body.removeChild(ta); done();
-          }
         }
 
         toggleCredShown(id){ this.setState(s=>({credShown:{...s.credShown,[id]:!s.credShown[id]}})); }
@@ -2508,7 +2467,6 @@
           }finally{ this._busy=false; }
         }
 
-        setProjectsView(v){ this.setState({projectsView:v}); }
 
         toggleReqSelectMode(){ this.setState(s=>({reqSelectMode:!s.reqSelectMode, reqSelected: s.reqSelectMode ? {} : s.reqSelected})); }
         toggleReqSelected(id){ this.setState(s=>{ const sel={...(s.reqSelected||{})}; if(sel[id]) delete sel[id]; else sel[id]=true; return {reqSelected:sel}; }); }
@@ -2705,11 +2663,6 @@
             if(!data||data.length<postgrestMaxRows) return {data:rows,error:null};
           }
         }
-        todayIso(){ const t=new Date(), pad=n=>String(n).padStart(2,'0'); return t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate()); }
-        parseLocalDate(isoDate){ return new Date(isoDate+LOCAL_DATE_SUFFIX); }
-        fmtNum(n,dec=4){ return n==null||!Number.isFinite(n) ? '—' : String(parseFloat(n.toFixed(dec))); }
-        parseDecimalCommaOrDot(v){ const t=String(v??'').trim().replace(',','.'); if(t==='') return ''; return /^(\d+\.?\d*|\.\d+)$/.test(t)?Number(t):NaN; }
-        nextVersionLabel(v){ const t=String(v||'').trim(); if(!t) return ESTIMATION_DEFAULTS.duplicateVersionLabel; const m=t.match(/^(.*?)(\d+)(\D*)$/); return m ? m[1]+(Number(m[2])+1)+m[3] : t+' 2'; }
         estDefaultTypeId(){ const types=this.state.estActivityTypes||[]; return (types.find(t=>t.id===ESTIMATION_DEFAULTS.activityTypeId)||types[0]||{}).id||ESTIMATION_DEFAULTS.activityTypeId; }
         estimationStatusId(){
           const list=this.state.statuses||[];
@@ -3080,27 +3033,6 @@
           finally{ this._busy=false; }
         }
         isSectionOrFilledActivity(l){ return l.kind===ESTIMATION_LINE_KIND.section||l.concept||l.hours!==''; }
-        formatDayCount(x){
-          if(x==null||!Number.isFinite(x)) return '—';
-          const n=this.fmtNum(x,2);
-          return n+(n==='1'?' día':' días');
-        }
-        formatSlashDate(iso){
-          if(!iso) return '—';
-          const d=this.parseLocalDate(iso);
-          if(Number.isNaN(d.getTime())) return '—';
-          return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
-        }
-        formatExportStamp(d){
-          const months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-          const raw=String(d.versionLabel||'').trim();
-          const version=/^versi[oó]n\b/i.test(raw)?raw:('Versión '+(raw||'—'));
-          if(!d.estimatedOn) return version;
-          const day=this.parseLocalDate(d.estimatedOn);
-          if(Number.isNaN(day.getTime())) return version;
-          const dd=String(day.getDate()).padStart(2,'0');
-          return version+' · '+dd+' '+months[day.getMonth()]+' '+day.getFullYear();
-        }
         exportField(value){ const text=String(value||'').trim(); return text||'—'; }
         exportHourScenarios(){
           return [
@@ -3548,10 +3480,6 @@
           return doc.save();
         }
 
-        guardCrumbsAndLogoAgainstUnsavedExit(crumbs,R){
-          crumbs.slice(0,-1).forEach(c=>{ const go=c.go; c.go=()=>this.leaveEstimacion(go); });
-          const home=R.goHome; R.goHome=()=>this.leaveEstimacion(home);
-        }
         byBoardStageThenReqCodeDesc(reqOf=item=>item.req){
           const rankOf=id=>BOARD_RANK.byStatus[String(id||'').toLowerCase()]??BOARD_RANK.other;
           const codeOf=req=>(req.codigo||'').trim();
@@ -4418,6 +4346,7 @@
           return R;
         }
       }
+      applyRootMixins(Component);
     </script>
   </body>
 </html>
