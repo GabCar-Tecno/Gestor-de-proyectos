@@ -123,7 +123,7 @@
       discord: 'discord'
     },
     MODAL_MODE: { create: 'crear', edit: 'editar' },
-    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes', checkbox: 'checkbox', pmPicker: 'pmPicker', monthPicker: 'monthPicker' },
+    FIELD_KIND: { text: 'text', area: 'area', select: 'select', checklist: 'checklist', codes: 'codes', files: 'files', checkbox: 'checkbox', pmPicker: 'pmPicker', monthPicker: 'monthPicker' },
     INPUT_TYPE: inputType,
     TABLE: {
       companies: 'companies',
@@ -135,6 +135,7 @@
       environments: 'environments',
       estimations: 'estimations',
       estimationLines: 'estimation_lines',
+      estimationDocuments: 'estimation_documents',
       estimationComplexities: 'estimation_complexities',
       estimationActivityTypes: 'estimation_activity_types',
       profiles: 'profiles',
@@ -156,6 +157,15 @@
       signedUrlTtlSeconds: 300,
       defaultContentType: 'application/octet-stream'
     },
+    REQUIREMENT_FILE: {
+      s3UrlPrefix: 's3://',
+      maxSizeBytes: 52428800,
+      contentTypes: {
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.pdf': 'application/pdf'
+      }
+    },
     FILE_NAME: {
       estimationPrefix: 'Estimación_Req_',
       requirementsPrefix: 'requerimientos-',
@@ -176,7 +186,7 @@
     },
     SHOW_PASS_KEY: { credentialRowPrefix: 'cred-' },
     TEXT_LIST_TYPE: { ordered: 'ordered', bulleted: 'bulleted' },
-    EDGE_FUNCTION: { discordNotify: 'discord-notify' },
+    EDGE_FUNCTION: { discordNotify: 'discord-notify', requirementFiles: 'requirement-files' },
     AUTH_EVENT: { passwordRecovery: 'PASSWORD_RECOVERY' },
     ID_PREFIX: {
       company: 'e',
