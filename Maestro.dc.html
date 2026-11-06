@@ -97,16 +97,16 @@
       </sc-if>
     </div>
   </div>
-  <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
-    ><div class="master-scroll-top" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
-      ><div class="master-scroll-thumb"></div></div
-  ></sc-if>
+  <div class="master-scroll-top" style="display:none" onPointerDown="{{ maestroTopScroll }}" title="Desplazar columnas"
+    ><div class="master-scroll-thumb"></div></div>
   <div class="master-table {{ maestroTableClass }}" onScroll="{{ maestroTableScroll }}">
     <div class="master-table-head">
       <sc-if value="{{ isPM }}" hint-placeholder-val="{{ false }}"
         ><span class="master-cell-est master-sticky master-sticky-0"></span></sc-if
       ><span class="master-sticky master-sticky-1">Aplicación</span><span class="master-sticky master-sticky-2">#Req</span
       ><span>Título del requerimiento</span><span>Estado</span
+      ><sc-if value="{{ maestroNormal }}" hint-placeholder-val="{{ true }}"
+        ><span>Horas estimadas</span></sc-if
       ><sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
         ><span>PM Entrega</span><span>Fecha solicitud</span><span>Entrega estimación</span
         ><span>Aprobación estimación</span><span>Inicio desarrollo</span></sc-if
@@ -143,13 +143,13 @@
                 aria-haspopup="menu"
                 aria-expanded="{{ r.estMenuOpen }}"
                 onClick="{{ r.toggleEstMenu }}"
-                ><svg width="16" height="16" aria-hidden="true"><use href="#ic-chart"></use></svg></button
+                ><svg width="16" height="16" aria-hidden="true"><use href="#ic-download"></use></svg></button
             ></sc-if></span
           ></sc-if
         >
         <span class="master-cell-app master-cell-main master-sticky master-sticky-1"
-          ><span class="master-cell-label">Aplicación</span>{{
-          r.proyecto }}</span
+          ><span class="master-cell-label">Aplicación</span
+          ><span class="master-cell-app-text">{{ r.proyecto }}</span></span
         >
         <span
           class="master-cell-main master-sticky master-sticky-2"
@@ -176,6 +176,11 @@
             ></span
             >{{ r.estado }}</span
           ></span
+        >
+        <sc-if value="{{ maestroNormal }}" hint-placeholder-val="{{ true }}"
+          ><span class="master-cell-main" style="font-size:11.5px"
+            ><span class="master-cell-label">Horas estimadas</span>{{ r.horasTxt }}</span
+          ></sc-if
         >
         <sc-if value="{{ maestroExtended }}" hint-placeholder-val="{{ false }}"
           ><span class="master-cell-main" title="{{ r.ext.pmEntrega }}"
@@ -247,7 +252,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null,"maestroEstMenuOpen":false,"closeMaestroEstMenu":null,"maestroEstOptions":[],"maestroEstMenuStyle":""}'>
+<script type="text/x-dc" data-dc-script data-props='{"isPM":false,"exportMaestroExcel":null,"exportingExcel":null,"exportExcelLabel":null,"maestroVisibleCount":null,"maestroCount":null,"maestroStatusCounts":null,"maestroSearch":null,"setMaestroSearch":null,"toggleMaestroProjectMenu":null,"maestroProjectMenuOpen":false,"maestroProjectLabel":null,"closeMaestroProjectMenu":null,"maestroProjectOptions":null,"toggleMaestroStatusMenu":null,"maestroStatusMenuOpen":false,"maestroStatusLabel":null,"closeMaestroStatusMenu":null,"maestroStatusOptions":null,"maestroReqList":[],"maestroEmpty":false,"maestroExtended":false,"maestroNormal":true,"maestroTableClass":"","maestroTopScroll":null,"maestroTableScroll":null,"maestroEstMenuOpen":false,"closeMaestroEstMenu":null,"maestroEstOptions":[],"maestroEstMenuStyle":""}'>
 class Component extends DCLogic {
 }
 </script>

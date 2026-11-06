@@ -740,7 +740,7 @@
             grid-template-columns: var(--master-lead-col,) minmax(110px, 0.95fr) 78px minmax(
                 210px,
                 2fr
-              ) 112px minmax(185px, 1.75fr) 105px 105px;
+              ) 112px 90px minmax(185px, 1.75fr) 105px 105px;
             gap: 12px;
             align-items: center;
           }
@@ -815,8 +815,22 @@
             display: none;
           }
           @media (min-width: 761px) {
-            .master-table.master-table--extended {
+            .master-table.master-table--scroll {
               overflow-x: auto;
+              --master-row-gap: 12px;
+              --master-sticky-2-left: 122px;
+              --master-base-min: 1111px;
+            }
+            .master-table--est {
+              --master-lead-extra: calc(var(--master-est-col) + var(--master-row-gap));
+            }
+            .master-table--scroll:not(.master-table--extended) .master-table-head,
+            .master-table--scroll:not(.master-table--extended) .master-row {
+              box-sizing: border-box;
+              min-width: calc(var(--master-base-min) + var(--master-lead-extra, 0px));
+            }
+            .master-table.master-table--extended {
+              --master-sticky-2-left: 142px;
             }
             .master-table--extended .master-table-head,
             .master-table--extended .master-row {
@@ -849,24 +863,27 @@
             .master-scroll-top.dragging .master-scroll-thumb {
               background: #95a3b8;
             }
-            .master-table.master-table--extended {
+            .master-table.master-table--scroll {
               scrollbar-width: thin;
               scrollbar-color: #b7c2d2 transparent;
             }
-            .master-table--extended::-webkit-scrollbar { height: 10px; }
-            .master-table--extended::-webkit-scrollbar-track { background: var(--gp-fog); border-radius: 8px; }
-            .master-table--extended::-webkit-scrollbar-thumb { background: #b7c2d2; border-radius: 8px; border: 2px solid var(--gp-fog); }
-            .master-table--extended::-webkit-scrollbar-thumb:hover { background: #95a3b8; }
+            .master-table--scroll::-webkit-scrollbar { height: 10px; }
+            .master-table--scroll::-webkit-scrollbar-track { background: var(--gp-fog); border-radius: 8px; }
+            .master-table--scroll::-webkit-scrollbar-thumb { background: #b7c2d2; border-radius: 8px; border: 2px solid var(--gp-fog); }
+            .master-table--scroll::-webkit-scrollbar-thumb:hover { background: #95a3b8; }
             .master-table--extended .master-cell-observations {
               order: 99;
             }
-            .master-table--extended { --sticky-bg: var(--gp-wisp); }
-            .master-table--extended .master-table-head { --sticky-bg: var(--gp-fog); }
-            .master-table--extended .master-row:hover { --sticky-bg: var(--gp-mist); }
-            .master-board-light .master-table--extended { --sticky-bg: var(--gp-fog); }
-            .master-board-light .master-table--extended .master-table-head { --sticky-bg: var(--gp-vapor); }
-            .master-board-light .master-table--extended .master-row:hover { --sticky-bg: var(--gp-frost); }
-            .master-table--extended .master-sticky {
+            .master-table--scroll { --sticky-bg: var(--gp-wisp); }
+            .master-table--scroll .master-table-head { --sticky-bg: var(--gp-fog); }
+            .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-mist); }
+            .master-board-light .master-table--scroll { --sticky-bg: var(--gp-fog); }
+            .master-board-light .master-table--scroll .master-table-head { --sticky-bg: var(--gp-vapor); }
+            .master-board-light .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-frost); }
+            html.dark-mode .master-board-light .master-table--scroll { --sticky-bg: var(--gp-surface); }
+            html.dark-mode .master-board-light .master-table--scroll .master-table-head { --sticky-bg: var(--gp-abyss); }
+            html.dark-mode .master-board-light .master-table--scroll .master-row:hover { --sticky-bg: var(--gp-dusk); }
+            .master-table--scroll .master-sticky {
               position: sticky;
               z-index: 1;
               align-self: stretch;
@@ -875,15 +892,21 @@
               background: var(--sticky-bg);
               box-shadow: 12px 0 0 var(--sticky-bg);
             }
-            .master-table--extended .master-sticky-0 { left: 0; }
-            .master-table--extended .master-sticky-1 { left: 0; }
-            .master-table--extended .master-sticky-2 { left: 142px; }
+            .master-table--scroll:not(.master-table--extended) .master-cell-app-text {
+              display: block;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .master-table--scroll .master-sticky-0 { left: 0; }
+            .master-table--scroll .master-sticky-1 { left: 0; }
+            .master-table--scroll .master-sticky-2 { left: var(--master-sticky-2-left); }
             .master-table--est.master-table--extended .master-table-head,
             .master-table--est.master-table--extended .master-row {
               min-width: calc(2240px + var(--master-est-col) + 12px);
             }
-            .master-table--est.master-table--extended .master-sticky-1 { left: calc(var(--master-est-col) + 12px); }
-            .master-table--est.master-table--extended .master-sticky-2 { left: calc(142px + var(--master-est-col) + 12px); }
+            .master-table--est.master-table--scroll .master-sticky-1 { left: calc(var(--master-est-col) + 12px); }
+            .master-table--est.master-table--scroll .master-sticky-2 { left: calc(var(--master-sticky-2-left) + var(--master-est-col) + 12px); }
           }
           .master-cell-main {
             min-width: 0;
@@ -905,12 +928,17 @@
             overflow-wrap: anywhere;
           }
           @media (max-width: 1000px) {
+            .master-table.master-table--scroll:not(.master-table--extended) {
+              --master-row-gap: 8px;
+              --master-sticky-2-left: 108px;
+              --master-base-min: 956px;
+            }
             .master-table-head,
             .master-row {
               grid-template-columns: var(--master-lead-col,) minmax(100px, 0.9fr) 70px minmax(
                   175px,
                   1.7fr
-                ) 100px minmax(150px, 1.5fr) 95px 100px;
+                ) 100px 86px minmax(150px, 1.5fr) 95px 100px;
               gap: 8px;
               padding-left: 12px;
               padding-right: 12px;
@@ -1934,7 +1962,7 @@
                 toggleMaestroStatusMenu="{{ toggleMaestroStatusMenu }}" maestroStatusMenuOpen="{{ maestroStatusMenuOpen }}"
                 maestroStatusLabel="{{ maestroStatusLabel }}" closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}"
                 maestroStatusOptions="{{ maestroStatusOptions }}" maestroReqList="{{ maestroReqList }}"
-                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
+                maestroEmpty="{{ maestroEmpty }}" maestroExtended="{{ maestroExtended }}" maestroNormal="{{ maestroNormal }}" maestroTableClass="{{ maestroTableClass }}" maestroTopScroll="{{ maestroTopScroll }}" maestroTableScroll="{{ maestroTableScroll }}" icons="{{ icons }}"
                 maestroEstMenuOpen="{{ maestroEstMenuOpen }}" closeMaestroEstMenu="{{ closeMaestroEstMenu }}"
                 maestroEstOptions="{{ maestroEstOptions }}" maestroEstMenuStyle="{{ maestroEstMenuStyle }}"
               />
@@ -2605,27 +2633,29 @@
         isPM(){ return this.state.profileRole===ROLE.pm; }
         canDownloadBoardExcel(){ return this.isPM(); }
         canSeeExtended(company){ return BOARD_EXT.canSeeExtended(company,this.state.profileRole); }
+        hoursText(req){ return req.horas!==''&&req.horas!=null?String(req.horas):'—'; }
         extendedDisplay(company,req){
           const byId={}; ((company&&company.contactos)||[]).forEach(c=>{ byId[c.id]=c; });
           const day=v=>v?this.parseLocalDate(v).toLocaleDateString(LOCALE):'—';
           const pm=req.pmContactId&&byId[req.pmContactId];
           const d={ pmEntrega:pm?pm.name:'—', fechaSolicitud:day(req.fechaSolicitud), fechaEntregaEstimacion:day(req.fechaEntregaEstimacion),
             fechaAprobacionEstimacion:day(req.fechaAprobacionEstimacion), fechaInicioDesarrollo:day(req.fechaInicioDesarrollo), fechaEntregaPruebas:day(req.fechaEntregaPruebas),
-            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:req.horas!==''&&req.horas!=null?String(req.horas):'—',
+            responsablesTxt:(req.responsables||[]).join(', ')||'—', horasTxt:this.hoursText(req),
             facturadoTxt:BOARD_EXT.formatInvoiced(req.facturado,req.mesFacturado,LOCALE), facturadoColor:req.facturado?'var(--gp-success)':'var(--gp-muted-3)' };
           d.items=[['PM Entrega',d.pmEntrega],['Fecha de solicitud',d.fechaSolicitud],['Fecha entrega estimación',d.fechaEntregaEstimacion],['Fecha aprobación estimación',d.fechaAprobacionEstimacion],
             ['Fecha inicio desarrollo',d.fechaInicioDesarrollo],['Fecha real entrega a pruebas',d.fechaEntregaPruebas],['Facturado',d.facturadoTxt]].map(([label,value])=>({label,value}));
           return d;
         }
         maestroScrollParts(){
-          const table=document.querySelector('.master-table--extended'), track=document.querySelector('.master-scroll-top');
+          const table=document.querySelector('.master-table--scroll'), track=document.querySelector('.master-scroll-top');
           const thumb=track&&track.querySelector('.master-scroll-thumb');
           return table&&track&&thumb ? {table,track,thumb} : null;
         }
         syncMaestroThumb(){
           const p=this.maestroScrollParts(); if(!p) return;
-          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth, trackW=track.clientWidth;
-          track.style.visibility=max>0?'visible':'hidden';
+          const {table,track,thumb}=p, max=table.scrollWidth-table.clientWidth;
+          track.style.display=max>0?'block':'none';
+          const trackW=track.clientWidth;
           if(max<=0||!trackW) return;
           const thumbW=Math.max(40,trackW*table.clientWidth/table.scrollWidth);
           thumb.style.width=thumbW+'px';
@@ -5005,7 +5035,8 @@
               {label:'Bloqueados',count:stateCount(MASTER_STATUS_GROUP.blocked),color:'var(--gp-metric-block)',tint:'var(--gp-metric-block-tint)'},
             ];
             R.maestroExtended=this.canSeeExtended(this.empresa());
-            R.maestroTableClass=[R.maestroExtended?'master-table--extended':'',isPM?'master-table--est':''].filter(Boolean).join(' ');
+            R.maestroNormal=!R.maestroExtended;
+            R.maestroTableClass=['master-table--scroll',R.maestroExtended?'master-table--extended':'',isPM?'master-table--est':''].filter(Boolean).join(' ');
             const estMenu=isPM?s.maestroEstMenu:null;
             R.maestroEstMenuOpen=!!estMenu;
             R.closeMaestroEstMenu=()=>this.closeMaestroEstMenu();
@@ -5016,11 +5047,9 @@
               {label:'Abrir estimación',choose:()=>this.openMaestroEstimacion(estMenu)},
             ]:[];
             R.maestroTopScroll=e=>this.startMaestroThumbDrag(e);
-            R.maestroTableScroll=()=>{ if(R.maestroExtended) this.syncMaestroThumb(); };
-            if(R.maestroExtended){
-              requestAnimationFrame(()=>requestAnimationFrame(()=>this.syncMaestroThumb()));
-              if(!this._maestroResizeBound){ this._maestroResizeBound=true; window.addEventListener('resize',()=>this.syncMaestroThumb()); }
-            }
+            R.maestroTableScroll=()=>this.syncMaestroThumb();
+            requestAnimationFrame(()=>requestAnimationFrame(()=>this.syncMaestroThumb()));
+            if(!this._maestroResizeBound){ this._maestroResizeBound=true; window.addEventListener('resize',()=>this.syncMaestroThumb()); }
             R.maestroReqList=filtered.map(({company,project,req})=>{
               const meta=this.estMeta(req.estado), count=this.activeBloq(req);
               const deliveries=(req.despliegues||[]).filter(d=>d.updatedAt).map(d=>({d,amb:envIndexOf.get(company).get(d.environmentId)}));
@@ -5042,6 +5071,7 @@
                 bloqLabel:count?count+' bloqueante'+(count===1?'':'s')+' activo'+(count===1?'':'s'):'Sin bloqueantes',
                 bloqColor:count?'var(--gp-red)':'var(--gp-muted-2)', deliveryColor:req.fechaEntregaUsuario||userDelivery?'var(--gp-success)':'var(--gp-muted-3)',
                 openTitle:this.isDev()?'Abrir y editar requerimiento':'Consultar requerimiento', open:openReq,
+                horasTxt:this.hoursText(req),
                 ext:R.maestroExtended?this.extendedDisplay(company,req):{},
               };
             });
