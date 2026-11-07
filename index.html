@@ -45,18 +45,18 @@
     <script src="./root/sessionVals.js"></script>
     <script src="./root/shellVals.js"></script>
     <script src="./root/data.js"></script>
-    <script src="./root/maestro.js"></script>
+    <script src="./root/master.js"></script>
     <script src="./root/masterVals.js"></script>
-    <script src="./root/empresaConfig.js"></script>
+    <script src="./root/companySettings.js"></script>
     <script src="./root/projectVals.js"></script>
     <script src="./root/apiDoc.js"></script>
     <script src="./root/modal.js"></script>
     <script src="./root/modalVals.js"></script>
     <script src="./root/promote.js"></script>
-    <script src="./root/correo.js"></script>
-    <script src="./root/requerimiento.js"></script>
+    <script src="./root/deployEmail.js"></script>
+    <script src="./root/requirement.js"></script>
     <script src="./root/requirementVals.js"></script>
-    <script src="./root/archivos.js"></script>
+    <script src="./root/files.js"></script>
     <script src="./root/estimation.js"></script>
     <script src="./root/estimationLines.js"></script>
     <script src="./root/estimationSave.js"></script>
@@ -107,8 +107,8 @@
         </svg>
       </template>
 
-      <dc-import name="IconosAcciones"></dc-import>
-      <dc-import name="IconosRecursos"></dc-import>
+      <dc-import name="ActionIcons"></dc-import>
+      <dc-import name="ResourceIcons"></dc-import>
 
       <sc-if value="{{ showChecking }}" hint-placeholder-val="{{ false }}">
         <div
@@ -206,7 +206,7 @@
             style="flex:1;padding:clamp(20px,3.2vw,40px) clamp(16px,3vw,44px) 80px;max-width:{{ mainMaxW }};width:100%;margin:0 auto"
           >
             <sc-if value="{{ viewEmpresas }}" hint-placeholder-val="{{ true }}">
-              <dc-import name="Empresas"
+              <dc-import name="Companies"
                 empresasList="{{ empresasList }}"
               />
             </sc-if>
@@ -215,7 +215,7 @@
               value="{{ viewProyectos }}"
               hint-placeholder-val="{{ true }}"
             >
-              <dc-import name="Proyectos"
+              <dc-import name="Projects"
                 empresa="{{ empresa }}" showParam="{{ showParam }}"
                 openCorreoDespliegue="{{ openCorreoDespliegue }}" goMaestro="{{ goMaestro }}"
                 goConfiguracion="{{ goConfiguracion }}" setProjectsGrid="{{ setProjectsGrid }}"
@@ -231,7 +231,7 @@
               value="{{ viewConfiguracion }}"
               hint-placeholder-val="{{ false }}"
             >
-              <dc-import name="Configuracion"
+              <dc-import name="Settings"
                 empresa="{{ empresa }}" goProyectos="{{ goProyectos }}"
                 showAmbientes="{{ showAmbientes }}" addAmbiente="{{ addAmbiente }}"
                 ambientesEmpty="{{ ambientesEmpty }}" ambientesList="{{ ambientesList }}"
@@ -246,7 +246,7 @@
             </sc-if>
 
             <sc-if value="{{ viewProyecto }}" hint-placeholder-val="{{ true }}">
-              <dc-import name="Proyecto"
+              <dc-import name="Project"
                 proyecto="{{ proyecto }}" isDev="{{ isDev }}"
                 goRequerimientos="{{ goRequerimientos }}" editDesplieguesProy="{{ editDesplieguesProy }}"
                 openComponentesProy="{{ openComponentesProy }}" componentesProyEmpty="{{ componentesProyEmpty }}"
@@ -256,7 +256,7 @@
             </sc-if>
 
             <sc-if value="{{ viewMaestro }}" hint-placeholder-val="{{ false }}">
-              <dc-import name="Maestro"
+              <dc-import name="Master"
                 isPM="{{ isPM }}" exportMaestroExcel="{{ exportMaestroExcel }}"
                 exportingExcel="{{ exportingExcel }}" exportExcelLabel="{{ exportExcelLabel }}"
                 maestroVisibleCount="{{ maestroVisibleCount }}" maestroCount="{{ maestroCount }}"
@@ -277,7 +277,7 @@
               value="{{ viewRequerimientos }}"
               hint-placeholder-val="{{ true }}"
             >
-              <dc-import name="Requerimientos"
+              <dc-import name="Requirements"
                 proyecto="{{ proyecto }}" filterChips="{{ filterChips }}"
                 isDev="{{ isDev }}" reqSelToggle="{{ reqSelToggle }}"
                 reqSelToggleLabel="{{ reqSelToggleLabel }}" reqSelBarShow="{{ reqSelBarShow }}"
@@ -291,7 +291,7 @@
               value="{{ viewRequerimiento }}"
               hint-placeholder-val="{{ true }}"
             >
-              <dc-import name="Requerimiento"
+              <dc-import name="Requirement"
                 goMaestro="{{ goMaestro }}" req="{{ req }}"
                 isDev="{{ isDev }}" promoteReq="{{ promoteReq }}"
                 promoteReqDisabled="{{ promoteReqDisabled }}" promoteReqTitle="{{ promoteReqTitle }}"
@@ -309,7 +309,7 @@
             </sc-if>
 
             <sc-if value="{{ viewApidoc }}" hint-placeholder-val="{{ false }}">
-              <dc-import name="Apidoc"
+              <dc-import name="ApiDoc"
                 proyecto="{{ proyecto }}" isDev="{{ isDev }}"
                 apiUrlVal="{{ apiUrlVal }}" onApiUrl="{{ onApiUrl }}" saveApiUrl="{{ saveApiUrl }}"
                 apiErrShow="{{ apiErrShow }}" apiErr="{{ apiErr }}"
@@ -322,14 +322,14 @@
             </sc-if>
 
             <sc-if value="{{ viewEstimaciones }}" hint-placeholder-val="{{ false }}">
-              <dc-import name="Estimaciones"
+              <dc-import name="Estimations"
                 proyecto="{{ proyecto }}" isDev="{{ isDev }}"
                 estimaciones="{{ estimaciones }}" icons="{{ icons }}"
               />
             </sc-if>
 
             <sc-if value="{{ viewEstimacion }}" hint-placeholder-val="{{ false }}">
-              <dc-import name="Estimacion"
+              <dc-import name="Estimation"
                 isDev="{{ isDev }}" est="{{ est }}"
                 icons="{{ icons }}"
               />

@@ -1,5 +1,5 @@
 <x-dc>
-<dc-import name="CorreoSeleccion"
+<dc-import name="EmailSelection"
   correoAmbientes="{{ correoAmbientes }}" correoCarpetaFalta="{{ correoCarpetaFalta }}"
   correoProyectos="{{ correoProyectos }}"
 />
@@ -38,7 +38,7 @@
       value="{{ correoOtrosHay }}"
       hint-placeholder-val="{{ true }}"
     >
-      <dc-import name="CorreoOtros"
+      <dc-import name="EmailOthers"
         toggleCorreoOtros="{{ toggleCorreoOtros }}" correoOtrosBorder="{{ correoOtrosBorder }}"
         correoOtrosResumenColor="{{ correoOtrosResumenColor }}" correoOtrosResumen="{{ correoOtrosResumen }}"
         correoOtrosConteo="{{ correoOtrosConteo }}" correoOtrosChevron="{{ correoOtrosChevron }}"
@@ -80,7 +80,7 @@
       value="{{ correoContactosHay }}"
       hint-placeholder-val="{{ true }}"
     >
-      <dc-import name="CorreoCuerpo"
+      <dc-import name="EmailBody"
         toggleCorreoTo="{{ toggleCorreoTo }}" correoToBorder="{{ correoToBorder }}"
         correoToResumenColor="{{ correoToResumenColor }}" correoToResumen="{{ correoToResumen }}"
         correoToChevron="{{ correoToChevron }}" correoToOpen="{{ correoToOpen }}"

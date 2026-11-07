@@ -1,6 +1,6 @@
 <x-dc>
 <div class="master-board-light" style="animation: vwIn 0.3s ease">
-  <dc-import name="MaestroEncabezado"
+  <dc-import name="MasterHeader"
     isPM="{{ isPM }}" exportMaestroExcel="{{ exportMaestroExcel }}"
     exportingExcel="{{ exportingExcel }}" exportExcelLabel="{{ exportExcelLabel }}"
     maestroVisibleCount="{{ maestroVisibleCount }}" maestroCount="{{ maestroCount }}"
@@ -59,7 +59,7 @@
         value="{{ maestroProjectMenuOpen }}"
         hint-placeholder-val="{{ false }}"
       >
-        <dc-import name="MaestroMenuProyecto"
+        <dc-import name="MasterProjectMenu"
           closeMaestroProjectMenu="{{ closeMaestroProjectMenu }}" maestroProjectOptions="{{ maestroProjectOptions }}"
         />
       </sc-if>
@@ -91,7 +91,7 @@
         value="{{ maestroStatusMenuOpen }}"
         hint-placeholder-val="{{ false }}"
       >
-        <dc-import name="MaestroMenuEstado"
+        <dc-import name="MasterStatusMenu"
           closeMaestroStatusMenu="{{ closeMaestroStatusMenu }}" maestroStatusOptions="{{ maestroStatusOptions }}"
         />
       </sc-if>
@@ -246,7 +246,7 @@
     >
   </div>
   <sc-if value="{{ maestroEstMenuOpen }}" hint-placeholder-val="{{ false }}">
-    <dc-import name="MaestroMenuEstimacion"
+    <dc-import name="MasterEstimationMenu"
       closeMaestroEstMenu="{{ closeMaestroEstMenu }}" maestroEstOptions="{{ maestroEstOptions }}" maestroEstMenuStyle="{{ maestroEstMenuStyle }}"
     ></dc-import>
   </sc-if>
