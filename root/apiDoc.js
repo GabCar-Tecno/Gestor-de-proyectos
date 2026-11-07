@@ -1,5 +1,5 @@
 (function () {
-  const { VIEW, API_TAB, SAVE_STATUS, TABLE, DELAY_MS } = window.APP_CONSTANTS;
+  const { VIEW, API_TAB, SAVE_STATUS, TABLE, DELAY_MS, ICON } = window.APP_CONSTANTS;
 
   window.ROOT_MIXINS.push({
     openApiDoc(){ clearTimeout(this._redocWaitT); this._redocWaitSpec=null; const p=this.proyecto(); const spec=(p.recursos&&p.recursos.apiSpec)||{}; this.setState({view:VIEW.apiDoc, apiUrlInput:spec.source===API_TAB.url?(spec.url||''):'', apiErr:'', apiHasRender:!!spec.source}); this._pendingSpec=spec.source?spec:null; },
@@ -20,5 +20,24 @@
       await this.loadData();
       this._pendingSpec=spec; this.setState({apiErr:''});
     },
+    apiDocVals(ctx){
+      const { s, v } = ctx;
+      const R={};
+      R.viewApidoc=v===VIEW.apiDoc;
+      R.mainMaxW= v===VIEW.apiDoc ? '1800px' : (v===VIEW.estimation ? '1500px' : (v===VIEW.master&&ctx.maestroExtended ? '1600px' : '1240px'));
+      R.apiUrlVal=s.apiUrlInput||'';
+      R.onApiUrl=(e)=>this.setState({apiUrlInput:e.target.value});
+      R.saveApiUrl=()=>this.saveApiUrl();
+      R.apiErr=s.apiErr||''; R.apiErrShow=!!s.apiErr;
+      R.redocDisplay=(v===VIEW.apiDoc&&s.apiHasRender)?'block':'none';
+      R.apiEmptyShow=v===VIEW.apiDoc&&!s.apiHasRender;
+      R.showFullscreenBtn=v===VIEW.apiDoc&&!!s.apiHasRender;
+      R.toggleFullscreen=()=>this.toggleApiFullscreen();
+      R.fullscreenTitle=s.apiFullscreen?'Salir de pantalla completa':'Pantalla completa';
+      R.fullscreenIconHref=ICON.expand;
+      R.redocRef=(el)=>{ this._redocEl=el; const spec=this._pendingSpec; if(el&&spec){ this._pendingSpec=null; setTimeout(()=>this.renderSpec(spec),0); } };
+      R.redocContainerRef=(el)=>{ this._redocContainerEl=el; };
+      return R;
+    }
   });
 })();

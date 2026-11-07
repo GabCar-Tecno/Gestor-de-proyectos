@@ -1,5 +1,8 @@
 (function () {
-  const { SAVE_STATUS, MODAL, MODAL_MODE, TABLE, DB_DEFAULT } = window.APP_CONSTANTS;
+  const { SAVE_STATUS, MODAL, MODAL_MODE, TABLE, DB_DEFAULT, DEPLOYABLE_KIND, EMAIL_FIELD } = window.APP_CONSTANTS;
+
+  const empresaLogos={ coltanques:'./assets/logos/coltanques.svg', tecno:'./assets/logos/tecno.svg', d1:'./assets/logos/d1.png', 'tiendas d1':'./assets/logos/d1.png' };
+  const logoDe=e=>empresaLogos[(e.nombre||'').trim().toLowerCase()]||'';
 
   window.ROOT_MIXINS.push({
     addEmpresa(){ if(!this.isDev()) return; this.openModal({type:MODAL.company,mode:MODAL_MODE.create,title:'Nueva empresa',form:{nombre:''}}); },
@@ -148,5 +151,59 @@
       const row=((project&&project.recursos&&project.recursos.despliegues)||[]).find(d=>d.environmentId===id)||{};
       this.setState(s=>({form:{...s.form,env:id,url:row.url||'',version:row.version||''}}));
     },
+    companiesVals(ctx){
+      const { s } = ctx;
+      const R={};
+      R.empresasList=s.data.map(e=>({ id:e.id,nombre:e.nombre,mono:e.mono,color:e.color, logo:logoDe(e), proyectosLabel:`${e.proyectos.length} proyecto${e.proyectos.length===1?'':'s'}`, open:()=>this.openEmpresa(e.id) }));
+      return R;
+    },
+    companyVals(ctx){
+      const { isDev, emp } = ctx;
+      const R={};
+      if(!emp) return R;
+      R.empresa={ nombre:emp.nombre, mono:emp.mono, color:emp.color, logo:logoDe(emp), proyectosLabel:`${emp.proyectos.length} proyecto${emp.proyectos.length===1?'':'s'}` };
+      R.showAmbientes=isDev;
+      R.ambientesEmpty=!(emp.ambientes||[]).length;
+      R.ambientesList=(emp.ambientes||[]).map(a=>{ const sm=a.stage?this.estMeta(a.stage):null; return { id:a.id, code:a.code, label:a.label||a.code, stageLabel: sm?sm[0]:'Sin etapa', stageColor: sm?sm[1]:'var(--gp-muted-2)', stageBg: sm?sm[2]:'var(--gp-hover-bg)', carpetaTexto: a.deployFolder ? a.deployFolder : 'Sin carpeta de despliegue', edit:()=>this.editAmbiente(a.id), del:()=>this.delAmbiente(a.id) }; });
+      R.addAmbiente=()=>this.addAmbiente();
+      R.showParam=isDev;
+      R.openCorreoDespliegue=()=>this.openCorreoDespliegue();
+      const _srvs=(emp&&emp.servidores)||[];
+      R.servidoresEmpty=!_srvs.length;
+      R.servidoresList=_srvs.map(s=>({ code:s.code, ip:s.ip, edit:()=>this.editServidor(s.id), del:()=>this.delServidor(s.id) }));
+      R.addServidor=()=>this.addServidor();
+      const _inss=(emp&&emp.instrucciones)||[];
+      R.instruccionesEmpty=!_inss.length;
+      R.instruccionesList=_inss.map(i=>({ text:i.text, edit:()=>this.editInstruccion(i.id), del:()=>this.delInstruccion(i.id) }));
+      R.addInstruccion=()=>this.addInstruccion();
+      const _ctos=(emp&&emp.contactos)||[];
+      R.contactosEmpty=!_ctos.length;
+      R.contactosList=_ctos.map(k=>{
+        const meta = k.defaultField===EMAIL_FIELD.to ? ['Para','var(--gp-cyan)','var(--gp-cyan-16)']
+                   : k.defaultField===EMAIL_FIELD.cc ? ['CC','var(--gp-violet)','var(--gp-violet-16)']
+                   : ['Manual','var(--gp-muted)','var(--gp-steel-14)'];
+        return { name:k.name, email:k.email||'Sin correo', isPm:k.role===BOARD_EXT.CONTACT_ROLE.pm, badgeLabel:meta[0], badgeColor:meta[1], badgeBg:meta[2],
+                 edit:()=>this.editContacto(k.id), del:()=>this.delContacto(k.id) };
+      });
+      R.addContacto=()=>this.addContacto();
+      const _deps=(emp&&emp.desplegables)||[];
+      const _srvById={}; _srvs.forEach(x=>{ _srvById[x.id]=x; });
+      const _insById={}; _inss.forEach(x=>{ _insById[x.id]=x; });
+      R.desplegablesEmpty=!_deps.length;
+      R.desplegablesList=_deps.map(d=>{
+        const srv=_srvById[d.serverId];
+        const meta = d.kind===DEPLOYABLE_KIND.gateway ? ['Gateway','var(--gp-violet)','var(--gp-violet-16)']
+                   : d.kind===DEPLOYABLE_KIND.app     ? ['App','var(--gp-amber)','var(--gp-amber-16)']
+                   :                      ['API','var(--gp-cyan)','var(--gp-cyan-16)'];
+        const insTxt=(d.instruccionIds||[]).map(i=>(_insById[i]||{}).text).filter(Boolean);
+        const partes=[srv?(srv.code+': '+srv.ip):'Servidor sin asignar'];
+        if(insTxt.length) partes.push(insTxt.join(', '));
+        return { titulo: d.name + (d.port?(':'+d.port):''), detalle: partes.join(' · '),
+                 kindLabel:meta[0], kindColor:meta[1], kindBg:meta[2],
+                 edit:()=>this.editDesplegable(d.id), del:()=>this.delDesplegable(d.id) };
+      });
+      R.addDesplegable=()=>this.addDesplegable();
+      return R;
+    }
   });
 })();

@@ -23,6 +23,18 @@
     guardCrumbsAndLogoAgainstUnsavedExit(crumbs,R){
       crumbs.slice(0,-1).forEach(c=>{ const go=c.go; c.go=()=>this.leaveEstimacion(go); });
       const home=R.goHome; R.goHome=()=>this.leaveEstimacion(home);
+    },
+    navVals(ctx){
+      const { s, v, isDev } = ctx;
+      return {
+        goHome:()=>this.goHome(), goProyectos:()=>this.goProyectos(), goProyecto:()=>this.goProyecto(),
+        goRequerimientos:()=>this.goRequerimientos(), goConfiguracion:()=>this.goConfiguracion(),
+        goMaestro:()=>this.goMaestro(), goEstimaciones:()=>this.goEstimaciones(),
+        viewEmpresas:v===VIEW.companies, viewProyectos:v===VIEW.projects, viewProyecto:v===VIEW.project,
+        viewRequerimientos:v===VIEW.requirements, viewRequerimiento:v===VIEW.requirement, viewApidoc:v===VIEW.apiDoc,
+        viewEstimaciones:v===VIEW.estimations&&isDev, viewEstimacion:v===VIEW.estimation&&isDev&&!!s.estDraft,
+        viewConfiguracion:v===VIEW.settings,
+      };
     }
   });
 })();

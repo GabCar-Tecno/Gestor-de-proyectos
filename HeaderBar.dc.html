@@ -1,0 +1,63 @@
+<x-dc>
+<sc-helmet>
+  <style>
+    .header-bar-row {
+      --header-bar-row-height: 43px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: var(--header-bar-row-height);
+    }
+  </style>
+</sc-helmet>
+<div class="header-bar-row">
+  <button
+    onClick="{{ backCrumbGo }}"
+    style="
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: 0;
+      padding: 6px 4px;
+      color: var(--gp-muted);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 45%;
+    "
+  >
+    <svg
+      width="14"
+      height="14"
+      style="flex: none; transform: scaleX(-1)"
+    >
+      <use href="#ic-chevron"></use>
+    </svg>
+    <span style="overflow: hidden; text-overflow: ellipsis"
+      >{{ backCrumbLabel }}</span
+    >
+  </button>
+  <span style="color: var(--gp-faint); flex: none">/</span>
+  <span
+    style="
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--gp-text);
+      font-size: 13.5px;
+      font-weight: 600;
+    "
+    >{{ currentCrumbLabel }}</span
+  >
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"backCrumbGo":null,"backCrumbLabel":"Empresas","currentCrumbLabel":"Proyectos"}'>
+class Component extends DCLogic {
+}
+</script>

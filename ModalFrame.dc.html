@@ -1,0 +1,222 @@
+<x-dc>
+<div
+  onClick="{{ overlayClick }}"
+  onPointerDown="{{ overlayDown }}"
+  class="modal-ov"
+  style="
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--gp-night-72);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: ovIn 0.18s ease;
+  "
+>
+  <div
+    onClick="{{ stop }}"
+    onPointerDown="{{ stop }}"
+    class="modal-sheet"
+    style="width:100%;max-width:{{ modalWidth }};background:var(--gp-surface);border:1px solid var(--gp-line-20);border-radius:18px;box-shadow:0 30px 80px -20px var(--gp-black-70);animation:shIn .24s cubic-bezier(.2,.8,.2,1);max-height:90vh;overflow:auto"
+  >
+    <div
+      style="
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid var(--gp-line-16);
+        position: sticky;
+        top: 0;
+        background: var(--gp-surface);
+        z-index: 2;
+      "
+    >
+      <div style="min-width: 0">
+        <h3
+          style="
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.45;
+            font-weight: 650;
+            color: var(--gp-text);
+            overflow-wrap: anywhere;
+          "
+        >
+          {{ modalTitle }}
+        </h3>
+        <sc-if
+          value="{{ modalReqContextShow }}"
+          hint-placeholder-val="{{ false }}"
+          ><div
+            style="
+              margin-top: 6px;
+              font-size: 11.5px;
+              color: var(--gp-muted);
+            "
+          >
+            {{ modalReqContext }}
+          </div></sc-if
+        >
+      </div>
+      <button
+        onClick="{{ closeModal }}"
+        style="
+          flex: none;
+          background: none;
+          border: 0;
+          color: var(--gp-muted-2);
+          cursor: pointer;
+          padding: 2px 6px;
+          display: flex;
+        "
+        style-hover="color:var(--gp-text)"
+      >
+        <svg width="17" height="17"><use href="#ic-x"></use></svg>
+      </button>
+    </div>
+    <div style="padding: 24px">
+      <dc-import
+        name="ModalDialogs"
+        modalMasterLectura="{{ modalMasterLectura }}"
+        masterDetail="{{ masterDetail }}"
+        masterOpenEnv="{{ masterOpenEnv }}"
+        masterGoProject="{{ masterGoProject }}"
+        icons="{{ icons }}"
+        modalHasForm="{{ modalHasForm }}"
+        modalFormStyle="{{ modalFormStyle }}"
+        formFields="{{ formFields }}"
+        modalErrShow="{{ modalErrShow }}"
+        modalErr="{{ modalErr }}"
+        modalDocumento="{{ modalDocumento }}"
+        onDocumentFile="{{ onDocumentFile }}"
+        documentFileName="{{ documentFileName }}"
+        modalRecurso="{{ modalRecurso }}"
+        recursoPreviewLabel="{{ recursoPreviewLabel }}"
+        recursoIconHref="{{ recursoIconHref }}"
+        recursoLabel="{{ recursoLabel }}"
+        recursoFieldLabel="{{ recursoFieldLabel }}"
+        form="{{ form }}"
+        f_url="{{ f_url }}"
+        recursoUrlPlaceholder="{{ recursoUrlPlaceholder }}"
+        openRecursoLink="{{ openRecursoLink }}"
+        recursoOpenLabel="{{ recursoOpenLabel }}"
+        modalDesplieguesProy="{{ modalDesplieguesProy }}"
+        modalDesplegable="{{ modalDesplegable }}"
+        desplegableSinInstrucciones="{{ desplegableSinInstrucciones }}"
+        desplegableInstrucciones="{{ desplegableInstrucciones }}"
+        modalComponentes="{{ modalComponentes }}"
+        componentesOpcionesEmpty="{{ componentesOpcionesEmpty }}"
+        componentesOpciones="{{ componentesOpciones }}"
+        modalCorreo="{{ modalCorreo }}"
+        correoAmbientes="{{ correoAmbientes }}"
+        correoCarpetaFalta="{{ correoCarpetaFalta }}"
+        correoProyectos="{{ correoProyectos }}"
+        correoOtrosEmpty="{{ correoOtrosEmpty }}"
+        correoOtrosHay="{{ correoOtrosHay }}"
+        toggleCorreoOtros="{{ toggleCorreoOtros }}"
+        correoOtrosBorder="{{ correoOtrosBorder }}"
+        correoOtrosResumenColor="{{ correoOtrosResumenColor }}"
+        correoOtrosResumen="{{ correoOtrosResumen }}"
+        correoOtrosConteo="{{ correoOtrosConteo }}"
+        correoOtrosChevron="{{ correoOtrosChevron }}"
+        correoOtrosOpen="{{ correoOtrosOpen }}"
+        correoOtros="{{ correoOtros }}"
+        correoContactosEmpty="{{ correoContactosEmpty }}"
+        correoContactosHay="{{ correoContactosHay }}"
+        toggleCorreoTo="{{ toggleCorreoTo }}"
+        correoToBorder="{{ correoToBorder }}"
+        correoToResumenColor="{{ correoToResumenColor }}"
+        correoToResumen="{{ correoToResumen }}"
+        correoToChevron="{{ correoToChevron }}"
+        correoToOpen="{{ correoToOpen }}"
+        correoContactosTo="{{ correoContactosTo }}"
+        toggleCorreoCc="{{ toggleCorreoCc }}"
+        correoCcBorder="{{ correoCcBorder }}"
+        correoCcResumenColor="{{ correoCcResumenColor }}"
+        correoCcResumen="{{ correoCcResumen }}"
+        correoCcChevron="{{ correoCcChevron }}"
+        correoCcOpen="{{ correoCcOpen }}"
+        correoContactosCc="{{ correoContactosCc }}"
+        setCorreoNota="{{ setCorreoNota }}"
+        correoCharsColor="{{ correoCharsColor }}"
+        correoChars="{{ correoChars }}"
+        correoAsunto="{{ correoAsunto }}"
+        correoCuerpo="{{ correoCuerpo }}"
+        setCorreoCuerpo="{{ setCorreoCuerpo }}"
+        correoLargo="{{ correoLargo }}"
+        correoBloqueoShow="{{ correoBloqueoShow }}"
+        correoBloqueo="{{ correoBloqueo }}"
+        abrirCorreo="{{ abrirCorreo }}"
+        correoNoPuede="{{ correoNoPuede }}"
+        correoBtnBg="{{ correoBtnBg }}"
+        correoBtnColor="{{ correoBtnColor }}"
+        correoBtnCursor="{{ correoBtnCursor }}"
+        copiarCorreoCuerpo="{{ copiarCorreoCuerpo }}"
+        correoCopyColor="{{ correoCopyColor }}"
+        correoCopyIcon="{{ correoCopyIcon }}"
+        correoCopyLabel="{{ correoCopyLabel }}"
+        modalGithubLinks="{{ modalGithubLinks }}"
+        addGithubLinkRow="{{ addGithubLinkRow }}"
+        modalCredenciales="{{ modalCredenciales }}"
+        addCredRow="{{ addCredRow }}"
+        modalVerGithubLinks="{{ modalVerGithubLinks }}"
+        verGithubLinksList="{{ verGithubLinksList }}"
+        verGithubLinksEmpty="{{ verGithubLinksEmpty }}"
+        modalVerDespliegue="{{ modalVerDespliegue }}"
+        verDespliegue="{{ verDespliegue }}"
+        isDev="{{ isDev }}"
+        modalPromoteConfirm="{{ modalPromoteConfirm }}"
+        promote="{{ promote }}"
+        f_version="{{ f_version }}"
+        modalBatchPromote="{{ modalBatchPromote }}"
+        batch="{{ batch }}"
+        modalDiscord="{{ modalDiscord }}"
+        discord="{{ discord }}"
+        modalAviso="{{ modalAviso }}"
+        avisoMensaje="{{ avisoMensaje }}"
+      />
+    </div>
+    <div
+      style="
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 16px 22px;
+        border-top: 1px solid var(--gp-line-16);
+        position: sticky;
+        bottom: 0;
+        background: var(--gp-surface);
+      "
+    >
+      <dc-import
+        name="ModalFooters"
+        modalPromoteConfirm="{{ modalPromoteConfirm }}"
+        closeModal="{{ closeModal }}"
+        promoteOnlyStatus="{{ promoteOnlyStatus }}"
+        promoteUpdateProject="{{ promoteUpdateProject }}"
+        modalDiscord="{{ modalDiscord }}"
+        discord="{{ discord }}"
+        modalBatchPromote="{{ modalBatchPromote }}"
+        batchCancel="{{ batchCancel }}"
+        batch="{{ batch }}"
+        batchOnlyStatus="{{ batchOnlyStatus }}"
+        batchUpdate="{{ batchUpdate }}"
+        modalGenericFooter="{{ modalGenericFooter }}"
+        modalSecondaryLabel="{{ modalSecondaryLabel }}"
+        modalShowSave="{{ modalShowSave }}"
+        saveModal="{{ saveModal }}"
+        saveLabel="{{ saveLabel }}"
+      ></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"overlayClick":null,"overlayDown":null,"stop":null,"modalWidth":null,"modalTitle":null,"modalReqContextShow":null,"modalReqContext":null,"closeModal":null,"modalMasterLectura":null,"masterDetail":null,"masterOpenEnv":null,"masterGoProject":null,"icons":null,"modalHasForm":null,"modalFormStyle":null,"formFields":null,"modalErrShow":null,"modalErr":null,"modalDocumento":null,"onDocumentFile":null,"documentFileName":null,"modalRecurso":null,"recursoPreviewLabel":null,"recursoIconHref":null,"recursoLabel":null,"recursoFieldLabel":null,"form":null,"f_url":null,"recursoUrlPlaceholder":null,"openRecursoLink":null,"recursoOpenLabel":null,"modalDesplieguesProy":null,"modalDesplegable":null,"desplegableSinInstrucciones":null,"desplegableInstrucciones":null,"modalComponentes":null,"componentesOpcionesEmpty":null,"componentesOpciones":null,"modalCorreo":null,"correoAmbientes":null,"correoCarpetaFalta":null,"correoProyectos":null,"correoOtrosEmpty":null,"correoOtrosHay":null,"toggleCorreoOtros":null,"correoOtrosBorder":null,"correoOtrosResumenColor":null,"correoOtrosResumen":null,"correoOtrosConteo":null,"correoOtrosChevron":null,"correoOtrosOpen":null,"correoOtros":null,"correoContactosEmpty":null,"correoContactosHay":null,"toggleCorreoTo":null,"correoToBorder":null,"correoToResumenColor":null,"correoToResumen":null,"correoToChevron":null,"correoToOpen":null,"correoContactosTo":null,"toggleCorreoCc":null,"correoCcBorder":null,"correoCcResumenColor":null,"correoCcResumen":null,"correoCcChevron":null,"correoCcOpen":null,"correoContactosCc":null,"setCorreoNota":null,"correoCharsColor":null,"correoChars":null,"correoAsunto":null,"correoCuerpo":null,"setCorreoCuerpo":null,"correoLargo":null,"correoBloqueoShow":null,"correoBloqueo":null,"abrirCorreo":null,"correoNoPuede":null,"correoBtnBg":null,"correoBtnColor":null,"correoBtnCursor":null,"copiarCorreoCuerpo":null,"correoCopyColor":null,"correoCopyIcon":null,"correoCopyLabel":null,"modalGithubLinks":null,"addGithubLinkRow":null,"modalCredenciales":null,"addCredRow":null,"modalVerGithubLinks":null,"verGithubLinksList":null,"verGithubLinksEmpty":null,"modalVerDespliegue":null,"verDespliegue":null,"isDev":null,"modalPromoteConfirm":null,"promote":null,"f_version":null,"modalBatchPromote":null,"batch":null,"modalDiscord":null,"discord":null,"modalAviso":null,"avisoMensaje":null,"promoteOnlyStatus":null,"promoteUpdateProject":null,"batchCancel":null,"batchOnlyStatus":null,"batchUpdate":null,"modalGenericFooter":null,"modalSecondaryLabel":null,"modalShowSave":null,"saveModal":null,"saveLabel":null}'>
+class Component extends DCLogic {
+}
+</script>

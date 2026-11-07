@@ -1,5 +1,5 @@
 (function () {
-  const { SAVE_STATUS, LOCALE, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, MODAL, MODAL_MODE, TABLE, ID_PREFIX, DB_DEFAULT, SHORT_DAY_MONTH } = window.APP_CONSTANTS;
+  const { SAVE_STATUS, LOCALE, PASSWORD_MIN_LENGTH, ESTIMATION_PHASE, MODAL, MODAL_MODE, TABLE, ID_PREFIX, DB_DEFAULT, SHORT_DAY_MONTH, ICON, DEPLOYABLE_KIND } = window.APP_CONSTANTS;
 
   window.ROOT_MIXINS.push({
     openModal(cfg){ if(!this.isDev()) return; this.setState({modal:cfg, form:cfg.form||{}}); },
@@ -238,6 +238,48 @@
       } finally {
         this._busy=false;
       }
+    },
+    modalPickVals(ctx){
+      const { s, emp } = ctx;
+      const R={};
+      const md=s.modal;
+      if(md.type===MODAL.deployable){
+        const sel=s.form.instruccionIds||[];
+        const inss=(emp&&emp.instrucciones)||[];
+        R.desplegableSinInstrucciones=!inss.length;
+        R.desplegableInstrucciones=inss.map(i=>{
+          const on=sel.includes(i.id);
+          return { text:i.text, toggle:()=>this.toggleDesplegableInstruccion(i.id),
+                   bg: on?'var(--gp-cyan-10)':'var(--gp-field)',
+                   border: on?'var(--gp-cyan-45)':'var(--gp-line-20)',
+                   boxBorder: on?'var(--gp-cyan)':'var(--gp-line-25)',
+                   boxBg: on?'var(--gp-cyan)':'transparent',
+                   iconHref: on?ICON.check:ICON.x,
+                   color: on?'var(--gp-text)':'var(--gp-muted)' };
+        });
+      }
+      if(md.type===MODAL.components){
+        const sel=s.form.desplegableIds||[];
+        const opts=(emp&&emp.desplegables)||[];
+        const srvById={}; ((emp&&emp.servidores)||[]).forEach(x=>{ srvById[x.id]=x; });
+        const kindMeta=(k)=> k===DEPLOYABLE_KIND.gateway ? ['Gateway','var(--gp-violet)','var(--gp-violet-16)']
+                           : k===DEPLOYABLE_KIND.app     ? ['App','var(--gp-amber)','var(--gp-amber-16)']
+                           :                 ['API','var(--gp-cyan)','var(--gp-cyan-16)'];
+        R.componentesOpcionesEmpty=!opts.length;
+        R.componentesOpciones=opts.map(d=>{
+          const on=sel.includes(d.id), meta=kindMeta(d.kind), srv=srvById[d.serverId];
+          return { titulo: d.name + (d.port?(':'+d.port):''), servidor: srv?srv.code:'sin servidor',
+                   kindLabel:meta[0], kindColor:meta[1], kindBg:meta[2],
+                   toggle:()=>this.toggleProyDesplegable(d.id),
+                   bg: on?'var(--gp-cyan-10)':'var(--gp-field)',
+                   border: on?'var(--gp-cyan-45)':'var(--gp-line-20)',
+                   boxBorder: on?'var(--gp-cyan)':'var(--gp-line-25)',
+                   boxBg: on?'var(--gp-cyan)':'transparent',
+                   iconHref: on?ICON.check:ICON.x,
+                   color: on?'var(--gp-text)':'var(--gp-muted)' };
+        });
+      }
+      return R;
     },
   });
 })();

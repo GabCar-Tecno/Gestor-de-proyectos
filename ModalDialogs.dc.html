@@ -1,0 +1,258 @@
+<x-dc>
+<sc-if
+  value="{{ modalMasterLectura }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalMaestroLectura"
+    masterDetail="{{ masterDetail }}"
+    masterOpenEnv="{{ masterOpenEnv }}"
+    masterGoProject="{{ masterGoProject }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalHasForm }}"
+  hint-placeholder-val="{{ true }}"
+>
+  <dc-import
+    name="ModalForm"
+    modalFormStyle="{{ modalFormStyle }}"
+    formFields="{{ formFields }}"
+    modalErrShow="{{ modalErrShow }}"
+    modalErr="{{ modalErr }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalDocumento }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalDocumento"
+    onDocumentFile="{{ onDocumentFile }}"
+    documentFileName="{{ documentFileName }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalRecurso }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalRecurso"
+    recursoPreviewLabel="{{ recursoPreviewLabel }}"
+    recursoIconHref="{{ recursoIconHref }}"
+    recursoLabel="{{ recursoLabel }}"
+    recursoFieldLabel="{{ recursoFieldLabel }}"
+    form="{{ form }}"
+    f_url="{{ f_url }}"
+    recursoUrlPlaceholder="{{ recursoUrlPlaceholder }}"
+    openRecursoLink="{{ openRecursoLink }}"
+    recursoOpenLabel="{{ recursoOpenLabel }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalDesplieguesProy }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalDesplieguesProy"
+    form="{{ form }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalDesplegable }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalDesplegable"
+    desplegableSinInstrucciones="{{ desplegableSinInstrucciones }}"
+    desplegableInstrucciones="{{ desplegableInstrucciones }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalComponentes }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalComponentes"
+    componentesOpcionesEmpty="{{ componentesOpcionesEmpty }}"
+    componentesOpciones="{{ componentesOpciones }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalCorreo }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalCorreo"
+    correoAmbientes="{{ correoAmbientes }}"
+    correoCarpetaFalta="{{ correoCarpetaFalta }}"
+    correoProyectos="{{ correoProyectos }}"
+    correoOtrosEmpty="{{ correoOtrosEmpty }}"
+    correoOtrosHay="{{ correoOtrosHay }}"
+    toggleCorreoOtros="{{ toggleCorreoOtros }}"
+    correoOtrosBorder="{{ correoOtrosBorder }}"
+    correoOtrosResumenColor="{{ correoOtrosResumenColor }}"
+    correoOtrosResumen="{{ correoOtrosResumen }}"
+    correoOtrosConteo="{{ correoOtrosConteo }}"
+    correoOtrosChevron="{{ correoOtrosChevron }}"
+    correoOtrosOpen="{{ correoOtrosOpen }}"
+    correoOtros="{{ correoOtros }}"
+    correoContactosEmpty="{{ correoContactosEmpty }}"
+    correoContactosHay="{{ correoContactosHay }}"
+    toggleCorreoTo="{{ toggleCorreoTo }}"
+    correoToBorder="{{ correoToBorder }}"
+    correoToResumenColor="{{ correoToResumenColor }}"
+    correoToResumen="{{ correoToResumen }}"
+    correoToChevron="{{ correoToChevron }}"
+    correoToOpen="{{ correoToOpen }}"
+    correoContactosTo="{{ correoContactosTo }}"
+    toggleCorreoCc="{{ toggleCorreoCc }}"
+    correoCcBorder="{{ correoCcBorder }}"
+    correoCcResumenColor="{{ correoCcResumenColor }}"
+    correoCcResumen="{{ correoCcResumen }}"
+    correoCcChevron="{{ correoCcChevron }}"
+    correoCcOpen="{{ correoCcOpen }}"
+    correoContactosCc="{{ correoContactosCc }}"
+    form="{{ form }}"
+    setCorreoNota="{{ setCorreoNota }}"
+    correoCharsColor="{{ correoCharsColor }}"
+    correoChars="{{ correoChars }}"
+    correoAsunto="{{ correoAsunto }}"
+    correoCuerpo="{{ correoCuerpo }}"
+    setCorreoCuerpo="{{ setCorreoCuerpo }}"
+    correoLargo="{{ correoLargo }}"
+    correoBloqueoShow="{{ correoBloqueoShow }}"
+    correoBloqueo="{{ correoBloqueo }}"
+    abrirCorreo="{{ abrirCorreo }}"
+    correoNoPuede="{{ correoNoPuede }}"
+    correoBtnBg="{{ correoBtnBg }}"
+    correoBtnColor="{{ correoBtnColor }}"
+    correoBtnCursor="{{ correoBtnCursor }}"
+    copiarCorreoCuerpo="{{ copiarCorreoCuerpo }}"
+    correoCopyColor="{{ correoCopyColor }}"
+    correoCopyIcon="{{ correoCopyIcon }}"
+    correoCopyLabel="{{ correoCopyLabel }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalGithubLinks }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalGithubLinks"
+    form="{{ form }}"
+    addGithubLinkRow="{{ addGithubLinkRow }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalCredenciales }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalCredenciales"
+    form="{{ form }}"
+    addCredRow="{{ addCredRow }}"
+    modalErrShow="{{ modalErrShow }}"
+    modalErr="{{ modalErr }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalVerGithubLinks }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalVerGithubLinks"
+    verGithubLinksList="{{ verGithubLinksList }}"
+    verGithubLinksEmpty="{{ verGithubLinksEmpty }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalVerDespliegue }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalVerDespliegue"
+    verDespliegue="{{ verDespliegue }}"
+    isDev="{{ isDev }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalPromoteConfirm }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalPromoteFooter"
+    promote="{{ promote }}"
+    form="{{ form }}"
+    f_url="{{ f_url }}"
+    f_version="{{ f_version }}"
+    modalErrShow="{{ modalErrShow }}"
+    modalErr="{{ modalErr }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalBatchPromote }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalBatchFooter"
+    batch="{{ batch }}"
+    modalErrShow="{{ modalErrShow }}"
+    modalErr="{{ modalErr }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalDiscord }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <dc-import
+    name="ModalDiscordFooter"
+    discord="{{ discord }}"
+    modalErrShow="{{ modalErrShow }}"
+    modalErr="{{ modalErr }}"
+    icons="{{ icons }}"
+  />
+</sc-if>
+
+<sc-if
+  value="{{ modalAviso }}"
+  hint-placeholder-val="{{ false }}"
+>
+  <p
+    style="
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--gp-text-2);
+      line-height: 1.6;
+    "
+  >
+    {{ avisoMensaje }}
+  </p>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modalMasterLectura":null,"masterDetail":null,"masterOpenEnv":null,"masterGoProject":null,"icons":null,"modalHasForm":null,"modalFormStyle":null,"formFields":null,"modalErrShow":null,"modalErr":null,"modalDocumento":null,"onDocumentFile":null,"documentFileName":null,"modalRecurso":null,"recursoPreviewLabel":null,"recursoIconHref":null,"recursoLabel":null,"recursoFieldLabel":null,"form":null,"f_url":null,"recursoUrlPlaceholder":null,"openRecursoLink":null,"recursoOpenLabel":null,"modalDesplieguesProy":null,"modalDesplegable":null,"desplegableSinInstrucciones":null,"desplegableInstrucciones":null,"modalComponentes":null,"componentesOpcionesEmpty":null,"componentesOpciones":null,"modalCorreo":null,"correoAmbientes":null,"correoCarpetaFalta":null,"correoProyectos":null,"correoOtrosEmpty":null,"correoOtrosHay":null,"toggleCorreoOtros":null,"correoOtrosBorder":null,"correoOtrosResumenColor":null,"correoOtrosResumen":null,"correoOtrosConteo":null,"correoOtrosChevron":null,"correoOtrosOpen":null,"correoOtros":null,"correoContactosEmpty":null,"correoContactosHay":null,"toggleCorreoTo":null,"correoToBorder":null,"correoToResumenColor":null,"correoToResumen":null,"correoToChevron":null,"correoToOpen":null,"correoContactosTo":null,"toggleCorreoCc":null,"correoCcBorder":null,"correoCcResumenColor":null,"correoCcResumen":null,"correoCcChevron":null,"correoCcOpen":null,"correoContactosCc":null,"setCorreoNota":null,"correoCharsColor":null,"correoChars":null,"correoAsunto":null,"correoCuerpo":null,"setCorreoCuerpo":null,"correoLargo":null,"correoBloqueoShow":null,"correoBloqueo":null,"abrirCorreo":null,"correoNoPuede":null,"correoBtnBg":null,"correoBtnColor":null,"correoBtnCursor":null,"copiarCorreoCuerpo":null,"correoCopyColor":null,"correoCopyIcon":null,"correoCopyLabel":null,"modalGithubLinks":null,"addGithubLinkRow":null,"modalCredenciales":null,"addCredRow":null,"modalVerGithubLinks":null,"verGithubLinksList":null,"verGithubLinksEmpty":null,"modalVerDespliegue":null,"verDespliegue":null,"isDev":null,"modalPromoteConfirm":null,"promote":null,"f_version":null,"modalBatchPromote":null,"batch":null,"modalDiscord":null,"discord":null,"modalAviso":null,"avisoMensaje":null}'>
+class Component extends DCLogic {
+}
+</script>

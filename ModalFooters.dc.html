@@ -1,0 +1,197 @@
+<x-dc>
+<sc-helmet>
+  <style>
+    .modal-footers-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
+</sc-helmet>
+<div class="modal-footers-row">
+  <sc-if
+    value="{{ modalPromoteConfirm }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <button
+      onClick="{{ closeModal }}"
+      style="
+        background: none;
+        border: 1px solid var(--gp-line-24);
+        color: var(--gp-text-2);
+        cursor: pointer;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      "
+    >
+      Cancelar
+    </button>
+    <button
+      onClick="{{ promoteOnlyStatus }}"
+      style="
+        background: none;
+        border: 1px solid var(--gp-line-24);
+        color: var(--gp-muted);
+        cursor: pointer;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      "
+      style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
+    >
+      Cambiar solo el estado
+    </button>
+    <button
+      onClick="{{ promoteUpdateProject }}"
+      style="
+        background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+        border: 0;
+        color: var(--gp-white);
+        cursor: pointer;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
+      "
+    >
+      Avanzar y actualizar ambiente
+    </button>
+  </sc-if>
+  <sc-if
+    value="{{ modalDiscord }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <button
+      onClick="{{ discord.skip }}"
+      style="
+        background: none;
+        border: 1px solid var(--gp-line-24);
+        color: var(--gp-muted);
+        cursor: pointer;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      "
+      style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
+    >
+      Ahora no
+    </button>
+    <button
+      onClick="{{ discord.send }}"
+      style="
+        background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+        border: 0;
+        color: var(--gp-white);
+        cursor: pointer;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
+      "
+    >
+      {{ discord.sendLabel }}
+    </button>
+  </sc-if>
+  <sc-if
+    value="{{ modalBatchPromote }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <button
+      onClick="{{ batchCancel }}"
+      style="
+        background: none;
+        border: 1px solid var(--gp-line-24);
+        color: var(--gp-text-2);
+        cursor: pointer;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      "
+    >
+      Cancelar
+    </button>
+    <sc-if
+      value="{{ batch.hasAmb }}"
+      hint-placeholder-val="{{ true }}"
+    >
+      <button
+        onClick="{{ batchOnlyStatus }}"
+        style="
+          background: none;
+          border: 1px solid var(--gp-line-24);
+          color: var(--gp-muted);
+          cursor: pointer;
+          padding: 10px 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 500;
+        "
+        style-hover="color:var(--gp-cyan);border-color:var(--gp-cyan-40)"
+      >
+        Cambiar solo el estado
+      </button>
+      <button
+        onClick="{{ batchUpdate }}"
+        style="
+          background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+          border: 0;
+          color: var(--gp-white);
+          cursor: pointer;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
+        "
+      >
+        Avanzar y actualizar ambiente
+      </button>
+    </sc-if>
+    <sc-if
+      value="{{ batch.stateOnly }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <button
+        onClick="{{ batchOnlyStatus }}"
+        style="
+          background: linear-gradient(135deg, var(--gp-indigo), var(--gp-sky));
+          border: 0;
+          color: var(--gp-white);
+          cursor: pointer;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          box-shadow: 0 6px 18px -6px var(--gp-indigo-70);
+        "
+      >
+        Avanzar estados
+      </button>
+    </sc-if>
+  </sc-if>
+  <sc-if
+    value="{{ modalGenericFooter }}"
+    hint-placeholder-val="{{ true }}"
+  >
+    <dc-import
+      name="ModalFooter"
+      closeModal="{{ closeModal }}"
+      modalSecondaryLabel="{{ modalSecondaryLabel }}"
+      modalShowSave="{{ modalShowSave }}"
+      saveModal="{{ saveModal }}"
+      saveLabel="{{ saveLabel }}"
+    />
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modalPromoteConfirm":null,"closeModal":null,"promoteOnlyStatus":null,"promoteUpdateProject":null,"modalDiscord":null,"discord":null,"modalBatchPromote":null,"batchCancel":null,"batch":null,"batchOnlyStatus":null,"batchUpdate":null,"modalGenericFooter":null,"modalSecondaryLabel":null,"modalShowSave":null,"saveModal":null,"saveLabel":null}'>
+class Component extends DCLogic {
+}
+</script>
