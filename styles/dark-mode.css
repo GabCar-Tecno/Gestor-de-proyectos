@@ -1,0 +1,216 @@
+html.dark-mode body {
+  background: var(--gp-midnight);
+  color: var(--gp-text);
+}
+html.dark-mode a:not(.redoc-embed *) {
+  color: var(--gp-link);
+}
+html.dark-mode a:hover:not(.redoc-embed *) {
+  color: var(--gp-tag-avatar-text);
+}
+html.dark-mode .redoc-embed {
+  background: var(--gp-white);
+  color: var(--gp-charcoal);
+  color-scheme: light;
+}
+html.dark-mode .redoc-embed ::-webkit-scrollbar-thumb {
+  background: var(--gp-silver);
+  border-color: var(--gp-pebble);
+}
+html.dark-mode .redoc-embed ::-webkit-scrollbar-thumb:hover {
+  background: var(--gp-dove);
+}
+html.dark-mode ::-webkit-scrollbar-thumb {
+  background: var(--gp-shadow);
+  border-color: var(--gp-midnight);
+}
+html.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--gp-eclipse);
+}
+html.dark-mode .app-header {
+  background: var(--gp-header-bg) !important;
+  border-bottom-color: var(--gp-line-16) !important;
+  color: var(--gp-text) !important;
+}
+html.dark-mode .master-board-light {
+  background: var(--gp-midnight);
+  color: var(--gp-text);
+}
+html.dark-mode .master-board-light h1 {
+  color: var(--gp-text);
+}
+html.dark-mode .master-table,
+html.dark-mode .master-board-light .master-table {
+  background: var(--gp-surface);
+  border-color: var(--gp-card-line);
+  box-shadow: none;
+}
+html.dark-mode .master-table-head,
+html.dark-mode .master-board-light .master-table-head {
+  background: var(--gp-abyss);
+  color: var(--gp-muted);
+}
+html.dark-mode .master-row,
+html.dark-mode .master-board-light .master-row {
+  color: var(--gp-text);
+  border-top-color: var(--gp-line-14);
+}
+html.dark-mode .master-board-light .master-row:hover {
+  background: var(--gp-dusk);
+}
+html.dark-mode .master-cell-sub,
+html.dark-mode .master-board-light .master-cell-sub {
+  color: var(--gp-muted);
+}
+html.dark-mode .master-cell-label,
+html.dark-mode .master-board-light .master-cell-label {
+  color: var(--gp-muted-2);
+}
+html.dark-mode .master-metric {
+  --metric-color: var(--gp-metric-total);
+  --metric-tint: var(--gp-metric-total-tint);
+  border-color: var(--gp-card-line);
+  background: linear-gradient(125deg, var(--metric-tint), var(--gp-surface));
+  box-shadow: none;
+}
+html.dark-mode .master-metric::after {
+  opacity: 0.12;
+}
+html.dark-mode .master-filter-bar {
+  border-color: var(--gp-card-line);
+  background: var(--gp-abyss);
+  box-shadow: none;
+}
+html.dark-mode .master-filter-control {
+  border-color: var(--gp-line-20);
+  background: var(--gp-field);
+  color: var(--gp-muted-4);
+}
+html.dark-mode .master-filter-control:focus-within {
+  border-color: var(--gp-cyan-50);
+  background: var(--gp-field);
+  box-shadow: 0 0 0 3px var(--gp-cyan-12);
+}
+html.dark-mode .master-filter-control > svg {
+  color: var(--gp-muted-2);
+}
+html.dark-mode .master-filter-control input {
+  color: var(--gp-text) !important;
+  -webkit-text-fill-color: var(--gp-text);
+  caret-color: var(--gp-link);
+}
+html.dark-mode .master-filter-control input::placeholder {
+  color: var(--gp-muted-2);
+  -webkit-text-fill-color: var(--gp-muted-2);
+}
+html.dark-mode .master-dropdown-trigger {
+  color: var(--gp-text);
+}
+html.dark-mode .master-dropdown-trigger:focus-visible,
+html.dark-mode .master-dropdown-option:focus-visible {
+  outline-color: var(--gp-cyan-60);
+}
+html.dark-mode .master-dropdown-menu {
+  border-color: var(--gp-line-20);
+  background: var(--gp-obsidian);
+  box-shadow: 0 14px 30px var(--gp-black-45);
+}
+html.dark-mode .master-dropdown-option {
+  color: var(--gp-text-2);
+}
+html.dark-mode .master-dropdown-option:hover {
+  background: var(--gp-tint);
+  color: var(--gp-text);
+}
+html.dark-mode .master-dropdown-option svg {
+  color: var(--gp-link);
+}
+html.dark-mode .master-dropdown-option-dot {
+  box-shadow: 0 0 0 3px var(--gp-line-14);
+}
+html.dark-mode .master-filter-chevron {
+  color: var(--gp-muted-5) !important;
+}
+html.dark-mode .project-card {
+  background: var(--gp-surface) !important;
+  border-color: var(--gp-card-line) !important;
+  color: var(--gp-text) !important;
+  box-shadow: none;
+}
+html.dark-mode .project-card:hover {
+  background: var(--gp-dusk) !important;
+  border-color: var(--gp-card-line-hover) !important;
+  box-shadow: none;
+}
+html.dark-mode .assignee-picker-count {
+  background: var(--gp-surface-2);
+  color: var(--gp-text-2);
+}
+html.dark-mode .assignee-dropdown {
+  border-color: var(--gp-line-20);
+  background: var(--gp-field);
+}
+html.dark-mode .assignee-dropdown-trigger {
+  color: var(--gp-text-2);
+}
+html.dark-mode .assignee-dropdown-trigger::after {
+  border-right-color: var(--gp-muted);
+  border-bottom-color: var(--gp-muted);
+}
+html.dark-mode .assignee-dropdown[open] .assignee-dropdown-trigger {
+  border-bottom-color: var(--gp-line-18);
+  background: var(--gp-surface);
+}
+html.dark-mode .assignee-picker-tag {
+  border-color: var(--gp-tag-line);
+  background: var(--gp-tint);
+  color: var(--gp-tag-text);
+}
+html.dark-mode .assignee-picker-tag-avatar {
+  background: var(--gp-tag-avatar-bg);
+  color: var(--gp-tag-avatar-text);
+}
+html.dark-mode .assignee-option {
+  color: var(--gp-text-2);
+}
+html.dark-mode .assignee-option:hover {
+  border-color: var(--gp-line-20);
+  background: var(--gp-surface);
+}
+html.dark-mode .assignee-option.is-selected {
+  border-color: var(--gp-hover-line);
+  background: var(--gp-tint);
+  color: var(--gp-text);
+}
+html.dark-mode .assignee-option-avatar {
+  background: var(--gp-surface-2);
+  color: var(--gp-muted);
+}
+html.dark-mode .assignee-option.is-selected .assignee-option-avatar {
+  background: var(--gp-cyan-20);
+  color: var(--gp-tag-avatar-text);
+}
+html.dark-mode .assignee-checkbox {
+  border-color: var(--gp-faint);
+  background: var(--gp-field);
+}
+html.dark-mode .assignee-checkbox.is-selected {
+  border-color: var(--gp-primary);
+  background: var(--gp-primary);
+}
+@media (max-width: 760px) {
+  html.dark-mode .master-table,
+  html.dark-mode .master-board-light .master-table {
+    background: transparent;
+  }
+  html.dark-mode .master-row,
+  html.dark-mode .master-board-light .master-row {
+    background: var(--gp-surface);
+    border-color: var(--gp-line-16);
+    box-shadow: none;
+  }
+  html.dark-mode .master-row:hover,
+  html.dark-mode .master-board-light .master-row:hover {
+    background: var(--gp-dusk);
+  }
+}

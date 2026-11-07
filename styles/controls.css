@@ -1,0 +1,90 @@
+::selection {
+  background: var(--gp-cyan-32);
+}
+a {
+  color: var(--gp-teal);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--gp-lagoon);
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gp-silver);
+  border-radius: 8px;
+  border: 2px solid var(--gp-pebble);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gp-dove);
+}
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+button {
+  color: inherit;
+}
+@keyframes ovIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes shIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes vwIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.redoc-embed {
+  --redoc-h: 78vh;
+  height: var(--redoc-h);
+  background: var(--gp-white);
+  color: var(--gp-charcoal);
+  color-scheme: light;
+}
+.redoc-embed:fullscreen {
+  --redoc-h: 100vh;
+  border-radius: 0 !important;
+  background: var(--gp-white);
+  color-scheme: light;
+}
+.redoc-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.redoc-embed .menu-content {
+  height: var(--redoc-h) !important;
+}
+.app-header {
+  background: var(--gp-pearl-96) !important;
+  border-bottom-color: var(--gp-cloud) !important;
+  color: var(--gp-charcoal) !important;
+}

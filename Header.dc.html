@@ -1,0 +1,268 @@
+<x-dc>
+<sc-helmet>
+  <style>
+    .header-row {
+      --header-row-height: 63px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      height: var(--header-row-height);
+    }
+    @media (max-width: 760px) {
+      .header-row {
+        gap: 10px;
+      }
+    }
+  </style>
+</sc-helmet>
+<div class="header-row">
+  <div
+    onClick="{{ goHome }}"
+    style="
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      flex: none;
+    "
+  >
+    <svg
+      width="30"
+      height="30"
+      viewBox="0 0 68.755 45.796"
+      fill="none"
+    >
+      <path
+        d="M22.921,45.8A22.92,22.92,0,0,1,21.348.009a4.184,4.184,0,0,1,.571,8.348,14.552,14.552,0,1,0,15.52,15.521,4.184,4.184,0,1,1,8.348.572A22.919,22.919,0,0,1,22.921,45.8"
+        fill="var(--gp-cyan)"
+      />
+      <path
+        d="M63.446,21.63a5.309,5.309,0,1,1,0-7.508,5.309,5.309,0,0,1,0,7.508"
+        transform="translate(-25.807 -5.964)"
+        fill="var(--gp-cyan)"
+      />
+    </svg>
+    <div style="line-height: 1">
+      <div
+        style="
+          font-weight: 700;
+          font-size: 17px;
+          letter-spacing: -0.3px;
+        "
+      >
+        Tecno<span style="color: var(--gp-cyan)">Corp</span>
+      </div>
+      <div
+        class="brand-sub"
+        style="
+          font-size: 9px;
+          letter-spacing: 3px;
+          color: var(--gp-muted-2);
+          font-weight: 600;
+          margin-top: 1px;
+        "
+      >
+        GESTIÓN DE PROYECTOS
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ !narrow }}" hint-placeholder-val="{{ true }}">
+    <nav
+      style="
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        overflow: hidden;
+        flex: 1;
+        min-width: 0;
+      "
+    >
+      <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="1">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex: none;
+            min-width: 0;
+          "
+        >
+          <sc-if value="{{ c.sep }}" hint-placeholder-val="{{ true }}"
+            ><span style="color: var(--gp-faint)">/</span></sc-if
+          >
+          <button
+            onClick="{{ c.go }}"
+            style="background:none;border:0;padding:6px 8px;border-radius:8px;color:{{ c.color }};font-size:13.5px;font-weight:{{ c.weight }};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px"
+          >
+            {{ c.label }}
+          </button>
+        </div>
+      </sc-for>
+    </nav>
+  </sc-if>
+  <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; min-width: 0"></div>
+  </sc-if>
+
+  <sc-if value="{{ showSave }}" hint-placeholder-val="{{ false }}">
+    <div
+      style="flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12px;color:{{ saveTextColor }};padding:5px 10px;border-radius:20px;background:var(--gp-line-12);border:1px solid var(--gp-line-16)"
+    >
+      <span
+        style="width:7px;height:7px;border-radius:50%;background:{{ saveDot }}"
+      ></span
+      >{{ saveLabelTxt }}
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasPrimary }}" hint-placeholder-val="{{ true }}">
+    <button
+      onClick="{{ primaryAction }}"
+      style="flex:none;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gp-indigo),var(--gp-sky));color:var(--gp-white);border:0;padding:{{ primaryPad }};border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px -6px var(--gp-indigo-70)"
+    >
+      <span style="font-size: 16px; line-height: 0; margin-top: -1px"
+        >+</span
+      >
+      <sc-if value="{{ !narrow }}" hint-placeholder-val="{{ true }}"
+        >{{ primaryLabel }}</sc-if
+      >
+    </button>
+  </sc-if>
+  <sc-if
+    value="{{ hasPrimaryLocked }}"
+    hint-placeholder-val="{{ false }}"
+  >
+    <span style="flex: none; font-size: 12px; color: var(--gp-muted-2)"
+      >Solo lectura</span
+    >
+  </sc-if>
+  <button
+    onClick="{{ toggleDarkMode }}"
+    title="{{ themeTitle }}"
+    aria-label="{{ themeTitle }}"
+    style="
+      flex: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--gp-line-22);
+      color: var(--gp-text-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    "
+    style-hover="color:var(--gp-ink);border-color:var(--gp-hover-line)"
+  >
+    <sc-if value="{{ !isDark }}" hint-placeholder-val="{{ true }}"
+      ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg
+    ></sc-if>
+    <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"
+      ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg
+    ></sc-if>
+  </button>
+  <span
+    style="
+      flex: none;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gp-muted);
+      background: var(--gp-line-14);
+      padding: 4px 9px;
+      border-radius: 20px;
+    "
+    >{{ roleLabel }}</span
+  >
+  <div style="position: relative; flex: none">
+    <button
+      onClick="{{ toggleUserMenu }}"
+      title="Cuenta"
+      style="
+        flex: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--gp-avatar-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--gp-white);
+        border: 1px solid var(--gp-line-18);
+        cursor: pointer;
+      "
+      style-hover="border-color:var(--gp-cyan-40)"
+    >
+      {{ userInitials }}
+    </button>
+    <sc-if
+      value="{{ userMenuOpen }}"
+      hint-placeholder-val="{{ false }}"
+    >
+      <div
+        onClick="{{ closeUserMenu }}"
+        style="position: fixed; inset: 0; z-index: 45"
+      ></div>
+      <div
+        style="
+          position: absolute;
+          top: 42px;
+          right: 0;
+          z-index: 46;
+          background: var(--gp-surface);
+          border: 1px solid var(--gp-line-20);
+          border-radius: 12px;
+          box-shadow: 0 20px 50px -12px var(--gp-black-60);
+          min-width: 190px;
+          overflow: hidden;
+          animation: vwIn 0.15s ease;
+        "
+      >
+        <button
+          onClick="{{ openPasswordModalFromMenu }}"
+          style="
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: 0;
+            color: var(--gp-text-2);
+            cursor: pointer;
+            padding: 11px 14px;
+            font-size: 13px;
+          "
+          style-hover="background:var(--gp-hover-bg);color:var(--gp-cyan)"
+        >
+          Cambiar contraseña
+        </button>
+        <div
+          style="height: 1px; background: var(--gp-line-18)"
+        ></div>
+        <button
+          onClick="{{ doLogout }}"
+          style="
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: 0;
+            color: var(--gp-red);
+            cursor: pointer;
+            padding: 11px 14px;
+            font-size: 13px;
+          "
+          style-hover="background:var(--gp-red-8)"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"goHome":null,"narrow":false,"crumbs":[{"sep":false,"go":null,"color":"var(--gp-text)","weight":600,"label":"Empresas"},{"sep":true,"go":null,"color":"var(--gp-muted)","weight":400,"label":"Proyectos"}],"showSave":false,"saveTextColor":"var(--gp-muted)","saveDot":"var(--gp-success)","saveLabelTxt":"Guardado","hasPrimary":false,"primaryAction":null,"primaryPad":"9px 16px","primaryLabel":"Nuevo","hasPrimaryLocked":false,"toggleDarkMode":null,"themeTitle":"Cambiar tema","isDark":false,"roleLabel":"Developer","toggleUserMenu":null,"userInitials":"AB","userMenuOpen":false,"closeUserMenu":null,"openPasswordModalFromMenu":null,"doLogout":null}'>
+class Component extends DCLogic {
+}
+</script>
